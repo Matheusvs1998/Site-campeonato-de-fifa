@@ -191,7 +191,22 @@ function App() {
                 )}
             </main>
             <footer className="container">
-                <p>&copy; 2026 Campeonato EA FC 26. Desenvolvido por: Matheus Vasconcelos.</p>
+                <div className="social-links">
+                    <a href="https://discord.gg/neQt9DdJVT" className="discord" target="_blank" rel="noopener noreferrer">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M13.545 2.907a13.227 13.227 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.19 12.19 0 0 0-3.658 0 8.258 8.258 0 0 0-.412-.833.051.051 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.041.041 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032c.001.014.01.028.021.037a13.276 13.276 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019c.308-.42.582-.863.818-1.329a.05.05 0 0 0-.027-.07 8.736 8.736 0 0 1-1.29-.614.051.051 0 0 1-.006-.085c.085-.063.17-.13.252-.198a.053.053 0 0 1 .054-.007c2.611 1.195 5.432 1.195 8.002 0a.053.053 0 0 1 .054.007c.082.068.167.135.252.198a.051.051 0 0 1-.006.085 8.746 8.746 0 0 1-1.29.614.05.05 0 0 0-.027.07c.236.465.51.908.817 1.329a.05.05 0 0 0 .056.019 13.235 13.235 0 0 0 4.001-2.02.049.049 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.034.034 0 0 0-.02-.019Zm-8.198 7.307c-.789 0-1.438-.724-1.438-1.612 0-.889.637-1.613 1.438-1.613.807 0 1.45.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612Zm5.316 0c-.788 0-1.438-.724-1.438-1.612 0-.889.637-1.613 1.438-1.613.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612Z"/>
+                        </svg>
+                        Discord Oficial
+                    </a>
+                    <a href="https://twitch.tv/eujohnzinrp" className="twitch" target="_blank" rel="noopener noreferrer">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
+                            <path d="M3.857 0 1 2.857v10.286h3.429V16l2.857-2.857H9.57L14.714 8V0H3.857zm9.714 7.429-2.285 2.285H9l-2 2v-2H4.429V1.143h9.142v6.286z"/>
+                            <path d="M11.857 3.143h-1.143V6.29h1.143V3.143zm-3.143 0H7.571V6.29h1.143V3.143z"/>
+                        </svg>
+                        Assistir ao Vivo
+                    </a>
+                </div>
+                <p>&copy; 2026 Campeonato EA FC 26 Gangster Cup. Desenvolvido por: Matheus Vasconcelos.</p>
             </footer>
         </div>
     );
@@ -202,8 +217,8 @@ function Home({ results, onRegisterClick }) {
         <React.Fragment>
             <section className="hero">
                 <div className="container">
-                    <h1>Domine os gramados virtuais</h1>
-                    <p>Veja os resultados em tempo real dos jogos logo abaixo.</p>
+                    <h1>campeonato EA FC 26 da Gangster Cup</h1>
+                    <p>Veja os resultados dos jogos logo abaixo.</p>
                     <button className="btn-large" style={{marginTop: '20px'}} onClick={onRegisterClick}>Garantir minha vaga</button>
                 </div>
             </section>
