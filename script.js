@@ -119,6 +119,25 @@ function App() {
         }
     };
 
+    const deleteMatch = async (id) => {
+        if (!supabaseClient || !window.confirm("Deseja realmente apagar esta partida?")) return;
+        
+        const { error } = await supabaseClient.from('matches').delete().eq('id', id);
+        if (error) {
+            console.error('Erro ao deletar partida:', error);
+        } else {
+            setResults(results.filter(match => match.id !== id));
+        }
+    };
+
+    const deleteAllMatches = async () => {
+        if (!supabaseClient || !window.confirm("AVISO: Isso apagará TODOS os resultados. Deseja continuar?")) return;
+
+        const { error } = await supabaseClient.from('matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        if (error) console.error('Erro ao resetar campeonato:', error);
+        else setResults([]);
+    };
+
     return (
         <div className="app-wrapper">
             <nav className="header-nav">
@@ -144,7 +163,16 @@ function App() {
                     <React.Fragment>
                         {page === 'home' && <Home results={results} onRegisterClick={() => setPage('register')} />}
                         {page === 'login' && <Login onLogin={handleLogin} />}
-                        {page === 'admin' && <Admin results={results} registrations={registrations} updateResult={updateResult} onDraw={drawMatches} />}
+                        {page === 'admin' && (
+                            <Admin 
+                                results={results} 
+                                registrations={registrations} 
+                                updateResult={updateResult} 
+                                onDraw={drawMatches}
+                                onDeleteMatch={deleteMatch}
+                                onDeleteAll={deleteAllMatches}
+                            />
+                        )}
                         {page === 'register' && <Register onBack={() => setPage('home')} onRegister={addRegistration} />}
                     </React.Fragment>
                 )}
@@ -281,12 +309,15 @@ function Register({ onBack, onRegister }) { // onRegister agora é assíncrono
     );
 }
 
-function Admin({ results, registrations, updateResult, onDraw }) {
+function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, onDeleteAll }) {
     return (
         <section className="container section">
-            <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px'}}>
+            <div className="admin-header">
                 <h2>Painel do Administrador</h2>
-                <button className="btn-primary" onClick={onDraw}>Realizar Sorteio de Partidas</button>
+                <div className="admin-actions">
+                    <button className="btn-danger" onClick={onDeleteAll}>Resetar Campeonato</button>
+                    <button className="btn-primary" onClick={onDraw}>Realizar Sorteio</button>
+                </div>
             </div>
 
             <div className="card" style={{marginBottom: '40px'}}>
@@ -326,6 +357,7 @@ function Admin({ results, registrations, updateResult, onDraw }) {
                             <th>Placar 1</th>
                             <th>Placar 2</th>
                             <th>Status</th>
+                            <th>Ações</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -355,6 +387,11 @@ function Admin({ results, registrations, updateResult, onDraw }) {
                                         <option value="Ao Vivo">Ao Vivo</option>
                                         <option value="Finalizado">Finalizado</option>
                                     </select>
+                                </td>
+                                <td>
+                                    <button className="btn-icon" onClick={() => onDeleteMatch(match.id)} title="Apagar Partida">
+                                        🗑️
+                                    </button>
                                 </td>
                             </tr>
                         ))}
