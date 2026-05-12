@@ -18,6 +18,7 @@ try {
 
 function App() {
     const [page, setPage] = useState('home'); // home, login, admin, register
+    const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [user, setUser] = useState(null); // { role: 'admin' | 'user' }
     const [registrations, setRegistrations] = useState([]);
     const [results, setResults] = useState([]);
@@ -138,19 +139,31 @@ function App() {
         else setResults([]);
     };
 
+    const navigate = (p) => {
+        setPage(p);
+        setIsMenuOpen(false);
+    };
+
     return (
         <div className="app-wrapper">
             <nav className="header-nav">
                 <div className="container nav-content">
-                    <div className="logo" onClick={() => setPage('home')}>Campeonato de  <span>EA FC 26</span></div>
-                    <ul className="nav-links">
-                        <li><a href="#" onClick={() => setPage('home')}>Início</a></li>
-                        <li><a href="#" onClick={() => setPage('register')}>Inscreva-se</a></li>
-                        {user?.role === 'admin' && <li><a href="#" onClick={() => setPage('admin')}>Admin</a></li>}
+                    <div className="logo" onClick={() => navigate('home')}>Campeonato de  <span>EA FC 26</span></div>
+                    
+                    <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Menu">
+                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
+                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
+                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
+                    </button>
+
+                    <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
+                        <li><a href="#" onClick={() => navigate('home')}>Início</a></li>
+                        <li><a href="#" onClick={() => navigate('register')}>Inscreva-se</a></li>
+                        {user?.role === 'admin' && <li><a href="#" onClick={() => navigate('admin')}>Admin</a></li>}
                         {!user ? (
-                            <li><button className="btn-primary" onClick={() => setPage('login')}>Entrar</button></li>
+                            <li><button className="btn-primary" onClick={() => navigate('login')}>Entrar</button></li>
                         ) : (
-                            <li><button className="btn-primary" onClick={() => setUser(null)}>Sair</button></li>
+                            <li><button className="btn-primary" onClick={() => { setUser(null); setIsMenuOpen(false); }}>Sair</button></li>
                         )}
                     </ul>
                 </div>
