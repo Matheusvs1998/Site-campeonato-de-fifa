@@ -161,7 +161,7 @@ function App() {
                         <li><a href="#" onClick={() => navigate('register')}>Inscreva-se</a></li>
                         {user?.role === 'admin' && <li><a href="#" onClick={() => navigate('admin')}>Admin</a></li>}
                         {!user ? (
-                            <li><button className="btn-primary" onClick={() => navigate('login')}>Entrar</button></li>
+                            <li><button className="btn-primary" onClick={() => navigate('login')}>Entrar(admin)</button></li>
                         ) : (
                             <li><button className="btn-primary" onClick={() => { setUser(null); setIsMenuOpen(false); }}>Sair</button></li>
                         )}
@@ -224,7 +224,7 @@ function Home({ results, onRegisterClick }) {
             </section>
 
             <section className="container section">
-                <h2>Resultados Atuais</h2>
+                <h2>Resultados dos jogos</h2>
                 <div className="results-grid">
                     {results.map(match => (
                         <div key={match.id} className="card match-card">
