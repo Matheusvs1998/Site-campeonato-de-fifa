@@ -23,6 +23,7 @@ function App() {
     const [registrations, setRegistrations] = useState([]);
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showLiveAlert, setShowLiveAlert] = useState(true);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -146,6 +147,29 @@ function App() {
 
     return (
         <div className="app-wrapper">
+            {showLiveAlert && (
+                <div className="live-alert-overlay">
+                    <div className="live-alert-card card">
+                        <button className="close-alert" onClick={() => setShowLiveAlert(false)} title="Fechar">×</button>
+                        <div className="live-badge">AO VIVO</div>
+                        <h3>Transmissões da Gangster Cup</h3>
+                        <p>Não perca nenhum lance! Acompanhe as partidas ao vivo agora mesmo no nosso canal oficial da Twitch.</p>
+                        <div style={{ marginTop: '20px' }}>
+                            <a 
+                                href="https://twitch.tv/eujohnzinrp" 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="btn-primary"
+                                style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}
+                                onClick={() => setShowLiveAlert(false)}
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M3.857 0 1 2.857v10.286h3.429V16l2.857-2.857H9.57L14.714 8V0H3.857zm9.714 7.429-2.285 2.285H9l-2 2v-2H4.429V1.143h9.142v6.286z"/><path d="M11.857 3.143h-1.143V6.29h1.143V3.143zm-3.143 0H7.571V6.29h1.143V3.143z"/></svg>
+                                Assistir Agora
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            )}
             <nav className="header-nav">
                 <div className="container nav-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '30px', flexWrap: 'wrap' }}>
                     <div className="logo" onClick={() => navigate('home')}>Campeonato de EA FC 26  <span>Gangster Cup</span></div>
