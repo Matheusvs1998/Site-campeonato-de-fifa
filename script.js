@@ -217,7 +217,7 @@ function Home({ results, onRegisterClick }) {
         <React.Fragment>
             <section className="hero">
                 <div className="container">
-                    <h1>campeonato EA FC 26 da Gangster Cup</h1>
+                    <h1>Campeonato EA FC 26 da Gangster Cup</h1>
                     <p>Veja os resultados dos jogos logo abaixo.</p>
                     <button className="btn-large" style={{marginTop: '20px'}} onClick={onRegisterClick}>Garantir minha vaga</button>
                 </div>
