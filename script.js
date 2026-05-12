@@ -147,8 +147,8 @@ function App() {
     return (
         <div className="app-wrapper">
             <nav className="header-nav">
-                <div className="container nav-content">
-                    <div className="logo" onClick={() => navigate('home')}>Campeonato de  <span>EA FC 26</span></div>
+                <div className="container nav-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '30px', flexWrap: 'wrap' }}>
+                    <div className="logo" onClick={() => navigate('home')}>Campeonato de EA FC 26  <span>Gangster Cup</span></div>
                     
                     <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Menu">
                         <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
