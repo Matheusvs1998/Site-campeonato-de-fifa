@@ -10,4 +10,11 @@ Site estático para um campeonato de EA FC 26.
 ## Como usar
 1. Abra `index.html` no navegador.
 2. Edite o conteúdo e as datas do campeonato conforme necessário.
-3. Para publicar, faça deploy em qualquer host estático (GitHub Pages, Netlify, Vercel, etc.).
+3. Para publicar no **Vercel**:
+   - Conecte seu repositório GitHub ao painel da Vercel.
+   - Ou use o comando `vercel` via CLI.
+
+## Tecnologias
+- React (via CDN)
+- Supabase (Banco de dados e persistência)
+- CSS3 com variáveis modernas
