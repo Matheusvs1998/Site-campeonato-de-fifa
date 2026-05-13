@@ -197,6 +197,31 @@ form {
     color: white;
 }
 
+.terms-box {
+    background: #1a1a1a;
+    border: 1px solid #444;
+    padding: 15px;
+    border-radius: 4px;
+    height: 150px;
+    overflow-y: scroll;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 15px;
+}
+
+.terms-box p {
+    margin-bottom: 10px;
+}
+
+.checkbox-label {
+    display: flex !important;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    user-select: none;
+}
+
 .form-group select {
     cursor: pointer;
     appearance: none;
@@ -222,11 +247,35 @@ form {
 
 .match-info {
     display: flex;
-    justify-content: space-around;
+    justify-content: center;
     align-items: center;
-    font-size: 1.2rem;
+    font-size: 1.1rem;
     font-weight: bold;
     margin-bottom: 10px;
+    gap: 15px;
+}
+
+.team-display {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    flex: 1;
+}
+
+.team-logo {
+    width: 50px;
+    height: 50px;
+    object-fit: contain;
+    filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
+}
+
+.team-logo-small {
+    width: 24px;
+    height: 24px;
+    object-fit: contain;
+    vertical-align: middle;
+    margin-right: 8px;
 }
 
 .score {
@@ -237,6 +286,41 @@ form {
 
 .status { font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); }
 .status.ao { color: #ff4444; font-weight: bold; } /* Ao Vivo */
+
+/* Estilos para a Classificação de Grupos */
+.groups-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 25px;
+    margin-bottom: 50px;
+}
+
+.group-card h3 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: var(--primary-color);
+    font-size: 1.3rem;
+    border-bottom: 1px solid #333;
+    padding-bottom: 10px;
+}
+
+.group-table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+.group-table th {
+    text-align: left;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    padding-bottom: 10px;
+}
+
+.group-table td {
+    padding: 12px 0;
+    border-bottom: 1px solid #2a2a2a;
+}
 
 .login-container { max-width: 400px; margin: 0 auto; }
 

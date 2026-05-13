@@ -16,6 +16,101 @@ try {
 }
 // --- Fim Configuração Supabase ---
 
+// Função para gerar fallback caso a logo oficial falhe
+const getFallbackLogo = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f30909&color=fff&bold=true&format=svg`;
+
+// Função auxiliar para buscar o escudo do time
+const getTeamLogo = (teamName) => {
+    // Extrai apenas o nome do time caso venha com o ID do jogador (ex: "Real Madrid (Player123)")
+    const nameOnly = teamName.split(' (')[0];
+    // Voltando para a versão Wikipedia com Proxy (weserv.nl) para garantir estabilidade
+    const proxy = 'https://images.weserv.nl/?url=';
+    const logos = {
+        // Espanha
+        'Real Madrid': 'upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg',
+        'Barcelona': 'upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona.svg',
+        'Atlético de Madrid': 'upload.wikimedia.org/wikipedia/en/f/f4/Atletico_Madrid_2017_logo.svg',
+        'Sevilla': 'upload.wikimedia.org/wikipedia/en/3/3b/Sevilla_FC_logo.svg',
+        'Real Sociedad': 'upload.wikimedia.org/wikipedia/en/f/f1/Real_Sociedad_logo.svg',
+        'Villarreal': 'upload.wikimedia.org/wikipedia/en/7/70/Villarreal_CF_logo.svg',
+        'Athletic Bilbao': 'upload.wikimedia.org/wikipedia/en/9/98/Athletic_Club_logo.svg',
+        'Real Betis': 'upload.wikimedia.org/wikipedia/en/1/13/Real_Betis_logo.svg',
+        'Valencia': 'upload.wikimedia.org/wikipedia/en/c/ce/Valencia_Cf_logo.svg',
+        // Inglaterra
+        'Manchester City': 'upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg',
+        'Arsenal': 'upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg',
+        'Liverpool': 'upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg',
+        'Manchester United': 'upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg',
+        'Chelsea': 'upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg',
+        'Tottenham': 'upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg',
+        'Newcastle United': 'upload.wikimedia.org/wikipedia/en/5/56/Newcastle_United_Logo.svg',
+        'Aston Villa': 'upload.wikimedia.org/wikipedia/en/f/f9/Aston_Villa_FC_crest_%282016%29.svg',
+        'West Ham': 'upload.wikimedia.org/wikipedia/en/c/c2/West_Ham_United_FC_logo.svg',
+        'Everton': 'upload.wikimedia.org/wikipedia/en/7/7c/Everton_FC_logo.svg',
+        // França
+        'PSG': 'upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg',
+        'Marseille': 'upload.wikimedia.org/wikipedia/en/d/d8/Olympic_Marseille_logo.svg',
+        'Lyon': 'upload.wikimedia.org/wikipedia/en/c/c6/Olympique_Lyonnais_crest.svg',
+        'Monaco': 'upload.wikimedia.org/wikipedia/en/f/f3/AS_Monaco_FC.svg',
+        'Lille': 'upload.wikimedia.org/wikipedia/en/3/3f/Lille_OSC_logo.svg',
+        'Nice': 'upload.wikimedia.org/wikipedia/en/2/2e/OGC_Nice_logo.svg',
+        'Rennes': 'upload.wikimedia.org/wikipedia/en/9/9e/Stade_Rennais_FC.svg',
+        // Alemanha
+        'Bayern de Munique': 'upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg',
+        'Borussia Dortmund': 'upload.wikimedia.org/wikipedia/commons/6/67/Borussia_Dortmund_logo.svg',
+        'Bayer Leverkusen': 'upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg',
+        'RB Leipzig': 'upload.wikimedia.org/wikipedia/en/0/04/RB_Leipzig_2014_logo.svg',
+        'Eintracht Frankfurt': 'upload.wikimedia.org/wikipedia/commons/0/04/Eintracht_Frankfurt_Logo.svg',
+        'Wolfsburg': 'upload.wikimedia.org/wikipedia/commons/f/f3/Logo_VfL_Wolfsburg.svg',
+        'Borussia Mönchengladbach': 'upload.wikimedia.org/wikipedia/commons/8/81/Borussia_M%C3%B6nchengladbach_logo.svg',
+        // Itália
+        'Inter de Milão': 'upload.wikimedia.org/wikipedia/commons/0/05/FC_Internazionale_Milano_2021.svg',
+        'AC Milan': 'upload.wikimedia.org/wikipedia/commons/d/d1/ACM-logo.svg',
+        'Juventus': 'upload.wikimedia.org/wikipedia/commons/b/bc/Juventus_FC_2017_icon_%28black%29.svg',
+        'Napoli': 'upload.wikimedia.org/wikipedia/commons/0/0d/S.S.C._Napoli_logo.svg',
+        'AS Roma': 'upload.wikimedia.org/wikipedia/en/f/f3/AS_Roma_logo_%282017%29.svg',
+        'Lazio': 'upload.wikimedia.org/wikipedia/en/c/ce/S.S._Lazio_badge.svg',
+        'Atalanta': 'upload.wikimedia.org/wikipedia/en/6/66/Atalanta_BC.svg',
+        'Fiorentina': 'upload.wikimedia.org/wikipedia/commons/7/79/ACF_Fiorentina_2022_logo.svg',
+        // Brasil
+        'Flamengo': 'upload.wikimedia.org/wikipedia/pt/2/2e/Flamengo_brazilian_poly_new.svg',
+        'Palmeiras': 'upload.wikimedia.org/wikipedia/pt/1/10/Palmeiras_logo.svg',
+        'São Paulo': 'upload.wikimedia.org/wikipedia/pt/6/6f/Logo_S%C3%A3o_Paulo_FC.svg',
+        'Corinthians': 'upload.wikimedia.org/wikipedia/pt/b/b4/Corinthians_simbolo.png',
+        'Grêmio': 'upload.wikimedia.org/wikipedia/pt/d/d8/Gr%C3%AAmio_FBPA.svg',
+        'Internacional': 'upload.wikimedia.org/wikipedia/commons/f/f1/Escudo_do_Sport_Club_Internacional.svg',
+        'Atlético-MG': 'upload.wikimedia.org/wikipedia/en/5/5f/Clube_Atl%C3%A9tico_Mineiro_logo.svg',
+        'Fluminense': 'upload.wikimedia.org/wikipedia/en/9/9e/Fluminense_FC_escudo.svg',
+        'Botafogo': 'upload.wikimedia.org/wikipedia/en/c/cb/Botafogo_de_Futebol_e_Regatas_logo.svg',
+        'Cruzeiro': 'upload.wikimedia.org/wikipedia/en/3/3c/Cruzeiro_Esporte_Clube_%28logo%29.svg',
+        'Vasco da Gama': 'upload.wikimedia.org/wikipedia/en/a/ac/CRVascoDaGama.svg',
+        'Bahia': 'upload.wikimedia.org/wikipedia/pt/3/39/Esporte_Clube_Bahia_logo.svg',
+        'Fortaleza': 'upload.wikimedia.org/wikipedia/pt/4/41/Fortaleza_Esporte_Clube_logo.svg',
+        'Athletico-PR': 'upload.wikimedia.org/wikipedia/pt/c/c7/Club_Athletico_Paranaense_2019.svg',
+        // Portugal
+        'Benfica': 'upload.wikimedia.org/wikipedia/en/a/a2/SL_Benfica_logo.svg',
+        'FC Porto': 'upload.wikimedia.org/wikipedia/en/f/f1/FC_Porto_logo.svg',
+        'Sporting CP': 'upload.wikimedia.org/wikipedia/en/3/3e/Sporting_Clube_de_Portugal.svg',
+        // Outros
+        'Al-Nassr': 'upload.wikimedia.org/wikipedia/en/2/2b/Al_Nassr_Logo.svg',
+        'Al-Hilal': 'upload.wikimedia.org/wikipedia/en/f/fa/Al-Hilal_Logo.svg',
+        'Al-Ittihad': 'upload.wikimedia.org/wikipedia/en/5/5b/Al-Ittihad_FC_logo.svg',
+        'Al-Ahli': 'upload.wikimedia.org/wikipedia/en/b/b0/Al-Ahli_Saudi_FC_logo.svg',
+        'Inter Miami': 'upload.wikimedia.org/wikipedia/en/5/5c/Inter_Miami_CF_logo.svg',
+        'LA Galaxy': 'upload.wikimedia.org/wikipedia/en/1/1b/LA_Galaxy_logo.svg',
+        'Ajax': 'upload.wikimedia.org/wikipedia/en/7/79/Ajax_Amsterdam.svg',
+        'PSV Eindhoven': 'upload.wikimedia.org/wikipedia/en/0/05/PSV_Eindhoven.svg',
+        'Feyenoord': 'upload.wikimedia.org/wikipedia/en/e/e9/Feyenoord_logo.svg',
+        'Celtic': 'upload.wikimedia.org/wikipedia/en/3/35/Celtic_FC_crest.svg',
+        'Rangers': 'upload.wikimedia.org/wikipedia/en/4/43/Rangers_FC.svg',
+        'Boca Juniors': 'upload.wikimedia.org/wikipedia/en/d/d1/Boca_Juniors_logo.svg',
+        'River Plate': 'upload.wikimedia.org/wikipedia/en/a/ac/River_Plate_crest.svg'
+    };
+
+    if (logos[nameOnly]) return `${proxy}${logos[nameOnly]}`;
+    return getFallbackLogo(nameOnly);
+};
+
 function App() {
     const [page, setPage] = useState('home'); // home, login, admin, register
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -82,28 +177,99 @@ function App() {
         return false; // Indica falha
     };
 
-    const drawMatches = async () => {
+    const drawMatches = async () => { // Modificado para incluir fase de grupos e mata-mata
         if (registrations.length < 2) {
             alert("É necessário pelo menos 2 inscritos para realizar o sorteio!");
             return;
         }
 
-        const shuffled = [...registrations].sort(() => 0.5 - Math.random());
-        const newMatches = [];
-        
-        for (let i = 0; i < shuffled.length; i += 2) {
-            if (shuffled[i + 1]) {
-                newMatches.push({
-                    p1: shuffled[i].teamName,
-                    p2: shuffled[i + 1].teamName,
-                    score1: 0,
-                    score2: 0,
-                    status: 'Agendado'
-                });
-            }
+        if (!supabaseClient) return;
+        if (!window.confirm("Isso apagará todas as partidas atuais para gerar o novo torneio (Grupos + Mata-Mata). Continuar?")) return;
+
+        // Limpar partidas antigas antes de gerar o novo sorteio
+        const { error: deleteError } = await supabaseClient.from('matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        if (deleteError) {
+            console.error('Erro ao limpar partidas:', deleteError);
+            return;
         }
 
-        if (newMatches.length > 0 && supabaseClient) {
+        const shuffled = [...registrations].sort(() => 0.5 - Math.random());
+        const newMatches = [];
+        const GROUP_SIZE = 4;
+
+        // --- FASE DE GRUPOS ---
+        const numGroups = Math.ceil(shuffled.length / GROUP_SIZE);
+        const groups = Array.from({ length: numGroups }, () => []);
+
+        // Distribui jogadores nos grupos
+        shuffled.forEach((reg, i) => {
+            groups[i % numGroups].push(reg);
+        });
+
+        groups.forEach((groupTeams, i) => {
+            const groupName = `Grupo ${String.fromCharCode(65 + i)}`; // Grupo A, B, C...
+            
+            // Todos contra todos dentro do grupo (Apenas Ida)
+            for (let j = 0; j < groupTeams.length; j++) {
+                for (let k = j + 1; k < groupTeams.length; k++) {
+                    newMatches.push({
+                        p1: `${groupTeams[j].teamName} (${groupTeams[j].gamertag} - ${groupTeams[j].platform.toLowerCase()})`,
+                        p2: `${groupTeams[k].teamName} (${groupTeams[k].gamertag} - ${groupTeams[k].platform.toLowerCase()})`,
+                        score1: 0,
+                        score2: 0,
+                        status: 'Agendado',
+                        group_name: groupName,
+                        stage: 'Fase de Grupos'
+                    });
+                }
+            }
+        });
+
+        // --- MATA-MATA DINÂMICO (Ida e Volta) ---
+        const numQualified = numGroups * 2; // 2 melhores de cada grupo
+        const knockoutStages = [];
+
+        // Define qual fase o mata-mata deve começar
+        if (numQualified > 8) knockoutStages.push({ name: 'Oitavas de Final', games: 8 });
+        if (numQualified > 4) knockoutStages.push({ name: 'Quartas de Final', games: 4 });
+        if (numQualified > 2) knockoutStages.push({ name: 'Semifinal', games: 2 });
+        knockoutStages.push({ name: 'Final', games: 1 });
+
+        knockoutStages.forEach(s => {
+            for (let i = 1; i <= s.games; i++) {
+                let p1Placeholder = `TBD (Vencedor)`;
+                let p2Placeholder = `TBD (Vencedor)`;
+
+                // Se for a primeira fase do mata-mata, indica de qual grupo vem
+                if (s === knockoutStages[0]) {
+                    const groupIdx = Math.floor((i - 1) / 1); 
+                    p1Placeholder = `1º Grupo ${String.fromCharCode(65 + (i-1))}`;
+                    p2Placeholder = `2º Grupo ${String.fromCharCode(65 + (i % numGroups))}`;
+                }
+                
+                // Jogo de Ida
+                newMatches.push({
+                    p1: p1Placeholder,
+                    p2: p2Placeholder,
+                    score1: 0,
+                    score2: 0,
+                    status: 'Agendado',
+                    stage: `${s.name} (Ida)`
+                });
+
+                // Jogo de Volta
+                newMatches.push({
+                    p1: p2Placeholder,
+                    p2: p1Placeholder,
+                    score1: 0,
+                    score2: 0,
+                    status: 'Agendado',
+                    stage: `${s.name} (Volta)`
+                });
+            }
+        });
+        
+        if (newMatches.length > 0) {
             const { data, error } = await supabaseClient
                 .from('matches')
                 .insert(newMatches)
@@ -114,7 +280,7 @@ function App() {
                 alert('Erro ao realizar sorteio. Tente novamente.');
             } else {
                 setResults(data); // Atualiza com as partidas inseridas (com IDs do Supabase)
-                alert("Sorteio realizado com sucesso!");
+                alert("Sorteio realizado com sucesso! Fase de Grupos e Mata-Mata gerados.");
             }
         } else {
             alert("Não foi possível gerar partidas suficientes para o sorteio.");
@@ -237,30 +403,164 @@ function App() {
 }
 
 function Home({ results, onRegisterClick }) {
+    // Cálculo dinâmico da classificação dos grupos baseado nos resultados
+    const groupStandings = {};
+    results.forEach(m => {
+        if (m.stage === 'Fase de Grupos' && m.group_name) {
+            if (!groupStandings[m.group_name]) groupStandings[m.group_name] = {};
+            
+            [m.p1, m.p2].forEach(t => {
+                if (!groupStandings[m.group_name][t]) {
+                    groupStandings[m.group_name][t] = { fullName: t, pts: 0 };
+                }
+            });
+
+            if (m.status === 'Finalizado') {
+                if (m.score1 > m.score2) {
+                    groupStandings[m.group_name][m.p1].pts += 3;
+                } else if (m.score2 > m.score1) {
+                    groupStandings[m.group_name][m.p2].pts += 3;
+                } else {
+                    groupStandings[m.group_name][m.p1].pts += 1;
+                    groupStandings[m.group_name][m.p2].pts += 1;
+                }
+            }
+        }
+    });
+
+    // Filtragem das partidas por status
+    const upcoming = results.filter(m => m.status === 'Agendado');
+    const finished = results.filter(m => m.status !== 'Agendado');
+
+    // Componente interno para evitar repetição de código
+    const MatchCard = ({ match, showScore }) => (
+        <div key={match.id} className="card match-card">
+            <div className="match-info">
+                <div className="team-display">
+                    <img 
+                        src={getTeamLogo(match.p1)} 
+                        alt={match.p1} 
+                        className="team-logo" 
+                        onError={(e) => { e.target.src = getFallbackLogo(match.p1.split(' (')[0]); }}
+                    />
+                    <span>{match.p1.split(' (')[0]}</span>
+                    {match.p1.includes(' (') && (
+                        <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '2px' }}>
+                            ({match.p1.split(' (')[1]}
+                        </small>
+                    )}
+                </div>
+                
+                {showScore ? (
+                    <span className="score">{match.score1} x {match.score2}</span>
+                ) : (
+                    <span className="score" style={{color: 'var(--text-muted)', fontSize: '1.2rem'}}>VS</span>
+                )}
+
+                <div className="team-display">
+                    <img 
+                        src={getTeamLogo(match.p2)} 
+                        alt={match.p2} 
+                        className="team-logo" 
+                        onError={(e) => { e.target.src = getFallbackLogo(match.p2.split(' (')[0]); }}
+                    />
+                    <span>{match.p2.split(' (')[0]}</span>
+                    {match.p2.includes(' (') && (
+                        <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '2px' }}>
+                            ({match.p2.split(' (')[1]}
+                        </small>
+                    )}
+                </div>
+            </div>
+            <div className={`status ${match.status.toLowerCase()}`}>
+                {match.stage && <span style={{display: 'block', fontSize: '0.85em', color: 'var(--primary-color)'}}>{match.stage} {match.group_name ? `(${match.group_name})` : ''}</span>}
+                {match.status}
+            </div>
+        </div>
+    );
+
     return (
         <React.Fragment>
             <section className="hero">
                 <div className="container">
-                    <h1>Campeonato EA FC 26 da Gangster Cup</h1>
-                    <p>Veja os resultados dos jogos logo abaixo.</p>
+                    <h1>Bem vindos a Gangster Cup</h1>
+                    <p>Acompanhe os próximos confrontos e os resultados em tempo real.</p>
                     <button className="btn-large" style={{marginTop: '20px'}} onClick={onRegisterClick}>Garantir minha vaga</button>
                 </div>
             </section>
 
             <section className="container section">
-                <h2>Resultados dos jogos</h2>
-                <div className="results-grid">
-                    {results.map(match => (
-                        <div key={match.id} className="card match-card">
-                            <div className="match-info">
-                                <span>{match.p1}</span>
-                                <span className="score">{match.score1} x {match.score2}</span>
-                                <span>{match.p2}</span>
-                            </div>
-                            <div className={`status ${match.status.toLowerCase()}`}>{match.status}</div>
+                {Object.keys(groupStandings).length > 0 && (
+                    <div style={{ marginBottom: '60px' }}>
+                        <h2 style={{ borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px' }}>Classificação dos Grupos</h2>
+                        <div className="groups-grid">
+                            {Object.keys(groupStandings).sort().map(groupName => (
+                                <div key={groupName} className="card group-card">
+                                    <h3>{groupName}</h3>
+                                    <table className="group-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Time</th>
+                                                <th style={{ textAlign: 'right' }}>Pts</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {Object.values(groupStandings[groupName])
+                                                .sort((a, b) => b.pts - a.pts)
+                                                .map((team, idx) => {
+                                                    const teamName = team.fullName.split(' (')[0];
+                                                    const gamertag = team.fullName.includes(' (') ? team.fullName.split(' (')[1] : '';
+                                                    return (
+                                                        <tr key={idx}>
+                                                            <td style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                <img 
+                                                                    src={getTeamLogo(teamName)} 
+                                                                    className="team-logo-small" 
+                                                                    alt="" 
+                                                                    onError={(e) => { e.target.src = getFallbackLogo(teamName); }}
+                                                                />
+                                                                <div>
+                                                                    <div style={{ fontWeight: 'bold' }}>{teamName}</div>
+                                                                    {gamertag && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>({gamertag}</div>}
+                                                                </div>
+                                                            </td>
+                                                            <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--primary-color)' }}>
+                                                                {team.pts}
+                                                            </td>
+                                                        </tr>
+                                                    );
+                                                })}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ))}
                         </div>
-                    ))}
-                </div>
+                    </div>
+                )}
+
+                {finished.length > 0 && (
+                    <div style={{marginBottom: '60px'}}>
+                        <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Resultados e Ao Vivo</h2>
+                        <div className="results-grid">
+                            {finished.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
+                        </div>
+                    </div>
+                )}
+
+                {upcoming.length > 0 && (
+                    <div>
+                        <h2 style={{borderLeft: '5px solid #444', paddingLeft: '15px', marginBottom: '30px'}}>Próximos Jogos</h2>
+                        <div className="results-grid">
+                            {upcoming.map(match => <MatchCard key={match.id} match={match} showScore={false} />)}
+                        </div>
+                    </div>
+                )}
+
+                {results.length === 0 && (
+                    <div className="text-center">
+                        <p style={{color: 'var(--text-muted)', fontSize: '1.2rem'}}>Nenhuma partida gerada. Aguarde o sorteio oficial!</p>
+                    </div>
+                )}
             </section>
         </React.Fragment>
     );
@@ -302,15 +602,20 @@ function Login({ onLogin }) {
 
 function Register({ onBack, onRegister }) { // onRegister agora é assíncrono
     const [formData, setFormData] = useState({
-        teamName: '',
+        teamName: 'Real Madrid',
         playerName: '',
         platform: 'PS5',
         gamertag: ''
     });
+    const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [submitted, setSubmitted] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!acceptedTerms) {
+            alert("Você precisa aceitar os termos de responsabilidade para continuar.");
+            return;
+        }
         const success = await onRegister(formData);
         if (success) {
             setSubmitted(true);
@@ -335,8 +640,93 @@ function Register({ onBack, onRegister }) { // onRegister agora é assíncrono
                 <h2>Inscrição de Atleta</h2>
                 <form onSubmit={handleSubmit} className="card">
                     <div className="form-group">
-                        <label>Nome do Time</label>
-                        <input type="text" value={formData.teamName} onChange={e => setFormData({...formData, teamName: e.target.value})} placeholder="Ex: Real Madrid Brasil" required />
+                        <div style={{textAlign: 'center', marginBottom: '15px'}}>
+                            <img 
+                                src={getTeamLogo(formData.teamName)} 
+                                alt="Preview" 
+                                className="team-logo" 
+                                onError={(e) => { e.target.src = getFallbackLogo(formData.teamName); }}
+                                style={{width: '80px', height: '80px'}} 
+                            />
+                        </div>
+                        <label>Escolha seu Time</label>
+                        <select value={formData.teamName} onChange={e => setFormData({...formData, teamName: e.target.value})} required>
+                            <optgroup label="Espanha">
+                                <option value="Real Madrid">Real Madrid</option>
+                                <option value="Barcelona">Barcelona</option>
+                                <option value="Atlético de Madrid">Atlético de Madrid</option>
+                                <option value="Sevilla">Sevilla</option>
+                                <option value="Real Sociedad">Real Sociedad</option>
+                                <option value="Villarreal">Villarreal</option>
+                                <option value="Athletic Bilbao">Athletic Bilbao</option>
+                                <option value="Real Betis">Real Betis</option>
+                                <option value="Valencia">Valencia</option>
+                            </optgroup>
+                            <optgroup label="Inglaterra">
+                                <option value="Manchester City">Manchester City</option>
+                                <option value="Arsenal">Arsenal</option>
+                                <option value="Liverpool">Liverpool</option>
+                                <option value="Manchester United">Manchester United</option>
+                                <option value="Chelsea">Chelsea</option>
+                                <option value="Tottenham">Tottenham</option>
+                                <option value="Newcastle United">Newcastle United</option>
+                                <option value="Aston Villa">Aston Villa</option>
+                                <option value="West Ham">West Ham</option>
+                                <option value="Everton">Everton</option>
+                            </optgroup>
+                            <optgroup label="França">
+                                <option value="PSG">PSG</option>
+                                <option value="Marseille">Marseille</option>
+                                <option value="Lyon">Lyon</option>
+                                <option value="Monaco">Monaco</option>
+                                <option value="Lille">Lille</option>
+                                <option value="Nice">Nice</option>
+                                <option value="Rennes">Rennes</option>
+                            </optgroup>
+                            <optgroup label="Alemanha">
+                                <option value="Bayern de Munique">Bayern de Munique</option>
+                                <option value="Borussia Dortmund">Borussia Dortmund</option>
+                                <option value="Bayer Leverkusen">Bayer Leverkusen</option>
+                                <option value="RB Leipzig">RB Leipzig</option>
+                                <option value="Eintracht Frankfurt">Eintracht Frankfurt</option>
+                                <option value="Wolfsburg">Wolfsburg</option>
+                                <option value="Borussia Mönchengladbach">Borussia Mönchengladbach</option>
+                            </optgroup>
+                            <optgroup label="Itália">
+                                <option value="Inter de Milão">Inter de Milão</option>
+                                <option value="AC Milan">AC Milan</option>
+                                <option value="Juventus">Juventus</option>
+                                <option value="Napoli">Napoli</option>
+                                <option value="AS Roma">AS Roma</option>
+                                <option value="Lazio">Lazio</option>
+                                <option value="Atalanta">Atalanta</option>
+                                <option value="Fiorentina">Fiorentina</option>
+                            </optgroup>
+                            <optgroup label="Portugal">
+                                <option value="Benfica">Benfica</option>
+                                <option value="FC Porto">FC Porto</option>
+                                <option value="Sporting CP">Sporting CP</option>
+                            </optgroup>
+                            <optgroup label="Arábia Saudita">
+                                <option value="Al-Nassr">Al-Nassr</option>
+                                <option value="Al-Hilal">Al-Hilal</option>
+                                <option value="Al-Ittihad">Al-Ittihad</option>
+                                <option value="Al-Ahli">Al-Ahli</option>
+                            </optgroup>
+                            <optgroup label="EUA (MLS)">
+                                <option value="Inter Miami">Inter Miami</option>
+                                <option value="LA Galaxy">LA Galaxy</option>
+                            </optgroup>
+                            <optgroup label="Outros">
+                                <option value="Ajax">Ajax</option>
+                                <option value="PSV Eindhoven">PSV Eindhoven</option>
+                                <option value="Feyenoord">Feyenoord</option>
+                                <option value="Celtic">Celtic</option>
+                                <option value="Rangers">Rangers</option>
+                                <option value="Boca Juniors">Boca Juniors</option>
+                                <option value="River Plate">River Plate</option>
+                            </optgroup>
+                        </select>
                     </div>
                     <div className="form-group">
                         <label>Nome do Jogador</label>
@@ -354,6 +744,21 @@ function Register({ onBack, onRegister }) { // onRegister agora é assíncrono
                         <label>Gamertag / PSN ID</label>
                         <input type="text" value={formData.gamertag} onChange={e => setFormData({...formData, gamertag: e.target.value})} placeholder="Ex: Player_123" required />
                     </div>
+                    
+                    <div className="form-group">
+                        <label>Termo de Responsabilidade</label>
+                        <div className="terms-box">
+                            <p><strong>1. Conduta:</strong> O jogador se compromete a manter o fair play e respeitar adversários e organizadores. Ofensas ou comportamentos tóxicos resultarão em desclassificação.</p>
+                            <p><strong>2. Imagem e Transmissão:</strong> Ao participar, você autoriza a exibição do seu nome de usuário e gameplay nas transmissões oficiais da Gangster Cup na Twitch.</p>
+                            <p><strong>3. Conexão:</strong> A estabilidade da internet é de responsabilidade do atleta. Quedas persistentes podem resultar em WO conforme a regra da rodada.</p>
+                            <p><strong>4. Dados:</strong> Seus dados (nome e gamertag) serão armazenados exclusivamente para a organização deste campeonato.</p>
+                        </div>
+                        <label className="checkbox-label">
+                            <input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} required />
+                            <span>Li e concordo com os termos acima</span>
+                        </label>
+                    </div>
+
                     <button type="submit" className="btn-primary">Finalizar Inscrição</button>
                 </form>
             </div>
@@ -389,7 +794,15 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                         <tbody>
                             {registrations.map((reg, idx) => (
                                 <tr key={idx}>
-                                    <td>{reg.teamName}</td>
+                                    <td>
+                                        <img 
+                                            src={getTeamLogo(reg.teamName)} 
+                                            className="team-logo-small" 
+                                            alt="" 
+                                            onError={(e) => { e.target.src = getFallbackLogo(reg.teamName); }}
+                                        />
+                                        {reg.teamName}
+                                    </td>
                                     <td>{reg.playerName}</td>
                                     <td>{reg.platform}</td>
                                     <td>{reg.gamertag}</td>
@@ -405,7 +818,12 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                 <table className="admin-table">
                     <thead>
                         <tr>
-                            <th>Partida</th>
+                            <th>
+                                Partida
+                                <span style={{fontSize: '0.7em', display: 'block', fontWeight: 'normal', color: 'var(--text-muted)'}}>
+                                    (Fase / Grupo)
+                                </span>
+                            </th>
                             <th>Placar 1</th>
                             <th>Placar 2</th>
                             <th>Status</th>
@@ -415,7 +833,13 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                     <tbody>
                         {results.map(match => (
                             <tr key={match.id}>
-                                <td>{match.p1} vs {match.p2}</td>
+                                <td>
+                                    {match.stage === 'Fase de Grupos' ? (
+                                        <span>{match.group_name}: {match.p1} vs {match.p2}</span>
+                                    ) : (
+                                        <span>{match.stage}: {match.p1} vs {match.p2}</span>
+                                    )}
+                                </td>
                                 <td>
                                     <input 
                                         type="number" 
