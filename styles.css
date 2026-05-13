@@ -11,6 +11,7 @@
     margin: 0;
     padding: 0;
     box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
 }
 
 body {
@@ -18,29 +19,36 @@ body {
     background-color: var(--bg-dark);
     color: var(--text-light);
     line-height: 1.6;
+    font-size: clamp(0.9rem, 2vw, 1rem);
     scroll-behavior: smooth;
 }
 
 .container {
     max-width: 1100px;
     margin: 0 auto;
-    padding: 0 20px;
+    padding: 0 clamp(10px, 4vw, 20px);
 }
 
-header, .header-nav {
+.header-nav {
     background: rgba(0, 0, 0, 0.9);
-    padding: 20px 0;
-    padding: 25px 0; /* Aumentado o padding vertical */
+    padding: 15px 0;
     position: sticky;
     top: 0;
     z-index: 1000;
-    font-size: medium;
+    backdrop-filter: blur(10px);
+}
+
+.nav-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
 }
 
 .logo {
-    font-size: 3.5rem; /* Aumentado o tamanho da fonte do logo */
+    font-size: clamp(1.2rem, 5vw, 2.2rem);
     font-weight: bold;
     cursor: pointer;
+    white-space: nowrap;
 }
 
 .logo span {
@@ -50,6 +58,7 @@ header, .header-nav {
 .nav-links {
     display: flex;
     list-style: none;
+    gap: 20px;
     align-items: center;
 }
 
@@ -71,7 +80,7 @@ header, .header-nav {
 }
 
 .hero {
-    height: 80vh;
+    min-height: 60vh;
     display: flex;
     align-items: center;
     text-align: center;
@@ -80,15 +89,16 @@ header, .header-nav {
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
+    padding: 60px 0;
 }
 
 .hero h1 {
-    font-size: 3.5rem;
+    font-size: clamp(2rem, 8vw, 3.5rem);
     margin-bottom: 20px;
 }
 
 .section {
-    padding: 80px 0;
+    padding: clamp(40px, 10vw, 80px) 0;
 }
 
 .grid {
@@ -236,23 +246,23 @@ form {
 /* Novas Estilizações React */
 .results-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 20px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr));
+    gap: 15px;
     margin-top: 20px;
 }
 
 .match-card {
-    text-align: center;
+    padding: 20px;
 }
 
 .match-info {
     display: flex;
     justify-content: center;
     align-items: center;
-    font-size: 1.1rem;
+    font-size: clamp(0.9rem, 3vw, 1.1rem);
     font-weight: bold;
     margin-bottom: 10px;
-    gap: 15px;
+    gap: 10px;
 }
 
 .team-display {
@@ -261,11 +271,23 @@ form {
     align-items: center;
     gap: 8px;
     flex: 1;
+    min-width: 0; 
+}
+
+.team-display span {
+    width: 100%;
+    text-align: center;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    word-break: break-word;
 }
 
 .team-logo {
-    width: 50px;
-    height: 50px;
+    width: clamp(40px, 10vw, 50px);
+    height: clamp(40px, 10vw, 50px);
     object-fit: contain;
     filter: drop-shadow(0 2px 4px rgba(0,0,0,0.3));
 }
@@ -280,8 +302,11 @@ form {
 
 .score {
     color: var(--primary-color);
-    font-size: 1.5rem;
-    padding: 0 15px;
+    font-size: clamp(1.2rem, 4vw, 1.8rem);
+    padding: 0 5px;
+    white-space: nowrap;
+    min-width: 60px;
+    text-align: center;
 }
 
 .status { font-size: 0.8rem; text-transform: uppercase; color: var(--text-muted); }
@@ -290,8 +315,8 @@ form {
 /* Estilos para a Classificação de Grupos */
 .groups-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-    gap: 25px;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr));
+    gap: 20px;
     margin-bottom: 50px;
 }
 
@@ -391,6 +416,10 @@ form {
         justify-content: center;
         transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         z-index: 1000;
+    }
+
+    .nav-content {
+        padding: 0 20px;
     }
 
     .nav-links.active {

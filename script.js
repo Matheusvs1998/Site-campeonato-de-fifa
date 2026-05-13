@@ -337,7 +337,7 @@ function App() {
                 </div>
             )}
             <nav className="header-nav">
-                <div className="container nav-content" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '30px', flexWrap: 'wrap' }}>
+                <div className="container nav-content">
                     <div className="logo" onClick={() => navigate('home')}>Campeonato de EA FC 26  <span>Gangster Cup</span></div>
                     
                     <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Menu">
@@ -445,7 +445,7 @@ function Home({ results, onRegisterClick }) {
                     />
                     <span>{match.p1.split(' (')[0]}</span>
                     {match.p1.includes(' (') && (
-                        <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '2px' }}>
+                        <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '2px', lineHeight: '1.2' }}>
                             ({match.p1.split(' (')[1]}
                         </small>
                     )}
@@ -466,7 +466,7 @@ function Home({ results, onRegisterClick }) {
                     />
                     <span>{match.p2.split(' (')[0]}</span>
                     {match.p2.includes(' (') && (
-                        <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.8rem', marginTop: '2px' }}>
+                        <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '2px', lineHeight: '1.2' }}>
                             ({match.p2.split(' (')[1]}
                         </small>
                     )}
