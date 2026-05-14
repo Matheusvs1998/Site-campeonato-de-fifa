@@ -1,7 +1,7 @@
 const { useState, useEffect } = React;
 
 // --- CONTROLE DE MANUTENÇÃO ---
-const MAINTENANCE_MODE = true; // Mude para true para ATIVAR; false para DESATIVAR
+const MAINTENANCE_MODE = false; // Mude para true para ATIVAR; false para DESATIVAR
 
 // --- Configuração Supabase ---
 // Substitua com suas credenciais do Supabase
