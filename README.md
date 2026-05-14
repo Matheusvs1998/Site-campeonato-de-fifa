@@ -31,6 +31,6 @@ Vercel: ![Vercel](/fotos/image-2.png)
 
 
 Site desenvolvido para testar meus conhecimentos e praticar, mas futuramente será usado para 
-um campeopeonato entre amigos!
+um campeonato entre amigos!
 
 Desenvolvido por: Matheus Vasconcelos
