@@ -17,6 +17,8 @@ Aplicação React para gerenciar um campeonato de EA FC 26, incluindo inscriçõ
 
 
 ## Tecnologias
+- [React](https://react.dev/) (Interface do Usuário)
+- [Vite](https://vitejs.dev/) (Ferramenta de Build e Desenvolvimento)
 - Supabase (Banco de dados e persistência)
 - CSS3 com variáveis modernas
 
