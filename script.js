@@ -2,7 +2,7 @@ const { useState, useEffect } = React;
 
 // --- CONTROLE DE MANUTENÇÃO ---
 const MAINTENANCE_MODE = false; // Mude para true para ATIVAR; false para DESATIVAR
-const IP_VERIFICATION_ENABLED = false; // Mude para false para DESATIVAR a verificação de IP para moderação
+const IP_VERIFICATION_ENABLED = true; // Mude para false para DESATIVAR a verificação de IP para moderação
 
 // --- Configuração Supabase ---
 // Substitua com suas credenciais do Supabase
