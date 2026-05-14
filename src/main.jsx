@@ -130,6 +130,7 @@ function App() {
     const [isVerifying, setIsVerifying] = useState(false);
     const [accessError, setAccessError] = useState(null);
     const [currentPublicIp, setCurrentPublicIp] = useState(null); // Novo estado para armazenar o IP público
+    const [logoutMessage, setLogoutMessage] = useState(null); // Estado para mensagem de despedida
 
     // Efeito para buscar o IP público uma vez ao carregar o componente
     useEffect(() => {
@@ -161,9 +162,22 @@ function App() {
         fetchData();
     }, []);
 
-    const handleLogin = (role) => {
-        setUser({ role });
+    const handleLogin = (role, username) => {
+        setUser({ role, username });
         setPage(role === 'admin' ? 'admin' : 'home');
+    };
+
+    const handleLogout = () => {
+        const adminName = user?.username || 'Administrador';
+        setLogoutMessage(`Até logo, ${adminName}!`);
+        setIsMenuOpen(false);
+
+        // Aguarda 2 segundos com a mensagem de despedida antes de resetar a sessão e navegar
+        setTimeout(() => {
+            setUser(null);
+            setPage('home');
+            setLogoutMessage(null);
+        }, 2000);
     };
 
     const updateResult = async (id, field, value) => {
@@ -451,11 +465,21 @@ function App() {
                                 {isVerifying ? 'Verificando...' : 'Moderação'}
                             </button></li>
                         ) : (
-                            <li><button className="btn-primary" onClick={() => { setUser(null); setIsMenuOpen(false); }}>Sair</button></li>
+                            <li><button className="btn-primary" onClick={handleLogout}>Sair</button></li>
                         )}
                     </ul>
                 </div>
             </nav>
+
+            {logoutMessage && (
+                <div className="success-overlay">
+                    <div className="success-modal">
+                        <div style={{fontSize: '5rem'}}>👋</div>
+                        <h2>{logoutMessage}</h2>
+                        <p>Sua sessão foi encerrada. Redirecionando...</p>
+                    </div>
+                </div>
+            )}
 
             <main>
                 {loading ? (
@@ -677,6 +701,7 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
     const [pass, setPass] = useState('');
     const [error, setError] = useState('');
     const [showAnimation, setShowAnimation] = useState(false);
+    const [welcomeUser, setWelcomeUser] = useState('');
     const [isChecking, setIsChecking] = useState(false);
 
     const handleSubmit = async (e) => {
@@ -711,8 +736,9 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
                 throw new Error('Acesso negado: Credenciais inválidas ou local não autorizado.');
             }
 
+            setWelcomeUser(data.username);
             setShowAnimation(true);
-            setTimeout(() => onLogin('admin'), 2000); // Aguarda 2s para mostrar a animação
+            setTimeout(() => onLogin('admin', data.username), 2000); // Aguarda 2s para mostrar a animação
         } catch (err) {
             setError(err.message || 'Erro ao validar acesso.');
         } finally {
@@ -727,7 +753,7 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
                     <div className="success-modal">
                         <div style={{fontSize: '5rem'}}>✅</div>
                         <h2>Acesso Autorizado!</h2>
-                        <p>Você logou na moderação.</p>
+                        <p>Bem-vindo, <strong>{welcomeUser}</strong>!</p>
                     </div>
                 </div>
             )}
