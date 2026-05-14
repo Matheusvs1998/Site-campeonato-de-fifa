@@ -1,5 +1,8 @@
 const { useState, useEffect } = React;
 
+// --- CONTROLE DE MANUTENÇÃO ---
+const MAINTENANCE_MODE = true; // Mude para true para ATIVAR; false para DESATIVAR
+
 // --- Configuração Supabase ---
 // Substitua com suas credenciais do Supabase
 const SUPABASE_URL = 'https://dwavwnehkkywicqfgbss.supabase.co'; // Corrigido: Remover "/rest/v1/"
@@ -119,6 +122,8 @@ function App() {
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showLiveAlert, setShowLiveAlert] = useState(true);
+    const [isVerifying, setIsVerifying] = useState(false);
+    const [accessError, setAccessError] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -311,8 +316,69 @@ function App() {
         setIsMenuOpen(false);
     };
 
+    const handleLogoClick = () => {
+        navigate('home');
+    };
+
+    const handleModerationClick = async () => {
+        if (isVerifying) return;
+        setIsVerifying(true);
+        setAccessError(null);
+
+        try {
+            // Captura o IP antes de abrir a tela de login
+            const ipResponse = await fetch('https://api.ipify.org?format=json');
+            const { ip: currentIp } = await ipResponse.json();
+
+            // Verifica se o IP está em QUALQUER conta de admin autorizada no banco
+            const { data, error } = await supabaseClient
+                .from('admins')
+                .select('allowed_ip')
+                .eq('allowed_ip', currentIp);
+
+            if (error || !data || data.length === 0) {
+                setAccessError(`Acesso Negado: O seu local (${currentIp}) não está autorizado.`);
+            } else {
+                navigate('login');
+            }
+        } catch (err) {
+            setAccessError("Erro de conexão ao verificar segurança. Tente novamente.");
+        } finally {
+            setIsVerifying(false);
+        }
+    };
+
     return (
         <div className="app-wrapper">
+            {accessError && (
+                <div className="success-overlay" onClick={() => setAccessError(null)}>
+                    <div className="success-modal" style={{borderColor: '#ff4444', boxShadow: '0 0 30px rgba(255, 68, 68, 0.3)'}} onClick={e => e.stopPropagation()}>
+                        <div style={{fontSize: '5rem'}}>🚫</div>
+                        <h2 style={{color: '#ff4444'}}>Acesso Bloqueado</h2>
+                        <p>{accessError}</p>
+                        <button className="btn-primary" style={{background: '#ff4444', color: 'white', marginTop: '20px'}} onClick={() => setAccessError(null)}>
+                            Voltar
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {MAINTENANCE_MODE && user?.role !== 'admin' && page !== 'login' ? (
+                <div className="maintenance-wrapper">
+                    <div className="maintenance-card">
+                        <div style={{fontSize: '5rem', marginBottom: '20px'}}>🛠️</div>
+                        <h1 style={{color: 'var(--primary-color)', marginBottom: '15px'}}>Site em Manutenção</h1>
+                        <p style={{color: 'var(--text-light)', marginBottom: '30px', fontSize: '1.1rem'}}>
+                            Estamos trabalhando em melhorias para a <strong>Gangster Cup</strong>. 
+                            Voltaremos em breve com o sorteio e as tabelas atualizadas!
+                        </p>
+                        <button className="btn-primary" onClick={handleModerationClick} disabled={isVerifying}>
+                            {isVerifying ? 'Verificando...' : 'Acesso Admin'}
+                        </button>
+                    </div>
+                </div>
+            ) : (
+                <>
             {showLiveAlert && (
                 <div className="live-alert-overlay">
                     <div className="live-alert-card card">
@@ -336,9 +402,10 @@ function App() {
                     </div>
                 </div>
             )}
+
             <nav className="header-nav">
                 <div className="container nav-content">
-                    <div className="logo" onClick={() => navigate('home')}>Campeonato de EA FC 26  <span>Gangster Cup</span></div>
+                    <div className="logo" onClick={handleLogoClick}>Campeonato de EA FC 26  <span>Gangster Cup</span></div>
                     
                     <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Menu">
                         <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
@@ -351,7 +418,9 @@ function App() {
                         <li><a href="#" onClick={() => navigate('register')}>Inscreva-se</a></li>
                         {user?.role === 'admin' && <li><a href="#" onClick={() => navigate('admin')}>Admin</a></li>}
                         {!user ? (
-                            <li><button className="btn-primary" onClick={() => navigate('login')}>Entrar(admin)</button></li>
+                            <li><button className="btn-primary" onClick={handleModerationClick} disabled={isVerifying}>
+                                {isVerifying ? 'Verificando...' : 'Moderação'}
+                            </button></li>
                         ) : (
                             <li><button className="btn-primary" onClick={() => { setUser(null); setIsMenuOpen(false); }}>Sair</button></li>
                         )}
@@ -380,6 +449,8 @@ function App() {
                     </React.Fragment>
                 )}
             </main>
+                </>
+            )}
             <footer className="container">
                 <div className="social-links">
                     <a href="https://discord.gg/neQt9DdJVT" className="discord" target="_blank" rel="noopener noreferrer">
@@ -569,31 +640,76 @@ function Home({ results, onRegisterClick }) {
 function Login({ onLogin }) {
     const [user, setUser] = useState('');
     const [pass, setPass] = useState('');
+    const [error, setError] = useState('');
+    const [showAnimation, setShowAnimation] = useState(false);
+    const [isChecking, setIsChecking] = useState(false);
 
-    const handleSubmit = (e) => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
-        // Mock de autenticação simples
-        if (user === 'admin' && pass === '32695940') {
-            onLogin('admin');
-        } else {
-            onLogin('user');
+        setError('');
+        setIsChecking(true);
+
+        try {
+            // Obtém o IP público atual do usuário
+            const ipResponse = await fetch('https://api.ipify.org?format=json');
+            const { ip: currentIp } = await ipResponse.json();
+
+            // Verifica usuário, senha e se o IP está autorizado
+            // Nota: Adicione a coluna 'allowed_ip' na sua tabela 'admins'
+            const { data, error: dbError } = await supabaseClient
+                .from('admins')
+                .select('*')
+                .eq('username', user)
+                .eq('password', pass)
+                .eq('allowed_ip', currentIp)
+                .single();
+
+            if (dbError || !data) {
+                throw new Error('Acesso negado: Credenciais inválidas ou local não autorizado.');
+            }
+
+            setShowAnimation(true);
+            setTimeout(() => onLogin('admin'), 2000); // Aguarda 2s para mostrar a animação
+        } catch (err) {
+            setError(err.message || 'Erro ao validar acesso.');
+        } finally {
+            setIsChecking(false);
         }
     };
 
     return (
         <section className="container section">
+            {showAnimation && (
+                <div className="success-overlay">
+                    <div className="success-modal">
+                        <div style={{fontSize: '5rem'}}>✅</div>
+                        <h2>Acesso Autorizado!</h2>
+                        <p>Você logou na moderação.</p>
+                    </div>
+                </div>
+            )}
             <div className="login-container">
                 <h2>Login</h2>
                 <form onSubmit={handleSubmit} className="card">
+                    {error && (
+                        <p style={{ color: '#ff4444', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>
+                            {error}
+                        </p>
+                    )}
                     <div className="form-group">
-                        <label>Usuário(admin)</label>
+                        <label>Usuario</label>
                         <input type="text" value={user} onChange={(e) => setUser(e.target.value)} required />
                     </div>
                     <div className="form-group">
                         <label>Senha</label>
                         <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} required />
                     </div>
-                    <button type="submit" className="btn-primary">Entrar</button>
+                    <button type="submit" className="btn-primary" disabled={isChecking}>
+                        {isChecking ? 'Verificando...' : 'Entrar'}
+                    </button>
+                    <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '15px', textAlign: 'center'}}>
+                        Apenas administradores autorizados.
+                    </p>
                 </form>
             </div>
         </section>
@@ -767,6 +883,44 @@ function Register({ onBack, onRegister }) { // onRegister agora é assíncrono
 }
 
 function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, onDeleteAll }) {
+    const [admins, setAdmins] = useState([]);
+    const [newAdmin, setNewAdmin] = useState({ username: '', password: '', allowed_ip: '' });
+    const [myIp, setMyIp] = useState('Carregando...');
+
+    useEffect(() => {
+        const fetchAdminsData = async () => {
+            const { data } = await supabaseClient.from('admins').select('*');
+            if (data) setAdmins(data);
+            
+            try {
+                const ipRes = await fetch('https://api.ipify.org?format=json');
+                const { ip } = await ipRes.json();
+                setMyIp(ip);
+            } catch (e) { setMyIp('Erro ao obter IP'); }
+        };
+        fetchAdminsData();
+    }, []);
+
+    const handleAddAdmin = async () => {
+        if (!newAdmin.username || !newAdmin.password || !newAdmin.allowed_ip) {
+            alert("Preencha todos os campos do novo admin!");
+            return;
+        }
+        const { data, error } = await supabaseClient.from('admins').insert([newAdmin]).select();
+        if (error) alert("Erro: " + error.message);
+        else {
+            setAdmins([...admins, data[0]]);
+            setNewAdmin({ username: '', password: '', allowed_ip: '' });
+        }
+    };
+
+    const handleDeleteAdmin = async (id) => {
+        if (!confirm("Remover este acesso?")) return;
+        const { error } = await supabaseClient.from('admins').delete().eq('id', id);
+        if (error) alert("Erro ao remover: " + error.message);
+        else setAdmins(admins.filter(a => a.id !== id));
+    };
+
     return (
         <section className="container section">
             <div className="admin-header">
@@ -774,6 +928,41 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                 <div className="admin-actions">
                     <button className="btn-danger" onClick={onDeleteAll}>Resetar Campeonato</button>
                     <button className="btn-primary" onClick={onDraw}>Realizar Sorteio</button>
+                </div>
+            </div>
+
+            <div className="card" style={{marginBottom: '40px'}}>
+                <h3>Gerenciar Acessos (Admins Autorizados)</h3>
+                <p style={{fontSize: '0.85rem', color: 'var(--text-muted)', margin: '10px 0 20px'}}>
+                    IP da sua máquina atual: <strong style={{color: 'var(--primary-color)'}}>{myIp}</strong>
+                </p>
+                <div className="admin-table-container">
+                    <table className="admin-table">
+                        <thead>
+                            <tr>
+                                <th>Usuário</th>
+                                <th>Senha</th>
+                                <th>IP Autorizado</th>
+                                <th>Ações</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {admins.map(adm => (
+                                <tr key={adm.id}>
+                                    <td>{adm.username}</td>
+                                    <td>••••••</td>
+                                    <td>{adm.allowed_ip}</td>
+                                    <td><button className="btn-icon" onClick={() => handleDeleteAdmin(adm.id)}>🗑️</button></td>
+                                </tr>
+                            ))}
+                            <tr>
+                                <td><input type="text" placeholder="User" value={newAdmin.username} onChange={e => setNewAdmin({...newAdmin, username: e.target.value})} /></td>
+                                <td><input type="password" placeholder="Senha" value={newAdmin.password} onChange={e => setNewAdmin({...newAdmin, password: e.target.value})} /></td>
+                                <td><input type="text" placeholder="IP (ex: 189.x.x.x)" value={newAdmin.allowed_ip} onChange={e => setNewAdmin({...newAdmin, allowed_ip: e.target.value})} /></td>
+                                <td><button className="btn-primary" style={{padding: '5px 15px'}} onClick={handleAddAdmin}>Add</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
                 </div>
             </div>
 
