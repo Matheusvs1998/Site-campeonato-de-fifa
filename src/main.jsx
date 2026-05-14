@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 // Os hooks do React são importados diretamente acima
 
 // --- CONTROLE DE MANUTENÇÃO ---
-const MAINTENANCE_MODE = true; // Mude para true para ATIVAR; false para DESATIVAR
+const MAINTENANCE_MODE = false; // Mude para true para ATIVAR; false para DESATIVAR
 const IP_VERIFICATION_ENABLED = false; // Mude para false para DESATIVAR a verificação de IP para moderação
 // --- Configuração Supabase ---
 // As credenciais do Supabase agora são carregadas de variáveis de ambiente (.env)
