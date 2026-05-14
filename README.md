@@ -10,11 +10,27 @@ Site estático para um campeonato de EA FC 26.
 ## Como usar
 1. Abra `index.html` no navegador.
 2. Edite o conteúdo e as datas do campeonato conforme necessário.
-3. Para publicar no **Vercel**:
-   - Conecte seu repositório GitHub ao painel da Vercel.
-   - Ou use o comando `vercel` via CLI.
+
 
 ## Tecnologias
 - React (via CDN)
 - Supabase (Banco de dados e persistência)
 - CSS3 com variáveis modernas
+
+## Moderação do site
+Moderação controlada pelo supabase mediante ao ip do admin.
+
+## Link do vercel
+site-campeonato-de-fifa-be4j.vercel.app
+
+## Prints
+Site: ![Site aberto](/fotos/image.png)
+Banco de dados: ![Supabase](/fotos/image-1.png)
+Vercel: ![Vercel](/fotos/image-2.png)
+
+
+
+Site desenvolvido para testar meus conhecimentos e praticar, mas futuramente será usado para 
+um campeopeonato entre amigos!
+
+Desenvolvido por: Matheus Vasconcelos
