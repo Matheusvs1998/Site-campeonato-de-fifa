@@ -37,7 +37,7 @@ VITE_SUPABASE_ANON_KEY="SUA_CHAVE_ANON_DO_SUPABASE"
 ## Preview
 Site: ![Tela principal](/fotos/image.png)
 Tela de manutenção: ![Tela de manutenção](/fotos/Desktop%20Screenshot%202026.05.14%20-%2015.10.18.17.png)   
-Vercel: ![Vercel](/fotos/image-2.png)
+
 
 
 Site desenvolvido para testar meus conhecimentos e praticar, mas futuramente será usado para um campeonato entre amigos!
