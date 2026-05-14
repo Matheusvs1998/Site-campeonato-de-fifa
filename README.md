@@ -34,10 +34,10 @@ Crie um arquivo `.env` na raiz do projeto com o seguinte formato, substituindo p
 VITE_SUPABASE_URL="SUA_URL_DO_SUPABASE"
 VITE_SUPABASE_ANON_KEY="SUA_CHAVE_ANON_DO_SUPABASE"
 ```
-## Prints
+## Preview
 Site: ![Site aberto](/fotos/image.png)
 Banco de dados: ![Supabase](/fotos/image-1.png)
 Vercel: ![Vercel](/fotos/image-2.png)
 
 
-Site desenvolvido para testar meus conhecimentos e praticar, mas futuramente será usado para 
+Site desenvolvido para testar meus conhecimentos e praticar, mas futuramente será usado para um campeonato entre amigos!
