@@ -40,4 +40,4 @@ Banco de dados: ![Supabase](/fotos/image-1.png)
 Vercel: ![Vercel](/fotos/image-2.png)
 
 
-Site desenvolvido para testar meus conhecimentos e praticar, mas futuramente será usado para 
+Site desenvolvido para testar meus conhecimentos e praticar, mas futuramente será usado para um campeonato entre amigos!
