@@ -26,7 +26,7 @@ Aplicação React para gerenciar um campeonato de EA FC 26, incluindo inscriçõ
 Moderação controlada pelo Supabase mediante ao IP do admin.
 
 ## Link do vercel
-Vercel: site-campeonato-de-fifa-be4j.vercel.app
+[Vercel](site-campeonato-de-fifa-be4j.vercel.app) (Hospedagem do site)
 
 ## Configuração de Variáveis de Ambiente
 Crie um arquivo `.env` na raiz do projeto com o seguinte formato, substituindo pelos seus valores reais:
