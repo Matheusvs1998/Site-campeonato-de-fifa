@@ -2,6 +2,7 @@ const { useState, useEffect } = React;
 
 // --- CONTROLE DE MANUTENÇÃO ---
 const MAINTENANCE_MODE = false; // Mude para true para ATIVAR; false para DESATIVAR
+const IP_VERIFICATION_ENABLED = false; // Mude para false para DESATIVAR a verificação de IP para moderação
 
 // --- Configuração Supabase ---
 // Substitua com suas credenciais do Supabase
@@ -324,6 +325,12 @@ function App() {
         if (isVerifying) return;
         setIsVerifying(true);
         setAccessError(null);
+
+        if (!IP_VERIFICATION_ENABLED) {
+            setIsVerifying(false);
+            navigate('login');
+            return;
+        }
 
         try {
             // Captura o IP antes de abrir a tela de login
@@ -650,19 +657,20 @@ function Login({ onLogin }) {
         setIsChecking(true);
 
         try {
-            // Obtém o IP público atual do usuário
-            const ipResponse = await fetch('https://api.ipify.org?format=json');
-            const { ip: currentIp } = await ipResponse.json();
-
-            // Verifica usuário, senha e se o IP está autorizado
-            // Nota: Adicione a coluna 'allowed_ip' na sua tabela 'admins'
-            const { data, error: dbError } = await supabaseClient
+            let query = supabaseClient
                 .from('admins')
                 .select('*')
                 .eq('username', user)
-                .eq('password', pass)
-                .eq('allowed_ip', currentIp)
-                .single();
+                .eq('password', pass);
+
+            if (IP_VERIFICATION_ENABLED) {
+                // Obtém o IP público atual do usuário
+                const ipResponse = await fetch('https://api.ipify.org?format=json');
+                const { ip: currentIp } = await ipResponse.json();
+                query = query.eq('allowed_ip', currentIp);
+            }
+
+            const { data, error: dbError } = await query.single();
 
             if (dbError || !data) {
                 throw new Error('Acesso negado: Credenciais inválidas ou local não autorizado.');
