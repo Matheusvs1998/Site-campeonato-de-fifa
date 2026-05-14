@@ -1,0 +1,33 @@
+{
+  "name": "campeonato-de-fifa",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module", 
+  "description": "Aplicação React para um campeonato de EA FC 26 com Supabase.",
+  "main": "src/main.jsx",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Matheusvs1998/Site-campeonato-de-fifa.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Matheusvs1998/Site-campeonato-de-fifa/issues"
+  },
+  "homepage": "https://github.com/Matheusvs1998/Site-campeonato-de-fifa#readme",
+  "dependencies": {
+    "@supabase/supabase-js": "^2.105.4",
+    "@vitejs/plugin-react": "^6.0.1",
+    "express": "^5.2.1",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "vite": "^8.0.13"
+  }
+}

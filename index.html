@@ -4,17 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Campeonato EA FC 26 Gangster Cup</title>
-    <!-- Carregando React e Babel via CDN -->
-    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://unpkg.com/@supabase/supabase-js@2"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div id="root"></div>
-
-    <!-- Note o type="text/babel" para que o browser entenda JSX sem build step -->
-    <script type="text/babel" src="script.js"></script>
+    <!-- O Vite irá carregar seu aplicativo React aqui -->
+    <script type="module" src="/src/main.jsx"></script>
 </body>
 </html>
