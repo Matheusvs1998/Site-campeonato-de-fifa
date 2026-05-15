@@ -50,4 +50,4 @@ Tela de manutenção: ![Tela de manutenção](/public/tela-de-manutencao.png)
 
 
 
-Autoria e desebvolvimento: Matheus Vasconcelos 
+Autoria e desenvolvimento: Matheus Vasconcelos 
