@@ -5,7 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 // Os hooks do React são importados diretamente acima
 
 // --- CONTROLE DE MANUTENÇÃO ---
-const MAINTENANCE_MODE = true; // Mude para true para ATIVAR; false para DESATIVAR
+const MAINTENANCE_MODE = false; // Mude para true para ATIVAR; false para DESATIVAR
 const IP_VERIFICATION_ENABLED = false; // Mude para false para DESATIVAR a verificação de IP para moderação
 // --- Configuração Supabase ---
 // As credenciais do Supabase agora são carregadas de variáveis de ambiente (.env)
@@ -131,6 +131,10 @@ function App() {
     const [accessError, setAccessError] = useState(null);
     const [currentPublicIp, setCurrentPublicIp] = useState(null); // Novo estado para armazenar o IP público
     const [logoutMessage, setLogoutMessage] = useState(null); // Estado para mensagem de despedida
+    const [resetMessage, setResetMessage] = useState(null); // Estado para mensagem de reset
+    const [showResetConfirm, setShowResetConfirm] = useState(false); // Estado para o modal de confirmação
+    const [drawMessage, setDrawMessage] = useState(null); // Estado para mensagem de sorteio realizado
+    const [showDrawConfirm, setShowDrawConfirm] = useState(false); // Estado para o modal de confirmação do sorteio
 
     // Efeito para buscar o IP público uma vez ao carregar o componente
     useEffect(() => {
@@ -145,21 +149,37 @@ function App() {
     }, []); // Array de dependências vazio para rodar apenas uma vez
 
     useEffect(() => {
-        const fetchData = async () => {
+        const fetchData = async (initial = false) => {
             if (!supabaseClient) {
                 setLoading(false);
                 return;
             }
-            setLoading(true);
+            if (initial) setLoading(true);
+
             const { data: fetchedRegistrations, error: regError } = await supabaseClient.from('registrations').select('*');
             const { data: fetchedMatches, error: matchError } = await supabaseClient.from('matches').select('*');
+            
             if (regError) console.error('Erro ao buscar inscrições:', regError);
             if (matchError) console.error('Erro ao buscar partidas:', matchError);
+            
             setRegistrations(fetchedRegistrations || []);
             setResults(fetchedMatches || []);
-            setLoading(false);
+            
+            if (initial) setLoading(false);
         };
-        fetchData();
+
+        fetchData(true);
+
+        // Configuração de inscrições em tempo real
+        const channel = supabaseClient
+            .channel('tournament-updates')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => fetchData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => fetchData())
+            .subscribe();
+
+        return () => {
+            supabaseClient.removeChannel(channel);
+        };
     }, []);
 
     const handleLogin = (role, username) => {
@@ -214,19 +234,24 @@ function App() {
         return false; // Indica falha
     };
 
-    const drawMatches = async () => { // Modificado para incluir fase de grupos e mata-mata
+    const drawMatches = () => {
         if (registrations.length < 2) {
             alert("É necessário pelo menos 2 inscritos para realizar o sorteio!");
             return;
         }
-
         if (!supabaseClient) return;
-        if (!window.confirm("Isso apagará todas as partidas atuais para gerar o novo torneio (Grupos + Mata-Mata). Continuar?")) return;
+        setShowDrawConfirm(true);
+    };
+
+    const executeDraw = async () => {
+        setShowDrawConfirm(false);
+        if (!supabaseClient) return;
 
         // Limpar partidas antigas antes de gerar o novo sorteio
-        const { error: deleteError } = await supabaseClient.from('matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+        const { error: deleteError } = await supabaseClient.from('matches').delete().not('id', 'is', null);
         if (deleteError) {
             console.error('Erro ao limpar partidas:', deleteError);
+            alert(`Erro ao limpar partidas: ${deleteError.message}`);
             return;
         }
 
@@ -317,7 +342,10 @@ function App() {
                 alert('Erro ao realizar sorteio. Tente novamente.');
             } else {
                 setResults(data); // Atualiza com as partidas inseridas (com IDs do Supabase)
-                alert("Sorteio realizado com sucesso! Fase de Grupos e Mata-Mata gerados.");
+                setDrawMessage("Fase de Grupos e Mata-Mata foram gerados com sucesso!");
+                setTimeout(() => {
+                    setDrawMessage(null);
+                }, 3000);
             }
         } else {
             alert("Não foi possível gerar partidas suficientes para o sorteio.");
@@ -330,17 +358,31 @@ function App() {
         const { error } = await supabaseClient.from('matches').delete().eq('id', id);
         if (error) {
             console.error('Erro ao deletar partida:', error);
+            alert(`Erro ao deletar partida: ${error.message}`);
         } else {
             setResults(results.filter(match => match.id !== id));
         }
     };
 
-    const deleteAllMatches = async () => {
-        if (!supabaseClient || !window.confirm("AVISO: Isso apagará TODOS os resultados. Deseja continuar?")) return;
+    const deleteAllMatches = () => {
+        if (!supabaseClient) return;
+        setShowResetConfirm(true);
+    };
 
-        const { error } = await supabaseClient.from('matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        if (error) console.error('Erro ao resetar campeonato:', error);
-        else setResults([]);
+    const executeReset = async () => {
+        setShowResetConfirm(false);
+        const { error } = await supabaseClient.from('matches').delete().not('id', 'is', null);
+        if (error) {
+            console.error('Erro ao resetar campeonato:', error);
+            alert(`Erro ao resetar campeonato: ${error.message}`);
+        } else {
+            setResults([]);
+            // Ativa a animação visual no meio da tela
+            setResetMessage("O campeonato foi limpo e está pronto para um novo sorteio.");
+            setTimeout(() => {
+                setResetMessage(null);
+            }, 3000); // Fecha automaticamente após 3 segundos
+        }
     };
 
     const navigate = (p) => {
@@ -477,6 +519,54 @@ function App() {
                         <div style={{fontSize: '5rem'}}>👋</div>
                         <h2>{logoutMessage}</h2>
                         <p>Sua sessão foi encerrada. Redirecionando...</p>
+                    </div>
+                </div>
+            )}
+
+            {showResetConfirm && (
+                <div className="success-overlay">
+                    <div className="success-modal" style={{borderColor: 'var(--primary-color)'}}>
+                        <div style={{fontSize: '5rem'}}>⚠️</div>
+                        <h2>Resetar Campeonato?</h2>
+                        <p>AVISO: Isso apagará TODOS os resultados das partidas atuais. Deseja continuar?</p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px', flexWrap: 'wrap' }}>
+                            <button className="btn-primary" onClick={executeReset}>Sim, Resetar</button>
+                            <button className="btn-primary" style={{ background: '#444', color: 'white' }} onClick={() => setShowResetConfirm(false)}>Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showDrawConfirm && (
+                <div className="success-overlay">
+                    <div className="success-modal" style={{borderColor: 'var(--primary-color)'}}>
+                        <div style={{fontSize: '5rem'}}>⚽</div>
+                        <h2>Realizar Novo Sorteio?</h2>
+                        <p>Isso apagará todas as partidas atuais para gerar o novo torneio (Grupos + Mata-Mata). Deseja continuar?</p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px', flexWrap: 'wrap' }}>
+                            <button className="btn-primary" onClick={executeDraw}>Sim, Gerar Torneio</button>
+                            <button className="btn-primary" style={{ background: '#444', color: 'white' }} onClick={() => setShowDrawConfirm(false)}>Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {drawMessage && (
+                <div className="success-overlay">
+                    <div className="success-modal">
+                        <div style={{fontSize: '5rem'}}>🏆</div>
+                        <h2>Torneio Gerado!</h2>
+                        <p>{drawMessage}</p>
+                    </div>
+                </div>
+            )}
+
+            {resetMessage && (
+                <div className="success-overlay">
+                    <div className="success-modal">
+                        <div style={{fontSize: '5rem'}}>✅</div>
+                        <h2>Campeonato Resetado!</h2>
+                        <p>{resetMessage}</p>
                     </div>
                 </div>
             )}
@@ -996,7 +1086,7 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
             <div className="admin-header">
                 <h2>Painel do Administrador</h2>
                 <div className="admin-actions">
-                    <button className="btn-danger" onClick={onDeleteAll}>Resetar Campeonato</button>
+                    <button className="btn-primary" onClick={onDeleteAll}>Resetar Campeonato</button>
                     <button className="btn-primary" onClick={onDraw}>Realizar Sorteio</button>
                 </div>
             </div>
