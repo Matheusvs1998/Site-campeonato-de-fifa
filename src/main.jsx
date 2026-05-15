@@ -920,9 +920,9 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
                     </div>
                 </div>
             )}
-            <div className="login-container">
-                <h2>Login</h2>
-                <form onSubmit={handleSubmit} className="card">
+            <div className="form-container">
+                <form onSubmit={handleSubmit} className="card" style={{ maxWidth: '380px', margin: '0 auto' }}>
+                    <h2 style={{ textAlign: 'center', marginBottom: '25px', color: 'var(--primary-color)' }}>Login</h2>
                     {error && (
                         <p style={{ color: '#ff4444', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>
                             {error}
@@ -1119,6 +1119,10 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
     const [admins, setAdmins] = useState([]);
     const [newAdmin, setNewAdmin] = useState({ username: '', password: '', allowed_ip: '', role: 'moderator' });
     const [myIp, setMyIp] = useState('Carregando...');
+    const [showValidationError, setShowValidationError] = useState(false);
+    const [showAddSuccess, setShowAddSuccess] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [adminToDelete, setAdminToDelete] = useState(null);
 
     const isDev = user?.role === 'developer';
     const isAdmin = user?.role === 'admin' || isDev;
@@ -1155,13 +1159,17 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
 
     const handleAddAdmin = async () => {
         if (!newAdmin.username || !newAdmin.password || !newAdmin.allowed_ip) {
-            alert("Preencha todos os campos do novo admin!");
+            setShowValidationError(true);
             return;
         }
         const { data, error } = await supabaseClient.from('admins').insert([newAdmin]).select();
         if (error) alert("Erro: " + error.message);
         else {
             setAdmins([...admins, data[0]]);
+            setShowAddSuccess(true);
+            setTimeout(() => {
+                setShowAddSuccess(false);
+            }, 2500);
             setNewAdmin({ username: '', password: '', allowed_ip: '', role: 'moderator' });
         }
     };
@@ -1182,7 +1190,15 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
     };
 
     const handleDeleteAdmin = async (id) => {
-        if (!confirm("Remover este acesso?")) return;
+        setAdminToDelete(id);
+        setShowDeleteConfirm(true);
+    };
+
+    const executeDeleteAdmin = async () => {
+        const id = adminToDelete;
+        setShowDeleteConfirm(false);
+        setAdminToDelete(null);
+        
         const { error } = await supabaseClient.from('admins').delete().eq('id', id);
         if (error) alert("Erro ao remover: " + error.message);
         else setAdmins(admins.filter(a => a.id !== id));
@@ -1190,6 +1206,43 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
 
     return (
         <section className="container section">
+            {showValidationError && (
+                <div className="success-overlay" onClick={() => setShowValidationError(false)}>
+                    <div className="success-modal" style={{borderColor: 'var(--primary-color)'}} onClick={e => e.stopPropagation()}>
+                        <div style={{fontSize: '5rem'}}>⚠️</div>
+                        <h2>Campos Incompletos</h2>
+                        <p>Por favor, preencha o <strong>Usuário, Senha e IP</strong> para cadastrar um novo administrador.</p>
+                        <div style={{ marginTop: '25px' }}>
+                            <button className="btn-primary" onClick={() => setShowValidationError(false)}>Entendido</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {showAddSuccess && (
+                <div className="success-overlay">
+                    <div className="success-modal">
+                        <div style={{fontSize: '5rem'}}>👤✅</div>
+                        <h2>Admin Adicionado!</h2>
+                        <p>O novo acesso foi configurado com sucesso.</p>
+                    </div>
+                </div>
+            )}
+
+            {showDeleteConfirm && (
+                <div className="success-overlay">
+                    <div className="success-modal" style={{borderColor: 'var(--primary-color)'}}>
+                        <div style={{fontSize: '5rem'}}>👤❌</div>
+                        <h2>Remover Acesso?</h2>
+                        <p>Tem certeza que deseja excluir as credenciais deste administrador?</p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px', flexWrap: 'wrap' }}>
+                            <button className="btn-primary" onClick={executeDeleteAdmin}>Sim, Remover</button>
+                            <button className="btn-primary" style={{ background: '#444', color: 'white' }} onClick={() => setShowDeleteConfirm(false)}>Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
             <div className="admin-header">
                 <div>
                     <h2>Painel do {roleDisplayName}</h2>
