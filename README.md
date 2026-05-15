@@ -23,11 +23,11 @@ Aplicação React para gerenciar um campeonato de EA FC 26, incluindo inscriçõ
 - CSS3 com variáveis modernas
 
 ## Moderação
-Moderação controlada pelo Supabase mediante ao IP do admin.
+Moderação controlada pelo Supabase mediante ao IP do admin
 Cargos adicionados(Developer, Admin, Moderador)
-Developer: controla tudo.
-Admin: pode realizar sorteios e cuidar dos placares.
-Moderator: cuida apenas dos placares.
+Developer: controla tudo
+Admin: pode realizar sorteios e cuidar dos placares
+Moderator: cuida apenas dos placares
 
 ## Link do vercel
 [Vercel](https://site-campeonato-de-fifa-be4j.vercel.app/) (Hospedagem do site)
