@@ -146,6 +146,7 @@ function App() {
     const [currentPublicIp, setCurrentPublicIp] = useState(null); // Novo estado para armazenar o IP público
     const [logoutMessage, setLogoutMessage] = useState(null); // Estado para mensagem de despedida
     const [resetMessage, setResetMessage] = useState(null); // Estado para mensagem de reset
+    const [forcedLogoutMessage, setForcedLogoutMessage] = useState(null); // Mensagem de expulsão por troca de cargo
     const [showResetConfirm, setShowResetConfirm] = useState(false); // Estado para o modal de confirmação
     const [drawMessage, setDrawMessage] = useState(null); // Estado para mensagem de sorteio realizado
     const [showDrawConfirm, setShowDrawConfirm] = useState(false); // Estado para o modal de confirmação do sorteio
@@ -184,11 +185,22 @@ function App() {
 
         fetchData(true);
 
-        // Configuração de inscrições em tempo real
+        // Configuração de atualizações em tempo real
         const channel = supabaseClient
             .channel('tournament-updates')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => fetchData())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => fetchData())
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'admins' }, (payload) => {
+                // Verifica se o admin alterado é o usuário que está logado agora
+                const storedUser = JSON.parse(localStorage.getItem('adminUser'));
+                if (storedUser && payload.new.id === storedUser.id) {
+                    // Se o cargo (role) mudou, forçamos o logout
+                    if (payload.new.role !== storedUser.role) {
+                        handleForcedLogout();
+                    }
+                }
+                fetchData();
+            })
             .subscribe();
 
         return () => {
@@ -205,8 +217,8 @@ function App() {
         }
     }, [user]); // Dependency array includes 'user'
 
-    const handleLogin = (role, username) => {
-        setUser({ role, username });
+    const handleLogin = (userData) => {
+        setUser(userData);
         // Se logou com sucesso, redireciona para o painel de admin
         setPage('admin');
     };
@@ -222,6 +234,16 @@ function App() {
             setPage('home');
             setLogoutMessage(null);
         }, 2000);
+    };
+
+    const handleForcedLogout = () => {
+        setForcedLogoutMessage("Seu cargo foi alterado por um administrador. Por segurança, realize o login novamente.");
+        localStorage.removeItem('adminUser');
+        setUser(null);
+        setPage('home');
+        setTimeout(() => {
+            setForcedLogoutMessage(null);
+        }, 5000);
     };
 
     const updateResult = async (id, field, value) => {
@@ -548,6 +570,16 @@ function App() {
                 </div>
             </nav>
 
+            {forcedLogoutMessage && (
+                <div className="success-overlay">
+                    <div className="success-modal" style={{borderColor: 'var(--primary-color)'}}>
+                        <div style={{fontSize: '5rem'}}>🔒</div>
+                        <h2>Sessão Encerrada</h2>
+                        <p>{forcedLogoutMessage}</p>
+                    </div>
+                </div>
+            )}
+
             {logoutMessage && (
                 <div className="success-overlay">
                     <div className="success-modal">
@@ -867,7 +899,7 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
             // Capitalize the first letter of the role for display
             setWelcomeRole(data.role.charAt(0).toUpperCase() + data.role.slice(1)); 
             setShowAnimation(true);            
-            setTimeout(() => onLogin(data.role, data.username), 2000); // Passa o cargo real do DB
+            setTimeout(() => onLogin(data), 2000); // Passa o objeto completo (incluindo ID)
         } catch (err) {
             setError(err.message || 'Erro ao validar acesso.');
         } finally {
