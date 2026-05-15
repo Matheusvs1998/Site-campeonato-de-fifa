@@ -447,6 +447,8 @@ function App() {
         setIsVerifying(true);
         setAccessError(null);
 
+        console.log("Iniciando verificação de moderação...");
+
         if (!IP_VERIFICATION_ENABLED) {
             setIsVerifying(false);
             navigate('login');
@@ -859,6 +861,7 @@ function Home({ results, onRegisterClick }) {
 function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
     const [user, setUser] = useState('');
     const [pass, setPass] = useState('');
+    const [showPassword, setShowPassword] = useState(false); // Estado para controlar a visibilidade da senha
     const [error, setError] = useState('');
     const [showAnimation, setShowAnimation] = useState(false);
     const [welcomeUser, setWelcomeUser] = useState('');
@@ -870,6 +873,8 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
         setError('');
         setIsChecking(true);
 
+        console.log("Iniciando tentativa de login...");
+
         try {
             let ipToVerify = currentPublicIp;
             if (IP_VERIFICATION_ENABLED) {
@@ -880,6 +885,7 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
                     ipToVerify = ip;
                 }
             }
+            console.log("IP público detectado para verificação:", ipToVerify);
 
             let query = supabaseClient
                 .from('admins')
@@ -887,14 +893,24 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
                 .eq('username', user)
                 .eq('password', pass);
 
-            if (IP_VERIFICATION_ENABLED && ipToVerify) { // Verifica se o IP está disponível
-                query = query.eq('allowed_ip', ipToVerify);
+            if (IP_VERIFICATION_ENABLED && ipToVerify) {
+                console.log("Verificando IP autorizado para a conta específica:", ipToVerify);
+                query = query.eq('allowed_ip', ipToVerify); // Mantém a verificação de IP para a conta específica
             }
 
             const { data, error: dbError } = await query.single();
+            console.log("Resultado da consulta Supabase:", data);
+            console.log("Erro da consulta Supabase:", dbError);
 
             if (dbError || !data) {
-                throw new Error('Acesso negado: Credenciais inválidas ou local não autorizado.');
+                if (dbError && dbError.code === 'PGRST116') { // No rows found for .single()
+                    throw new Error('Acesso negado: Credenciais inválidas ou local não autorizado.');
+                }
+                if (dbError && dbError.code === 'PGRST117') { // More than one row found for .single()
+                    // Isso indica um problema de dados: múltiplas entradas com o mesmo usuário/senha/IP
+                    throw new Error('Erro de configuração: Múltiplos acessos com as mesmas credenciais e IP. Contate o suporte.');
+                }
+                throw new Error(dbError?.message || 'Acesso negado: Credenciais inválidas ou local não autorizado.');
             }
 
             setWelcomeUser(data.username);
@@ -934,7 +950,22 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
                     </div>
                     <div className="form-group">
                         <label>Senha</label>
-                        <input type="password" value={pass} onChange={(e) => setPass(e.target.value)} required />
+                        <div style={{ position: 'relative', width: '100%' }}>
+                            <input 
+                                type={showPassword ? "text" : "password"} 
+                                value={pass} 
+                                onChange={(e) => setPass(e.target.value)} 
+                                required 
+                                style={{ width: '100%', paddingRight: '45px' }}
+                            />
+                            <button 
+                                type="button" 
+                                onClick={() => setShowPassword(!showPassword)}
+                                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: '0', opacity: 0.4, filter: 'grayscale(1)', transition: 'opacity 0.2s' }}
+                            >
+                                {showPassword ? '👁️' : '◎'}
+                            </button>
+                        </div>
                     </div>
                     <button type="submit" className="btn-primary" disabled={isChecking}>
                         {isChecking ? 'Verificando...' : 'Entrar'}
@@ -1119,6 +1150,7 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
     const [admins, setAdmins] = useState([]);
     const [newAdmin, setNewAdmin] = useState({ username: '', password: '', allowed_ip: '', role: 'moderator' });
     const [myIp, setMyIp] = useState('Carregando...');
+    const [showNewAdminPassword, setShowNewAdminPassword] = useState(false); // Estado para visibilidade da senha do novo admin
     const [showValidationError, setShowValidationError] = useState(false);
     const [showAddSuccess, setShowAddSuccess] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -1292,7 +1324,24 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                             ))}
                             <tr>
                                 <td><input type="text" placeholder="User" value={newAdmin.username} onChange={e => setNewAdmin({...newAdmin, username: e.target.value})} /></td>
-                                <td><input type="password" placeholder="Senha" value={newAdmin.password} onChange={e => setNewAdmin({...newAdmin, password: e.target.value})} /></td>
+                                <td>
+                                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                        <input 
+                                            type={showNewAdminPassword ? "text" : "password"} 
+                                            placeholder="Senha" 
+                                            value={newAdmin.password} 
+                                            onChange={e => setNewAdmin({...newAdmin, password: e.target.value})} 
+                                            style={{ paddingRight: '35px' }}
+                                        />
+                                        <button 
+                                            type="button" 
+                                            onClick={() => setShowNewAdminPassword(!showNewAdminPassword)}
+                                            style={{ position: 'absolute', right: '8px', background: 'none', border: 'none', cursor: 'pointer', padding: '0', fontSize: '1rem', opacity: 0.4, filter: 'grayscale(1)', transition: 'opacity 0.2s' }}
+                                        >
+                                            {showNewAdminPassword ? '👁️' : '◎'}
+                                        </button>
+                                    </div>
+                                </td>
                                 <td><input type="text" placeholder="IP (ex: 189.x.x.x)" value={newAdmin.allowed_ip} onChange={e => setNewAdmin({...newAdmin, allowed_ip: e.target.value})} /></td>
                                 <td>
                                     <select value={newAdmin.role} onChange={e => setNewAdmin({...newAdmin, role: e.target.value})}>
