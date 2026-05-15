@@ -123,6 +123,7 @@ function App() {
     const [page, setPage] = useState('home'); // home, login, admin, register
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [user, setUser] = useState(null); // { role: 'admin' | 'user' }
+    const [isLogoAnimated, setIsLogoAnimated] = useState(false);
     const [registrations, setRegistrations] = useState([]);
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -391,6 +392,8 @@ function App() {
     };
 
     const handleLogoClick = () => {
+        setIsLogoAnimated(true);
+        setTimeout(() => setIsLogoAnimated(false), 500); // Remove a classe após a animação terminar
         navigate('home');
     };
 
@@ -490,7 +493,10 @@ function App() {
 
             <nav className="header-nav">
                 <div className="container nav-content">
-                    <div className="logo" onClick={handleLogoClick}>Campeonato de EA FC 26  <span>Gangster Cup</span></div>
+                    <div className={`logo ${isLogoAnimated ? 'logo-click-animation' : ''}`} onClick={handleLogoClick}>
+                        <img src="/logo.png" alt="Logo" className="nav-logo" />
+                        EA FC 26 <span>GANGSTER CUP</span>
+                    </div>
                     
                     <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Menu">
                         <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>

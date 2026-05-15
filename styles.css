@@ -45,11 +45,35 @@ body {
 }
 
 .logo {
-    font-size: clamp(1.3rem, 4vw, 1.8rem);
+    font-size: clamp(1.1rem, 2.5vw, 1.4rem);
     font-weight: 800;
     cursor: pointer;
     white-space: nowrap;
-    letter-spacing: -0.5px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    line-height: 1;
+}
+
+.logo-click-animation {
+    animation: logoLightUp 0.6s ease-out;
+}
+
+@keyframes logoLightUp {
+    0% { transform: scale(1); filter: brightness(1); }
+    30% { 
+        transform: scale(1.08); 
+        filter: brightness(2.5) drop-shadow(0 0 20px var(--primary-color));
+        text-shadow: 0 0 15px var(--primary-color);
+    }
+    100% { transform: scale(1); filter: brightness(1); }
+}
+
+.nav-logo {
+    height: 40px;
+    width: auto;
+    object-fit: contain;
+    filter: drop-shadow(0 0 5px rgba(243, 9, 9, 0.2));
 }
 
 .logo span {
