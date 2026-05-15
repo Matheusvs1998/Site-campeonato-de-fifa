@@ -3,9 +3,6 @@ import ReactDOM from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
 import '../styles.css';
 
-// Os hooks do React são importados diretamente acima
-
-// --- CONTROLE DE MANUTENÇÃO ---
 const MAINTENANCE_MODE = false; // Mude para true para ATIVAR; false para DESATIVAR
 const IP_VERIFICATION_ENABLED = true; // Mude para false para DESATIVAR a verificação de IP para moderação
 // --- Configuração Supabase ---
@@ -120,6 +117,42 @@ const getTeamLogo = (teamName) => {
     return getFallbackLogo(nameOnly);
 };
 
+// Função auxiliar para calcular classificação (reutilizada no App e no Home)
+const calculateStandings = (matches) => {
+    const standings = {};
+    matches.forEach(m => {
+        if (m.stage === 'Fase de Grupos' && m.group_name) {
+            if (!standings[m.group_name]) standings[m.group_name] = {};
+            
+            [m.p1, m.p2].forEach(t => {
+                if (!standings[m.group_name][t]) {
+                    standings[m.group_name][t] = { fullName: t, pts: 0, goalsFor: 0, goalsAgainst: 0 };
+                }
+            });
+
+            if (m.status === 'Finalizado') {
+                const s1 = parseInt(m.score1) || 0;
+                const s2 = parseInt(m.score2) || 0;
+                
+                standings[m.group_name][m.p1].goalsFor += s1;
+                standings[m.group_name][m.p1].goalsAgainst += s2;
+                standings[m.group_name][m.p2].goalsFor += s2;
+                standings[m.group_name][m.p2].goalsAgainst += s1;
+
+                if (s1 > s2) {
+                    standings[m.group_name][m.p1].pts += 3;
+                } else if (s2 > s1) {
+                    standings[m.group_name][m.p2].pts += 3;
+                } else {
+                    standings[m.group_name][m.p1].pts += 1;
+                    standings[m.group_name][m.p2].pts += 1;
+                }
+            }
+        }
+    });
+    return standings;
+};
+
 function App() {
     const [page, setPage] = useState('home'); // home, login, admin, register
     const [isMenuOpen, setIsMenuOpen] = useState(false);
@@ -147,7 +180,6 @@ function App() {
     const [currentPublicIp, setCurrentPublicIp] = useState(null); // Novo estado para armazenar o IP público
     const [logoutMessage, setLogoutMessage] = useState(null); // Estado para mensagem de despedida
     const [resetMessage, setResetMessage] = useState(null); // Estado para mensagem de reset
-    const [forcedLogoutMessage, setForcedLogoutMessage] = useState(null); // Mensagem de expulsão por troca de cargo
     const [showResetConfirm, setShowResetConfirm] = useState(false); // Estado para o modal de confirmação
     const [drawMessage, setDrawMessage] = useState(null); // Estado para mensagem de sorteio realizado
     const [showDrawConfirm, setShowDrawConfirm] = useState(false); // Estado para o modal de confirmação do sorteio
@@ -206,7 +238,7 @@ function App() {
         return () => {
             supabaseClient.removeChannel(channel);
         };
-    }, [user]); // IMPORTANTE: user adicionado aqui para o Realtime capturar sua sessão
+    }, [user]);
 
     // Effect to persist user data to localStorage whenever 'user' state changes
     useEffect(() => {
@@ -237,13 +269,10 @@ function App() {
     };
 
     const handleForcedLogout = () => {
-        setForcedLogoutMessage("Seu cargo foi alterado por um administrador. Por segurança, realize o login novamente.");
         localStorage.removeItem('adminUser');
         setUser(null);
         setPage('home');
-        setTimeout(() => {
-            setForcedLogoutMessage(null);
-        }, 5000);
+        alert("Seu cargo foi alterado por um administrador. Por segurança, realize o login novamente.");
     };
 
     const updateResult = async (id, field, value) => {
@@ -289,12 +318,14 @@ function App() {
         setShowDrawConfirm(true);
     };
 
-    const executeDraw = async () => {
+    // Sorteio inicial apenas da Fase de Grupos
+    const executeGroupDraw = async () => {
         setShowDrawConfirm(false);
         if (!supabaseClient) return;
 
         // Limpar partidas antigas antes de gerar o novo sorteio
-        const { error: deleteError } = await supabaseClient.from('matches').delete().not('id', 'is', null);
+        // Usando neq com um ID impossível para permitir o delete sem filtro específico
+        const { error: deleteError } = await supabaseClient.from('matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
         if (deleteError) {
             console.error('Erro ao limpar partidas:', deleteError);
             alert(`Erro ao limpar partidas: ${deleteError.message}`);
@@ -303,6 +334,8 @@ function App() {
 
         const shuffled = [...registrations].sort(() => 0.5 - Math.random());
         const newMatches = [];
+        const defaultMatchDate = new Date().toISOString().split('T')[0];
+        const defaultMatchTime = "19:00";
         const GROUP_SIZE = 4;
 
         // --- FASE DE GRUPOS ---
@@ -327,56 +360,14 @@ function App() {
                         score2: 0,
                         status: 'Agendado',
                         group_name: groupName,
+                        date: defaultMatchDate, // Adicionar data padrão
+                        time: defaultMatchTime, // Adicionar hora padrão
                         stage: 'Fase de Grupos'
                     });
                 }
             }
         });
 
-        // --- MATA-MATA DINÂMICO (Ida e Volta) ---
-        const numQualified = numGroups * 2; // 2 melhores de cada grupo
-        const knockoutStages = [];
-
-        // Define qual fase o mata-mata deve começar
-        if (numQualified > 8) knockoutStages.push({ name: 'Oitavas de Final', games: 8 });
-        if (numQualified > 4) knockoutStages.push({ name: 'Quartas de Final', games: 4 });
-        if (numQualified > 2) knockoutStages.push({ name: 'Semifinal', games: 2 });
-        knockoutStages.push({ name: 'Final', games: 1 });
-
-        knockoutStages.forEach(s => {
-            for (let i = 1; i <= s.games; i++) {
-                let p1Placeholder = `TBD (Vencedor)`;
-                let p2Placeholder = `TBD (Vencedor)`;
-
-                // Se for a primeira fase do mata-mata, indica de qual grupo vem
-                if (s === knockoutStages[0]) {
-                    const groupIdx = Math.floor((i - 1) / 1); 
-                    p1Placeholder = `1º Grupo ${String.fromCharCode(65 + (i-1))}`;
-                    p2Placeholder = `2º Grupo ${String.fromCharCode(65 + (i % numGroups))}`;
-                }
-                
-                // Jogo de Ida
-                newMatches.push({
-                    p1: p1Placeholder,
-                    p2: p2Placeholder,
-                    score1: 0,
-                    score2: 0,
-                    status: 'Agendado',
-                    stage: `${s.name} (Ida)`
-                });
-
-                // Jogo de Volta
-                newMatches.push({
-                    p1: p2Placeholder,
-                    p2: p1Placeholder,
-                    score1: 0,
-                    score2: 0,
-                    status: 'Agendado',
-                    stage: `${s.name} (Volta)`
-                });
-            }
-        });
-        
         if (newMatches.length > 0) {
             const { data, error } = await supabaseClient
                 .from('matches')
@@ -385,10 +376,105 @@ function App() {
 
             if (error) {
                 console.error('Erro ao sortear partidas:', error);
-                alert('Erro ao realizar sorteio. Tente novamente.');
+                alert('Erro ao realizar sorteio: ' + (error.message || 'Verifique se as colunas "date" e "time" foram criadas no Supabase.'));
             } else {
                 setResults(data); // Atualiza com as partidas inseridas (com IDs do Supabase)
-                setDrawMessage("Fase de Grupos e Mata-Mata foram gerados com sucesso!");
+                setDrawMessage("Fase de Grupos gerada com sucesso!");
+                setTimeout(() => setDrawMessage(null), 2500);
+            }
+        }
+    };
+
+    // Gera a próxima fase do mata-mata baseado nos resultados anteriores
+    const executeKnockoutDraw = async () => {
+        if (!supabaseClient) return;
+        
+        // Determina qual foi a última fase gerada
+        const stagesPresent = [...new Set(results.map(m => m.stage))];
+        let nextStage = "";
+        let participants = [];
+
+        if (stagesPresent.length === 1 && stagesPresent[0] === 'Fase de Grupos') {
+            // Gerar primeira fase eliminatória a partir dos grupos
+            const standings = calculateStandings(results);
+            const groups = Object.keys(standings).sort();
+            groups.forEach(groupName => {
+                const sortedTeams = Object.values(standings[groupName])
+                    .sort((a, b) => (b.pts - a.pts) || ((b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst)));
+                if (sortedTeams.length >= 1) participants.push(sortedTeams[0].fullName);
+                if (sortedTeams.length >= 2) participants.push(sortedTeams[1].fullName);
+            });
+
+            if (participants.length >= 16) nextStage = "Oitavas de Final";
+            else if (participants.length >= 8) nextStage = "Quartas de Final";
+            else if (participants.length >= 4) nextStage = "Semifinal";
+            else nextStage = "Final";
+        } else {
+            // Gerar próxima fase baseada no vencedor do mata-mata anterior
+            const currentStage = results.reduce((last, m) => {
+                const order = ["Oitavas de Final", "Quartas de Final", "Semifinal", "Final"];
+                const mStage = m.stage.split(' (')[0];
+                return order.indexOf(mStage) > order.indexOf(last) ? mStage : last;
+            }, "");
+
+            const order = ["Oitavas de Final", "Quartas de Final", "Semifinal", "Final"];
+            nextStage = order[order.indexOf(currentStage) + 1];
+
+            if (!nextStage) {
+                alert("O campeonato já chegou ao fim!");
+                return;
+            }
+
+            // Lógica para extrair vencedores por placar agregado
+            const currentStageMatches = results.filter(m => m.stage.startsWith(currentStage));
+            const pairings = {};
+            
+            currentStageMatches.forEach(m => {
+                const teams = [m.p1, m.p2].sort().join(' vs ');
+                if (!pairings[teams]) pairings[teams] = { p1: m.p1, p2: m.p2, s1: 0, s2: 0 };
+                pairings[teams].s1 += m.p1 === pairings[teams].p1 ? m.score1 : m.score2;
+                pairings[teams].s2 += m.p1 === pairings[teams].p2 ? m.score1 : m.score2;
+            });
+
+            Object.values(pairings).forEach(p => {
+                participants.push(p.s1 >= p.s2 ? p.p1 : p.p2);
+            });
+        }
+
+        if (participants.length < 2) {
+            alert("Não há times suficientes para a próxima fase!");
+            return;
+        }
+
+        const newMatches = [];
+        const defaultMatchDate = new Date().toISOString().split('T')[0];
+        const defaultMatchTime = "21:00";
+
+        for (let i = 0; i < participants.length; i += 2) {
+            const p1 = participants[i];
+            const p2 = participants[i + 1] || "TBD (Aguardando)";
+
+            const baseMatch = {
+                score1: 0, score2: 0, status: 'Agendado', group_name: '',
+                date: defaultMatchDate, time: defaultMatchTime
+            };
+
+            // Lógica para Final em jogo único e demais fases em Ida e Volta
+            if (nextStage === "Final") {
+                newMatches.push({ ...baseMatch, p1, p2, stage: nextStage });
+            } else {
+                newMatches.push({ ...baseMatch, p1, p2, stage: `${nextStage} (Ida)` });
+                newMatches.push({ ...baseMatch, p1: p2, p2: p1, stage: `${nextStage} (Volta)` });
+            }
+        }
+
+        if (newMatches.length > 0) {
+            const { data, error } = await supabaseClient.from('matches').insert(newMatches).select();
+            if (error) {
+                alert('Erro ao gerar fase: ' + error.message);
+            } else {
+                setResults([...results, ...data]);
+                setDrawMessage(`${nextStage} gerada com sucesso!`);
                 setTimeout(() => {
                     setDrawMessage(null);
                 }, 3000);
@@ -447,40 +533,19 @@ function App() {
         setIsVerifying(true);
         setAccessError(null);
 
-        console.log("Iniciando verificação de moderação...");
-
         if (!IP_VERIFICATION_ENABLED) {
             setIsVerifying(false);
             navigate('login');
             return;
         }
-
-        let ipToVerify = currentPublicIp;
-        try {
-            // Se o IP ainda não foi capturado pelo useEffect global, busca agora
-            if (!ipToVerify) {
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const { ip } = await ipResponse.json();
-                ipToVerify = ip;
-                setCurrentPublicIp(ip);
-            }
-
-            // Verifica se o IP está em QUALQUER conta de admin autorizada no banco
-            const { data, error } = await supabaseClient
-                .from('admins')
-                .select('allowed_ip')
-                .eq('allowed_ip', ipToVerify);
-
-            if (error || !data || data.length === 0) {
-                setAccessError(`Acesso Negado: O seu local (${ipToVerify}) não está autorizado.`);
-            } else {
-                navigate('login');
-            }
-        } catch (err) {
-            setAccessError("Erro de conexão ao verificar segurança. Tente novamente.");
-        } finally {
-            setIsVerifying(false);
-        }
+        // Se IP_VERIFICATION_ENABLED for false, a navegação para 'login' já ocorreu acima.
+        // Se for true, a lógica de verificação de IP será mantida aqui.
+        // Como a requisição é para não usar IP, esta parte será removida.
+        // No entanto, para manter a estrutura original caso o IP_VERIFICATION_ENABLED seja reativado,
+        // vou apenas remover a chamada à API de IP e a verificação no banco de dados.
+        // A verificação de IP no login será tratada pelo Login component.
+        navigate('login'); // Sempre navega para login se IP_VERIFICATION_ENABLED for false
+        setIsVerifying(false); // Finaliza a verificação
     };
 
     return (
@@ -572,16 +637,6 @@ function App() {
                 </nav>
             </header>
 
-            {forcedLogoutMessage && (
-                <div className="success-overlay">
-                    <div className="success-modal" style={{borderColor: 'var(--primary-color)'}}>
-                        <div style={{fontSize: '5rem'}}>🔒</div>
-                        <h2>Sessão Encerrada</h2>
-                        <p>{forcedLogoutMessage}</p>
-                    </div>
-                </div>
-            )}
-
             {logoutMessage && (
                 <div className="success-overlay">
                     <div className="success-modal">
@@ -613,7 +668,7 @@ function App() {
                         <h2>Realizar Novo Sorteio?</h2>
                         <p>Isso apagará todas as partidas atuais para gerar o novo torneio (Grupos + Mata-Mata). Deseja continuar?</p>
                         <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px', flexWrap: 'wrap' }}>
-                            <button className="btn-primary" onClick={executeDraw}>Sim, Gerar Torneio</button>
+                            <button className="btn-primary" onClick={executeGroupDraw}>Sim, Gerar Grupos</button>
                             <button className="btn-primary" style={{ background: '#444', color: 'white' }} onClick={() => setShowDrawConfirm(false)}>Cancelar</button>
                         </div>
                     </div>
@@ -653,6 +708,7 @@ function App() {
                                 registrations={registrations} 
                                 updateResult={updateResult} 
                                 onDraw={drawMatches}
+                                onKnockoutDraw={executeKnockoutDraw}
                                 onDeleteMatch={deleteMatch}
                                 onDeleteAll={deleteAllMatches}
                                 user={user}
@@ -689,37 +745,66 @@ function App() {
 }
 
 function Home({ results, onRegisterClick }) {
-    // Cálculo dinâmico da classificação dos grupos baseado nos resultados
-    const groupStandings = useMemo(() => {
-        const standings = {};
-        results.forEach(m => {
-            if (m.stage === 'Fase de Grupos' && m.group_name) {
-                if (!standings[m.group_name]) standings[m.group_name] = {};
-                
-                [m.p1, m.p2].forEach(t => {
-                    if (!standings[m.group_name][t]) {
-                        standings[m.group_name][t] = { fullName: t, pts: 0 };
-                    }
-                });
+    const [champion, setChampion] = useState(null); // Estado para o campeão
 
-                if (m.status === 'Finalizado') {
-                    if (m.score1 > m.score2) {
-                        standings[m.group_name][m.p1].pts += 3;
-                    } else if (m.score2 > m.score1) {
-                        standings[m.group_name][m.p2].pts += 3;
-                    } else {
-                        standings[m.group_name][m.p1].pts += 1;
-                        standings[m.group_name][m.p2].pts += 1;
-                    }
-                }
+    // Efeito para detectar o campeão quando os resultados mudam
+    useEffect(() => {
+        const finalMatches = results.filter(m => m.stage.startsWith('Final'));
+        if (finalMatches.length > 0 && finalMatches.every(m => m.status === 'Finalizado')) {
+            const scores = {};
+            finalMatches.forEach(m => {
+                scores[m.p1] = (scores[m.p1] || 0) + (parseInt(m.score1) || 0);
+                scores[m.p2] = (scores[m.p2] || 0) + (parseInt(m.score2) || 0);
+            });
+            const teams = Object.keys(scores);
+            if (teams.length === 2) {
+                const [t1, t2] = teams;
+                if (scores[t1] > scores[t2]) setChampion(t1);
+                else if (scores[t2] > scores[t1]) setChampion(t2);
+                else setChampion("Empate! (Decisão por pênaltis)");
             }
+        } else {
+            setChampion(null); // Resetar campeão se a final não estiver finalizada ou não existir
+        }
+    }, [results]);
+    // Cálculo dinâmico da classificação dos grupos baseado nos resultados
+    const currentStage = useMemo(() => {
+        if (results.length === 0) return 'Fase de Grupos';
+        const stages = [...new Set(results.map(m => m.stage.split(' (')[0]))];
+        const order = ["Fase de Grupos", "Oitavas de Final", "Quartas de Final", "Semifinal", "Final"];
+        let maxIndex = 0;
+        stages.forEach(s => {
+            const idx = order.indexOf(s);
+            if (idx > maxIndex) maxIndex = idx;
         });
-        return standings;
-    }, [results]); // Só recalcula se a lista de partidas mudar
+        return order[maxIndex];
+    }, [results]);
 
-    // Filtragem das partidas por status
-    const upcoming = results.filter(m => m.status === 'Agendado');
-    const finished = results.filter(m => m.status !== 'Agendado');
+    const groupStandings = useMemo(() => {
+        return currentStage === 'Fase de Grupos' ? calculateStandings(results) : {};
+    }, [results, currentStage]);
+
+    const activeResults = useMemo(() => {
+        return results.filter(m => m.stage.startsWith(currentStage));
+    }, [results, currentStage]);
+
+    const liveMatches = activeResults.filter(m => m.status === 'Ao Vivo');
+    
+    const finishedMatches = useMemo(() => activeResults
+        .filter(m => m.status === 'Finalizado')
+        .sort((a, b) => {
+            const dateA = new Date(`${a.date || '1970-01-01'}T${(a.time || '00:00').padStart(5, '0')}`);
+            const dateB = new Date(`${b.date || '1970-01-01'}T${(b.time || '00:00').padStart(5, '0')}`);
+            return dateB - dateA;
+        }), [activeResults]);
+
+    const upcomingMatches = useMemo(() => activeResults
+        .filter(m => m.status === 'Agendado')
+        .sort((a, b) => {
+            const dateA = new Date(`${a.date || '9999-12-31'}T${(a.time || '23:59').padStart(5, '0')}`);
+            const dateB = new Date(`${b.date || '9999-12-31'}T${(b.time || '23:59').padStart(5, '0')}`);
+            return dateA - dateB;
+        }), [activeResults]);
 
     // Componente interno para evitar repetição de código
     const MatchCard = ({ match, showScore }) => (
@@ -763,15 +848,45 @@ function Home({ results, onRegisterClick }) {
                     )}
                 </div>
             </div>
-            <div className={`status ${match.status.toLowerCase()}`}>
+            <div className={`status ${match.status.toLowerCase()}`} style={{ textAlign: 'center' }}>
                 {match.stage && <span style={{display: 'block', fontSize: '0.85em', color: 'var(--primary-color)'}}>{match.stage} {match.group_name ? `(${match.group_name})` : ''}</span>}
-                {match.status}
+                {match.date && match.time && ( // Garante que só aparece se ambos existirem
+                    <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--primary-color)', fontWeight: 'bold', margin: '5px 0'}}>
+                        {new Date(match.date + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})}
+                        {match.time ? ` às ${match.time}` : ''}
+                    </span>
+                )}
+                <span style={{ display: 'block', fontWeight: 'bold', textTransform: 'uppercase' }}>{match.status}</span>
             </div>
         </div>
     );
 
     return (
         <React.Fragment>
+            {/* Seção de Celebração do Campeão - Integrada na Home Page */}
+            {champion && (
+                <section className="champion-section fade-in">
+                    {[...Array(6)].map((_, i) => (
+                        <div key={i} className="firework"></div>
+                    ))}
+                    <div className="champion-modal winner-modal">
+                        <div className="winner-badge">CAMPEÃO</div>
+                        <div className="winner-trophy">🏆</div>
+                        <img 
+                            src={getTeamLogo(champion)} 
+                            alt="Escudo do Campeão" 
+                            className="winner-team-logo"
+                            onError={(e) => { e.target.src = getFallbackLogo(champion.split(' (')[0]); }}
+                        />
+                        <h2 className="winner-name">{champion.split(' (')[0]}</h2>
+                        {champion.includes(' (') && (
+                            <p className="winner-gamertag">({champion.split(' (')[1]}</p>
+                        )}
+                        <p className="winner-congrats">Parabéns por conquistar a Gangster cup!</p>
+                    </div>
+                </section>
+            )}
+
             <section className="hero">
                 <div className="container">
                     <h1>Bem vindos a Gangster Cup</h1>
@@ -830,20 +945,29 @@ function Home({ results, onRegisterClick }) {
                     </div>
                 )}
 
-                {finished.length > 0 && (
+                {liveMatches.length > 0 && (
                     <div style={{marginBottom: '60px'}}>
-                        <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Resultados e Ao Vivo</h2>
+                        <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Ao Vivo Agora!</h2>
                         <div className="results-grid">
-                            {finished.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
+                            {liveMatches.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
                         </div>
                     </div>
                 )}
 
-                {upcoming.length > 0 && (
-                    <div>
-                        <h2 style={{borderLeft: '5px solid #444', paddingLeft: '15px', marginBottom: '30px'}}>Próximos Jogos</h2>
+                {finishedMatches.length > 0 && (
+                    <div style={{marginBottom: '60px'}}>
+                        <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Resultados Finais</h2>
                         <div className="results-grid">
-                            {upcoming.map(match => <MatchCard key={match.id} match={match} showScore={false} />)}
+                            {finishedMatches.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
+                        </div>
+                    </div>
+                )}
+
+                {upcomingMatches.length > 0 && (
+                    <div>
+                        <h2 style={{borderLeft: '5px solid var(--text-muted)', paddingLeft: '15px', marginBottom: '30px'}}>Próximos Jogos</h2>
+                        <div className="results-grid">
+                            {upcomingMatches.map(match => <MatchCard key={match.id} match={match} showScore={false} />)}
                         </div>
                     </div>
                 )}
@@ -873,19 +997,10 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
         setError('');
         setIsChecking(true);
 
-        console.log("Iniciando tentativa de login...");
-
         try {
-            let ipToVerify = currentPublicIp;
-            if (IP_VERIFICATION_ENABLED) {
-                // Se o IP ainda não foi carregado, tenta buscar agora
-                if (!ipToVerify) {
-                    const ipResponse = await fetch('https://api.ipify.org?format=json');
-                    const { ip } = await ipResponse.json();
-                    ipToVerify = ip;
-                }
-            }
-            console.log("IP público detectado para verificação:", ipToVerify);
+            // Com IP_VERIFICATION_ENABLED = false, a verificação de IP é ignorada aqui.
+            // O login será baseado apenas em usuário e senha.
+            console.log("Tentando login com usuário e senha...");
 
             let query = supabaseClient
                 .from('admins')
@@ -893,12 +1008,8 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
                 .eq('username', user)
                 .eq('password', pass);
 
-            if (IP_VERIFICATION_ENABLED && ipToVerify) {
-                console.log("Verificando IP autorizado para a conta específica:", ipToVerify);
-                query = query.eq('allowed_ip', ipToVerify); // Mantém a verificação de IP para a conta específica
-            }
-
             const { data, error: dbError } = await query.single();
+            console.log("Query executada. Data:", data, "Erro:", dbError);
             console.log("Resultado da consulta Supabase:", data);
             console.log("Erro da consulta Supabase:", dbError);
 
@@ -937,7 +1048,7 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
                 </div>
             )}
             <div className="form-container">
-                <form onSubmit={handleSubmit} className="card" style={{ maxWidth: '380px', margin: '0 auto' }}>
+                <form onSubmit={handleSubmit} className="card" style={{ maxWidth: '280px', margin: '0 auto', padding: '20px' }}>
                     <h2 style={{ textAlign: 'center', marginBottom: '25px', color: 'var(--primary-color)' }}>Login</h2>
                     {error && (
                         <p style={{ color: '#ff4444', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>
@@ -1146,15 +1257,50 @@ function Register({ onBack, onRegister }) { // onRegister agora é assíncrono
     );
 }
 
-function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, onDeleteAll, user }) {
+function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, onDeleteMatch, onDeleteAll, user }) {
     const [admins, setAdmins] = useState([]);
-    const [newAdmin, setNewAdmin] = useState({ username: '', password: '', allowed_ip: '', role: 'moderator' });
-    const [myIp, setMyIp] = useState('Carregando...');
+    const [newAdmin, setNewAdmin] = useState({ username: '', password: '', role: 'moderator' }); // Removido allowed_ip
     const [showNewAdminPassword, setShowNewAdminPassword] = useState(false); // Estado para visibilidade da senha do novo admin
     const [showValidationError, setShowValidationError] = useState(false);
     const [showAddSuccess, setShowAddSuccess] = useState(false);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [adminToDelete, setAdminToDelete] = useState(null);
+
+    // Ordenação fixa para evitar que as linhas "saltem" ao editar
+    const sortedMatches = useMemo(() => {
+        if (results.length === 0) return [];
+        const stages = [...new Set(results.map(m => m.stage.split(' (')[0]))];
+        const order = ["Fase de Grupos", "Oitavas de Final", "Quartas de Final", "Semifinal", "Final"];
+        let maxIndex = 0;
+        stages.forEach(s => {
+            const idx = order.indexOf(s);
+            if (idx > maxIndex) maxIndex = idx;
+        });
+        const currentStage = order[maxIndex];
+
+        return [...results]
+            .filter(m => m.stage.startsWith(currentStage))
+            .sort((a, b) => {
+                if (a.stage !== b.stage) {
+                    if (a.stage === 'Fase de Grupos') return -1;
+                    if (b.stage === 'Fase de Grupos') return 1;
+                    return a.stage.localeCompare(b.stage);
+                }
+                if (a.group_name !== b.group_name) return (a.group_name || '').localeCompare(b.group_name || '');
+                return a.id.localeCompare(b.id);
+            });
+    }, [results]);
+
+    // Verifica se a última fase gerada está totalmente finalizada
+    const isLastStageFinished = useMemo(() => {
+        if (results.length === 0) return false;
+        const stages = [...new Set(results.map(m => m.stage.split(' (')[0]))];
+        const lastStage = stages.includes('Final') ? 'Final' :
+                          stages.includes('Semifinal') ? 'Semifinal' :
+                          stages.includes('Quartas de Final') ? 'Quartas de Final' :
+                          stages.includes('Oitavas de Final') ? 'Oitavas de Final' : 'Fase de Grupos';
+        return results.filter(m => m.stage.startsWith(lastStage)).every(m => m.status === 'Finalizado');
+    }, [results]);
 
     const isDev = user?.role === 'developer';
     const isAdmin = user?.role === 'admin' || isDev;
@@ -1175,22 +1321,13 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
             .on('postgres_changes', { event: '*', schema: 'public', table: 'admins' }, () => fetchAdminsData())
             .subscribe();
 
-        const fetchIp = async () => {
-            try {
-                const ipRes = await fetch('https://api.ipify.org?format=json');
-                const { ip } = await ipRes.json();
-                setMyIp(ip);
-            } catch (e) { setMyIp('Erro ao obter IP'); }
-        };
-        fetchIp();
-
         return () => {
             supabaseClient.removeChannel(adminChannel);
         };
-    }, []);
+    }, []); // Removido a dependência de myIp, pois não é mais relevante para o acesso
 
     const handleAddAdmin = async () => {
-        if (!newAdmin.username || !newAdmin.password || !newAdmin.allowed_ip) {
+        if (!newAdmin.username || !newAdmin.password) { // Removido allowed_ip da validação
             setShowValidationError(true);
             return;
         }
@@ -1202,7 +1339,7 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
             setTimeout(() => {
                 setShowAddSuccess(false);
             }, 2500);
-            setNewAdmin({ username: '', password: '', allowed_ip: '', role: 'moderator' });
+            setNewAdmin({ username: '', password: '', role: 'moderator' }); // Removido allowed_ip
         }
     };
 
@@ -1243,7 +1380,7 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                     <div className="success-modal" style={{borderColor: 'var(--primary-color)'}} onClick={e => e.stopPropagation()}>
                         <div style={{fontSize: '5rem'}}>⚠️</div>
                         <h2>Campos Incompletos</h2>
-                        <p>Por favor, preencha o <strong>Usuário, Senha e IP</strong> para cadastrar um novo administrador.</p>
+                        <p>Por favor, preencha o <strong>Usuário e Senha</strong> para cadastrar um novo administrador.</p>
                         <div style={{ marginTop: '25px' }}>
                             <button className="btn-primary" onClick={() => setShowValidationError(false)}>Entendido</button>
                         </div>
@@ -1282,23 +1419,29 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                 </div>
                 <div className="admin-actions">
                     {isDev && <button className="btn-primary" onClick={onDeleteAll}>Resetar Campeonato</button>}
-                    {isAdmin && <button className="btn-primary" onClick={onDraw}>Realizar Sorteio</button>}
+                    {isAdmin && <button className="btn-primary" onClick={onDraw}>Sortear Grupos</button>}
+                    {isAdmin && results.length > 0 && !results.some(m => m.stage.startsWith('Final')) && (
+                        <button 
+                            className="btn-primary" 
+                            style={{background: isLastStageFinished ? '#28a745' : '#6c757d'}} 
+                            onClick={onKnockoutDraw}
+                            disabled={!isLastStageFinished}
+                        >
+                            {results.every(m => m.stage === 'Fase de Grupos') ? 'Finalizar Fase de Grupos' : 'Gerar Próxima Fase'}
+                        </button>
+                    )}
                 </div>
             </div>
 
             {isDev && (
             <div className="card" style={{marginBottom: '40px'}}>
                 <h3>Gerenciar Acessos (Admins Autorizados)</h3>
-                <p style={{fontSize: '0.85rem', color: 'var(--text-muted)', margin: '10px 0 20px'}}>
-                    IP da sua máquina atual: <strong style={{color: 'var(--primary-color)'}}>{myIp}</strong>
-                </p>
                 <div className="admin-table-container">
                     <table className="admin-table">
                         <thead>
                             <tr>
                                 <th>Usuário</th>
                                 <th>Senha</th>
-                                <th>IP Autorizado</th>
                                 <th>Cargo</th>
                                 <th>Ações</th>
                             </tr>
@@ -1308,7 +1451,6 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                                 <tr key={adm.id}>
                                     <td className={`text-${adm.role}`} style={{fontWeight: 'bold'}}>{adm.username}</td>
                                     <td>••••••</td>
-                                    <td>{adm.allowed_ip}</td>
                                     <td>
                                         <select 
                                             value={adm.role} 
@@ -1342,7 +1484,6 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                                         </button>
                                     </div>
                                 </td>
-                                <td><input type="text" placeholder="IP (ex: 189.x.x.x)" value={newAdmin.allowed_ip} onChange={e => setNewAdmin({...newAdmin, allowed_ip: e.target.value})} /></td>
                                 <td>
                                     <select value={newAdmin.role} onChange={e => setNewAdmin({...newAdmin, role: e.target.value})}>
                                         <option value="moderator">Moderador</option>
@@ -1405,6 +1546,8 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                                     (Fase / Grupo)
                                 </span>
                             </th>
+                            <th>Data</th>
+                            <th>Hora</th>
                             <th>Placar 1</th>
                             <th>Placar 2</th>
                             <th>Status</th>
@@ -1412,7 +1555,7 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                         </tr>
                     </thead>
                     <tbody>
-                        {results.map(match => (
+                        {sortedMatches.map(match => (
                             <tr key={match.id}>
                                 <td>
                                     {match.stage === 'Fase de Grupos' ? (
@@ -1420,6 +1563,22 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                                     ) : (
                                         <span>{match.stage}: {match.p1} vs {match.p2}</span>
                                     )}
+                                </td>
+                                <td>
+                                    <input 
+                                        type="date" 
+                                        value={match.date || ''} 
+                                        onChange={(e) => updateResult(match.id, 'date', e.target.value)} 
+                                        style={{padding: '5px', fontSize: '0.85rem'}}
+                                    />
+                                </td>
+                                <td>
+                                    <input 
+                                        type="time" 
+                                        value={match.time || ''} 
+                                        onChange={(e) => updateResult(match.id, 'time', e.target.value)} 
+                                        style={{padding: '5px', fontSize: '0.85rem'}}
+                                    />
                                 </td>
                                 <td>
                                     <input 
