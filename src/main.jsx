@@ -191,11 +191,10 @@ function App() {
             .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => fetchData())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => fetchData())
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'admins' }, (payload) => {
-                // Verifica se o admin alterado é o usuário que está logado agora
-                const storedUser = JSON.parse(localStorage.getItem('adminUser'));
-                if (storedUser && payload.new.id === storedUser.id) {
+                // Comparamos o ID e o Cargo usando o estado atual do usuário logado
+                if (user && payload.new.id === user.id) {
                     // Se o cargo (role) mudou, forçamos o logout
-                    if (payload.new.role !== storedUser.role) {
+                    if (payload.new.role !== user.role) {
                         handleForcedLogout();
                     }
                 }
@@ -206,7 +205,7 @@ function App() {
         return () => {
             supabaseClient.removeChannel(channel);
         };
-    }, []);
+    }, [user]); // IMPORTANTE: user adicionado aqui para o Realtime capturar sua sessão
 
     // Effect to persist user data to localStorage whenever 'user' state changes
     useEffect(() => {
@@ -1131,6 +1130,12 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
         };
         fetchAdminsData();
 
+        // Mantém a lista de administradores atualizada em tempo real no painel
+        const adminChannel = supabaseClient
+            .channel('admins-sync')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'admins' }, fetchAdminsData)
+            .subscribe();
+
         const fetchIp = async () => {
             try {
                 const ipRes = await fetch('https://api.ipify.org?format=json');
@@ -1139,6 +1144,10 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
             } catch (e) { setMyIp('Erro ao obter IP'); }
         };
         fetchIp();
+
+        return () => {
+            supabaseClient.removeChannel(adminChannel);
+        };
     }, []);
 
     const handleAddAdmin = async () => {
