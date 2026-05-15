@@ -122,7 +122,20 @@ const getTeamLogo = (teamName) => {
 function App() {
     const [page, setPage] = useState('home'); // home, login, admin, register
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    const [user, setUser] = useState(null); // { role: 'admin' | 'user' }
+    // Initialize user from localStorage and set initial page if user exists
+    const [user, setUser] = useState(() => {
+        try {
+            const storedUser = localStorage.getItem('adminUser');
+            if (storedUser) {
+                const parsedUser = JSON.parse(storedUser);
+                if (parsedUser) setPage('admin'); // Set initial page to 'admin' if user is found
+                return parsedUser;
+            }
+        } catch (error) {
+            console.error("Failed to parse user from localStorage", error);
+        }
+        return null;
+    });
     const [isLogoAnimated, setIsLogoAnimated] = useState(false);
     const [registrations, setRegistrations] = useState([]);
     const [results, setResults] = useState([]);
@@ -183,6 +196,15 @@ function App() {
         };
     }, []);
 
+    // Effect to persist user data to localStorage whenever 'user' state changes
+    useEffect(() => {
+        if (user) {
+            localStorage.setItem('adminUser', JSON.stringify(user));
+        } else {
+            localStorage.removeItem('adminUser');
+        }
+    }, [user]); // Dependency array includes 'user'
+
     const handleLogin = (role, username) => {
         setUser({ role, username });
         // Se logou com sucesso, redireciona para o painel de admin
@@ -193,7 +215,7 @@ function App() {
         const adminName = user?.username || 'Administrador';
         setLogoutMessage(`Até logo, ${adminName}!`);
         setIsMenuOpen(false);
-
+        localStorage.removeItem('adminUser'); // Explicitly remove from localStorage on logout
         // Aguarda 2 segundos com a mensagem de despedida antes de resetar a sessão e navegar
         setTimeout(() => {
             setUser(null);
@@ -508,8 +530,13 @@ function App() {
                     <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
                         <li><a href="#" onClick={() => navigate('home')}>Início</a></li>
                         <li><a href="#" onClick={() => navigate('register')}>Inscreva-se</a></li>
-                        {user?.role === 'admin' && <li><a href="#" onClick={() => navigate('admin')}>Admin</a></li>}
-                        {user && <li><a href="#" onClick={() => navigate('admin')}>Admin</a></li>}
+                        {user && (
+                            <li>
+                                <a href="#" onClick={() => navigate('admin')}>
+                                    {user.role === 'developer' ? 'Dev' : user.role === 'admin' ? 'Painel Admin' : 'Moderador'}
+                                </a>
+                            </li>
+                        )}
                         {!user ? (
                             <li><button className="btn-primary" onClick={handleModerationClick} disabled={isVerifying}>
                                 {isVerifying ? 'Verificando...' : 'Moderação'}
@@ -801,6 +828,7 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
     const [error, setError] = useState('');
     const [showAnimation, setShowAnimation] = useState(false);
     const [welcomeUser, setWelcomeUser] = useState('');
+    const [welcomeRole, setWelcomeRole] = useState(''); // New state for welcome role
     const [isChecking, setIsChecking] = useState(false);
 
     const handleSubmit = async (e) => {
@@ -836,7 +864,9 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
             }
 
             setWelcomeUser(data.username);
-            setShowAnimation(true);
+            // Capitalize the first letter of the role for display
+            setWelcomeRole(data.role.charAt(0).toUpperCase() + data.role.slice(1)); 
+            setShowAnimation(true);            
             setTimeout(() => onLogin(data.role, data.username), 2000); // Passa o cargo real do DB
         } catch (err) {
             setError(err.message || 'Erro ao validar acesso.');
@@ -852,7 +882,7 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
                     <div className="success-modal">
                         <div style={{fontSize: '5rem'}}>✅</div>
                         <h2>Acesso Autorizado!</h2>
-                        <p>Bem-vindo, <strong>{welcomeUser}</strong>!</p>
+                        <p>Bem-vindo, <strong>{welcomeRole} {welcomeUser}</strong>!</p>
                     </div>
                 </div>
             )}
@@ -1059,18 +1089,24 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
     const isDev = user?.role === 'developer';
     const isAdmin = user?.role === 'admin' || isDev;
 
+    const roleDisplayName = user?.role === 'developer' ? 'Desenvolvedor' : 
+                            user?.role === 'admin' ? 'Administrador' : 'Moderador';
+
     useEffect(() => {
         const fetchAdminsData = async () => {
             const { data } = await supabaseClient.from('admins').select('*');
             if (data) setAdmins(data);
-            
+        };
+        fetchAdminsData();
+
+        const fetchIp = async () => {
             try {
                 const ipRes = await fetch('https://api.ipify.org?format=json');
                 const { ip } = await ipRes.json();
                 setMyIp(ip);
             } catch (e) { setMyIp('Erro ao obter IP'); }
         };
-        fetchAdminsData();
+        fetchIp();
     }, []);
 
     const handleAddAdmin = async () => {
@@ -1111,7 +1147,10 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
     return (
         <section className="container section">
             <div className="admin-header">
-                <h2>Painel do Administrador</h2>
+                <div>
+                    <h2>Painel do {roleDisplayName}</h2>
+                    <p style={{fontSize: '0.9rem', marginTop: '5px'}}>Logado como: <strong className={`text-${user?.role}`}>{user?.username}</strong></p>
+                </div>
                 <div className="admin-actions">
                     {isDev && <button className="btn-primary" onClick={onDeleteAll}>Resetar Campeonato</button>}
                     {isAdmin && <button className="btn-primary" onClick={onDraw}>Realizar Sorteio</button>}
@@ -1276,7 +1315,7 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
     );
 }
 
-const root = ReactDOM.createRoot(document.getElementById('root')).render(
+ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
     <App />
   </React.StrictMode>
