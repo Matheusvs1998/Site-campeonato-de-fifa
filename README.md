@@ -2,11 +2,15 @@
 
 Aplicação React para gerenciar um campeonato de EA FC 26, incluindo inscrições, sorteio de partidas e moderação.
 
+---
+
 ## Arquivos incluídos
 - `index.html` — página principal do campeonato
 - `styles.css` — estilos responsivos
 - `src/main.jsx` — Lógica principal da aplicação React, componentes e comunicação com o Supabase.
 - `.env` — Variáveis de ambiente para credenciais sensíveis (ex: chaves do Supabase).
+
+---
 
 ## Como usar
 1.  **Configuração:**
@@ -22,12 +26,14 @@ Aplicação React para gerenciar um campeonato de EA FC 26, incluindo inscriçõ
 - [Supabase](https://supabase.com/) (Banco de dados e persistência com realtime ativado)
 - CSS3 com variáveis modernas
 
-## Moderação
-Moderação controlada pelo Supabase mediante ao IP do admin
-Cargos adicionados(Developer, Admin, Moderador)
-Developer: controla tudo
-Admin: pode realizar sorteios e cuidar dos placares
-Moderator: cuida apenas dos placares
+## 🛡️ Moderação e Controle de Acesso
+O gerenciamento do campeonato possui um sistema de níveis de acesso integrado ao Supabase, garantindo que cada colaborador tenha as permissões adequadas:
+
+*   **Segurança:** Autenticação e controle administrativo (validado via IP/Auth).
+*   **Hierarquia de Cargos:**
+    *   **Developer:** Possui controle total sobre o sistema, banco de dados e configurações globais.
+    *   **Admin:** Responsável pela organização do torneio. Pode realizar o sorteio das chaves e gerenciar placares.
+    *   **Moderador:** Focado na operação das partidas, com permissão para atualizar placares em tempo real.
 
 ## Link do vercel
 [Vercel](https://site-campeonato-de-fifa-be4j.vercel.app/) (Hospedagem do site)
