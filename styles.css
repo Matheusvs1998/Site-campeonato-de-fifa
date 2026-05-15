@@ -408,6 +408,34 @@ form {
 
 .admin-table input, .admin-table select { background: #333; color: white; border: none; padding: 5px; border-radius: 4px; }
 
+.role-badge {
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: bold;
+    text-transform: uppercase;
+    display: inline-block;
+}
+
+.role-developer {
+    background-color: #28a745; /* Verde */
+    color: white;
+}
+
+.role-admin {
+    background-color: #007bff; /* Azul */
+    color: white;
+}
+
+.role-moderator {
+    background-color: #fd7e14; /* Laranja */
+    color: white;
+}
+
+.text-developer { color: #28a745 !important; }
+.text-admin { color: #007bff !important; }
+.text-moderator { color: #fd7e14 !important; }
+
 .admin-table-container {
     width: 100%;
     overflow-x: auto;

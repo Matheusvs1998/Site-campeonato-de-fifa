@@ -185,7 +185,8 @@ function App() {
 
     const handleLogin = (role, username) => {
         setUser({ role, username });
-        setPage(role === 'admin' ? 'admin' : 'home');
+        // Se logou com sucesso, redireciona para o painel de admin
+        setPage('admin');
     };
 
     const handleLogout = () => {
@@ -508,6 +509,7 @@ function App() {
                         <li><a href="#" onClick={() => navigate('home')}>Início</a></li>
                         <li><a href="#" onClick={() => navigate('register')}>Inscreva-se</a></li>
                         {user?.role === 'admin' && <li><a href="#" onClick={() => navigate('admin')}>Admin</a></li>}
+                        {user && <li><a href="#" onClick={() => navigate('admin')}>Admin</a></li>}
                         {!user ? (
                             <li><button className="btn-primary" onClick={handleModerationClick} disabled={isVerifying}>
                                 {isVerifying ? 'Verificando...' : 'Moderação'}
@@ -592,6 +594,7 @@ function App() {
                                 onDraw={drawMatches}
                                 onDeleteMatch={deleteMatch}
                                 onDeleteAll={deleteAllMatches}
+                                user={user}
                             />
                         )}
                         {page === 'register' && <Register onBack={() => setPage('home')} onRegister={addRegistration} />}
@@ -834,7 +837,7 @@ function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
 
             setWelcomeUser(data.username);
             setShowAnimation(true);
-            setTimeout(() => onLogin('admin', data.username), 2000); // Aguarda 2s para mostrar a animação
+            setTimeout(() => onLogin(data.role, data.username), 2000); // Passa o cargo real do DB
         } catch (err) {
             setError(err.message || 'Erro ao validar acesso.');
         } finally {
@@ -1048,10 +1051,13 @@ function Register({ onBack, onRegister }) { // onRegister agora é assíncrono
     );
 }
 
-function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, onDeleteAll }) {
+function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, onDeleteAll, user }) {
     const [admins, setAdmins] = useState([]);
-    const [newAdmin, setNewAdmin] = useState({ username: '', password: '', allowed_ip: '' });
+    const [newAdmin, setNewAdmin] = useState({ username: '', password: '', allowed_ip: '', role: 'moderator' });
     const [myIp, setMyIp] = useState('Carregando...');
+
+    const isDev = user?.role === 'developer';
+    const isAdmin = user?.role === 'admin' || isDev;
 
     useEffect(() => {
         const fetchAdminsData = async () => {
@@ -1076,7 +1082,22 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
         if (error) alert("Erro: " + error.message);
         else {
             setAdmins([...admins, data[0]]);
-            setNewAdmin({ username: '', password: '', allowed_ip: '' });
+            setNewAdmin({ username: '', password: '', allowed_ip: '', role: 'moderator' });
+        }
+    };
+
+    const handleUpdateRole = async (id, newRole) => {
+        if (!supabaseClient) return;
+        
+        const { error } = await supabaseClient
+            .from('admins')
+            .update({ role: newRole })
+            .eq('id', id);
+
+        if (error) {
+            alert("Erro ao atualizar cargo: " + error.message);
+        } else {
+            setAdmins(admins.map(a => a.id === id ? { ...a, role: newRole } : a));
         }
     };
 
@@ -1092,11 +1113,12 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
             <div className="admin-header">
                 <h2>Painel do Administrador</h2>
                 <div className="admin-actions">
-                    <button className="btn-primary" onClick={onDeleteAll}>Resetar Campeonato</button>
-                    <button className="btn-primary" onClick={onDraw}>Realizar Sorteio</button>
+                    {isDev && <button className="btn-primary" onClick={onDeleteAll}>Resetar Campeonato</button>}
+                    {isAdmin && <button className="btn-primary" onClick={onDraw}>Realizar Sorteio</button>}
                 </div>
             </div>
 
+            {isDev && (
             <div className="card" style={{marginBottom: '40px'}}>
                 <h3>Gerenciar Acessos (Admins Autorizados)</h3>
                 <p style={{fontSize: '0.85rem', color: 'var(--text-muted)', margin: '10px 0 20px'}}>
@@ -1109,15 +1131,26 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                                 <th>Usuário</th>
                                 <th>Senha</th>
                                 <th>IP Autorizado</th>
+                                <th>Cargo</th>
                                 <th>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
                             {admins.map(adm => (
                                 <tr key={adm.id}>
-                                    <td>{adm.username}</td>
+                                    <td className={`text-${adm.role}`} style={{fontWeight: 'bold'}}>{adm.username}</td>
                                     <td>••••••</td>
                                     <td>{adm.allowed_ip}</td>
+                                    <td>
+                                        <select 
+                                            value={adm.role} 
+                                            onChange={(e) => handleUpdateRole(adm.id, e.target.value)}
+                                        >
+                                            <option value="moderator">Moderador</option>
+                                            <option value="admin">Administrador</option>
+                                            <option value="developer">Desenvolvedor</option>
+                                        </select>
+                                    </td>
                                     <td><button className="btn-icon" onClick={() => handleDeleteAdmin(adm.id)}>🗑️</button></td>
                                 </tr>
                             ))}
@@ -1125,12 +1158,20 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                                 <td><input type="text" placeholder="User" value={newAdmin.username} onChange={e => setNewAdmin({...newAdmin, username: e.target.value})} /></td>
                                 <td><input type="password" placeholder="Senha" value={newAdmin.password} onChange={e => setNewAdmin({...newAdmin, password: e.target.value})} /></td>
                                 <td><input type="text" placeholder="IP (ex: 189.x.x.x)" value={newAdmin.allowed_ip} onChange={e => setNewAdmin({...newAdmin, allowed_ip: e.target.value})} /></td>
+                                <td>
+                                    <select value={newAdmin.role} onChange={e => setNewAdmin({...newAdmin, role: e.target.value})}>
+                                        <option value="moderator">Moderador</option>
+                                        <option value="admin">Administrador</option>
+                                        <option value="developer">Desenvolvedor</option>
+                                    </select>
+                                </td>
                                 <td><button className="btn-primary" style={{padding: '5px 15px'}} onClick={handleAddAdmin}>Add</button></td>
                             </tr>
                         </tbody>
                     </table>
                 </div>
             </div>
+            )}
 
             <div className="card" style={{marginBottom: '40px'}}>
                 <h3>Jogadores Inscritos ({registrations.length})</h3>
@@ -1220,9 +1261,11 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
                                     </select>
                                 </td>
                                 <td>
-                                    <button className="btn-icon" onClick={() => onDeleteMatch(match.id)} title="Apagar Partida">
-                                        🗑️
-                                    </button>
+                                    {isAdmin && (
+                                        <button className="btn-icon" onClick={() => onDeleteMatch(match.id)} title="Apagar Partida">
+                                            🗑️
+                                        </button>
+                                    )}
                                 </td>
                             </tr>
                         ))}
