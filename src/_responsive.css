@@ -1,0 +1,53 @@
+/* Breakpoint para telas muito pequenas (Smartphones antigos ou com zoom alto) */
+@media screen and (max-width: 380px) {
+    .container {
+        padding: 0 12px;
+    }
+
+    .hero h1 {
+        font-size: 2rem; /* Redução adicional para não quebrar linhas estranhamente */
+    }
+
+    /* Mudança Drástica: Transforma a exibição da partida em vertical */
+    .match-info {
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .team-display {
+        flex-direction: row;
+        width: 100%;
+        justify-content: center;
+        gap: 15px;
+        text-align: left;
+    }
+
+    .team-display span {
+        -webkit-line-clamp: 1; /* Força apenas uma linha para o nome */
+    }
+
+    .score {
+        width: 100%;
+        background: rgba(243, 9, 9, 0.1);
+        padding: 8px 0;
+        border-radius: 4px;
+        order: 3; /* Garante que o placar fique abaixo dos nomes se necessário */
+    }
+
+    /* Botões em largura total para facilitar o clique com o polegar */
+    .btn-large, .btn-primary {
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Breakpoint para telas muito grandes (Monitores UltraWide / 4K) */
+@media screen and (min-width: 1600px) {
+    .container {
+        max-width: 1400px; /* Expande o conteúdo em telas gigantes */
+    }
+
+    .hero h1 {
+        font-size: 5.5rem;
+    }
+}

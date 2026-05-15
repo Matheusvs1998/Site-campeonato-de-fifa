@@ -1,0 +1,8 @@
+:root {
+    --primary-color: #f30909;
+    --bg-dark: #121212;
+    --bg-card: #1e1e1e;
+    --text-light: #f4f4f4;
+    --text-muted: #aaa;
+    --transition: all 0.3s ease;
+}

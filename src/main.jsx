@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import ReactDOM from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
+import '../styles.css';
 
 // Os hooks do React são importados diretamente acima
 
@@ -513,16 +514,16 @@ function App() {
                 <>
             {showLiveAlert && (
                 <div className="live-alert-overlay">
-                    <div className="live-alert-card card">
+                    <div className="live-alert-card">
                         <button className="close-alert" onClick={() => setShowLiveAlert(false)} title="Fechar">×</button>
                         <div className="live-badge">AO VIVO</div>
                         <h3>Transmissões da Gangster Cup</h3>
                         <p>Não perca nenhum lance! Acompanhe as partidas ao vivo agora mesmo no nosso canal oficial da Twitch.</p>
                         <div style={{ marginTop: '20px' }}>
-                            <a 
-                                href="https://twitch.tv/eujohnzinrp" 
-                                target="_blank" 
-                                rel="noopener noreferrer" 
+                            <a
+                                href="https://twitch.tv/eujohnzinrp"
+                                target="_blank"
+                                rel="noopener noreferrer"
                                 className="btn-primary"
                                 style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}
                                 onClick={() => setShowLiveAlert(false)}
@@ -535,14 +536,14 @@ function App() {
                 </div>
             )}
 
-            <nav className="header-nav">
-                <div className="container nav-content">
+            <header className="header-nav">
+                <nav className="container nav-content" aria-label="Navegação Principal">
                     <div className={`logo ${isLogoAnimated ? 'logo-click-animation' : ''}`} onClick={handleLogoClick}>
                         <img src="/logo.png" alt="Logo" className="nav-logo" />
                         EA FC 26 <span>GANGSTER CUP</span>
                     </div>
-                    
-                    <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Menu">
+
+                    <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Abrir Menu">
                         <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
                         <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
                         <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
@@ -566,8 +567,8 @@ function App() {
                             <li><button className="btn-primary" onClick={handleLogout}>Sair</button></li>
                         )}
                     </ul>
-                </div>
-            </nav>
+                </nav>
+            </header>
 
             {forcedLogoutMessage && (
                 <div className="success-overlay">
@@ -637,15 +638,15 @@ function App() {
                 </div>
             )}
 
-            <main>
+            <section className="page-content">
                 {loading ? (
                     <section className="container section text-center"><h2>Carregando dados...</h2></section>
                 ) : (
-                    <React.Fragment>
+                    <div className="fade-in">
                         {page === 'home' && <Home results={results} onRegisterClick={() => setPage('register')} />}
-                        {page === 'login' && <Login onLogin={handleLogin} />}
+                        {page === 'login' && <Login onLogin={handleLogin} currentPublicIp={currentPublicIp} />}
                         {page === 'admin' && (
-                            <Admin 
+                            <Admin
                                 results={results} 
                                 registrations={registrations} 
                                 updateResult={updateResult} 
@@ -656,12 +657,13 @@ function App() {
                             />
                         )}
                         {page === 'register' && <Register onBack={() => setPage('home')} onRegister={addRegistration} />}
-                    </React.Fragment>
+                    </div>
                 )}
-            </main>
+            </section>
                 </>
             )}
-            <footer className="container">
+            <footer className="footer-nav">
+                <div className="container">
                 <div className="social-links">
                     <a href="https://discord.gg/neQt9DdJVT" className="discord" target="_blank" rel="noopener noreferrer">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
@@ -677,7 +679,8 @@ function App() {
                         Assistir ao Vivo
                     </a>
                 </div>
-                <p>&copy; 2026 Campeonato EA FC 26 Gangster Cup. Desenvolvido por: Matheus Vasconcelos.</p>
+                <p style={{ marginTop: '20px' }}>&copy; 2026 Gangster Cup. </p>
+                </div>
             </footer>
         </div>
     );
@@ -1133,7 +1136,7 @@ function Admin({ results, registrations, updateResult, onDraw, onDeleteMatch, on
         // Mantém a lista de administradores atualizada em tempo real no painel
         const adminChannel = supabaseClient
             .channel('admins-sync')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'admins' }, fetchAdminsData)
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'admins' }, () => fetchAdminsData())
             .subscribe();
 
         const fetchIp = async () => {
