@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client';
 import { createClient } from '@supabase/supabase-js';
 import '../styles.css';
 
-const MAINTENANCE_MODE = false; // Mude para true para ATIVAR; false para DESATIVAR
+const MAINTENANCE_MODE = true; // Mude para true para ATIVAR; false para DESATIVAR
 const IP_VERIFICATION_ENABLED = true; // Mude para false para DESATIVAR a verificação de IP para moderação
 // --- Configuração Supabase ---
 // As credenciais do Supabase agora são carregadas de variáveis de ambiente (.env)
