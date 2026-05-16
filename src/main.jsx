@@ -1,175 +1,169 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, Fragment } from 'react';
 import ReactDOM from 'react-dom/client';
-import { createClient } from '@supabase/supabase-js';
+import { supabaseClient } from './supabase.js';
+import { calculateStandings } from './helpers.js';
+import Home from './components/Home';
+import Login from './components/Login';
+import SignUp from './components/SignUp';
+import VerifyEmail from './components/VerifyEmail';
+import Admin from './components/Admin';
+import PlayerDashboard from './components/PlayerDashboard';
 import '../styles.css';
 
 const MAINTENANCE_MODE = false; // Mude para true para ATIVAR; false para DESATIVAR
-const IP_VERIFICATION_ENABLED = true; // Mude para false para DESATIVAR a verificação de IP para moderação
-// --- Configuração Supabase ---
-// As credenciais do Supabase agora são carregadas de variáveis de ambiente (.env)
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL;
-const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_ANON_KEY;
-
-let supabaseClient = null;
-try {
-    if (SUPABASE_URL && SUPABASE_ANON_KEY) { // Verifica se as variáveis foram carregadas
-        supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    } else {
-        throw new Error("Variáveis de ambiente do Supabase não configuradas. Verifique seu arquivo .env");
-    }
-} catch (e) {
-    console.error("Supabase não configurado corretamente:", e.message);
-}
-// --- Fim Configuração Supabase ---
-
-// Função para gerar fallback caso a logo oficial falhe
-const getFallbackLogo = (name) => `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f30909&color=fff&bold=true&format=svg`;
-
-// Função auxiliar para buscar o escudo do time
-const getTeamLogo = (teamName) => {
-    // Extrai apenas o nome do time caso venha com o ID do jogador (ex: "Real Madrid (Player123)")
-    const nameOnly = teamName.split(' (')[0];
-    // Voltando para a versão Wikipedia com Proxy (weserv.nl) para garantir estabilidade
-    const proxy = 'https://images.weserv.nl/?url=';
-    const logos = {
-        // Espanha
-        'Real Madrid': 'upload.wikimedia.org/wikipedia/en/5/56/Real_Madrid_CF.svg',
-        'Barcelona': 'upload.wikimedia.org/wikipedia/en/4/47/FC_Barcelona.svg',
-        'Atlético de Madrid': 'upload.wikimedia.org/wikipedia/en/f/f4/Atletico_Madrid_2017_logo.svg',
-        'Sevilla': 'upload.wikimedia.org/wikipedia/en/3/3b/Sevilla_FC_logo.svg',
-        'Real Sociedad': 'upload.wikimedia.org/wikipedia/en/f/f1/Real_Sociedad_logo.svg',
-        'Villarreal': 'upload.wikimedia.org/wikipedia/en/7/70/Villarreal_CF_logo.svg',
-        'Athletic Bilbao': 'upload.wikimedia.org/wikipedia/en/9/98/Athletic_Club_logo.svg',
-        'Real Betis': 'upload.wikimedia.org/wikipedia/en/1/13/Real_Betis_logo.svg',
-        'Valencia': 'upload.wikimedia.org/wikipedia/en/c/ce/Valencia_Cf_logo.svg',
-        // Inglaterra
-        'Manchester City': 'upload.wikimedia.org/wikipedia/en/e/eb/Manchester_City_FC_badge.svg',
-        'Arsenal': 'upload.wikimedia.org/wikipedia/en/5/53/Arsenal_FC.svg',
-        'Liverpool': 'upload.wikimedia.org/wikipedia/en/0/0c/Liverpool_FC.svg',
-        'Manchester United': 'upload.wikimedia.org/wikipedia/en/7/7a/Manchester_United_FC_crest.svg',
-        'Chelsea': 'upload.wikimedia.org/wikipedia/en/c/cc/Chelsea_FC.svg',
-        'Tottenham': 'upload.wikimedia.org/wikipedia/en/b/b4/Tottenham_Hotspur.svg',
-        'Newcastle United': 'upload.wikimedia.org/wikipedia/en/5/56/Newcastle_United_Logo.svg',
-        'Aston Villa': 'upload.wikimedia.org/wikipedia/en/f/f9/Aston_Villa_FC_crest_%282016%29.svg',
-        'West Ham': 'upload.wikimedia.org/wikipedia/en/c/c2/West_Ham_United_FC_logo.svg',
-        'Everton': 'upload.wikimedia.org/wikipedia/en/7/7c/Everton_FC_logo.svg',
-        // França
-        'PSG': 'upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg',
-        'Marseille': 'upload.wikimedia.org/wikipedia/en/d/d8/Olympic_Marseille_logo.svg',
-        'Lyon': 'upload.wikimedia.org/wikipedia/en/c/c6/Olympique_Lyonnais_crest.svg',
-        'Monaco': 'upload.wikimedia.org/wikipedia/en/f/f3/AS_Monaco_FC.svg',
-        'Lille': 'upload.wikimedia.org/wikipedia/en/3/3f/Lille_OSC_logo.svg',
-        'Nice': 'upload.wikimedia.org/wikipedia/en/2/2e/OGC_Nice_logo.svg',
-        'Rennes': 'upload.wikimedia.org/wikipedia/en/9/9e/Stade_Rennais_FC.svg',
-        // Alemanha
-        'Bayern de Munique': 'upload.wikimedia.org/wikipedia/commons/1/1b/FC_Bayern_M%C3%BCnchen_logo_%282017%29.svg',
-        'Borussia Dortmund': 'upload.wikimedia.org/wikipedia/commons/6/67/Borussia_Dortmund_logo.svg',
-        'Bayer Leverkusen': 'upload.wikimedia.org/wikipedia/en/5/59/Bayer_04_Leverkusen_logo.svg',
-        'RB Leipzig': 'upload.wikimedia.org/wikipedia/en/0/04/RB_Leipzig_2014_logo.svg',
-        'Eintracht Frankfurt': 'upload.wikimedia.org/wikipedia/commons/0/04/Eintracht_Frankfurt_Logo.svg',
-        'Wolfsburg': 'upload.wikimedia.org/wikipedia/commons/f/f3/Logo_VfL_Wolfsburg.svg',
-        'Borussia Mönchengladbach': 'upload.wikimedia.org/wikipedia/commons/8/81/Borussia_M%C3%B6nchengladbach_logo.svg',
-        // Itália
-        'Inter de Milão': 'upload.wikimedia.org/wikipedia/commons/0/05/FC_Internazionale_Milano_2021.svg',
-        'AC Milan': 'upload.wikimedia.org/wikipedia/commons/d/d1/ACM-logo.svg',
-        'Juventus': 'upload.wikimedia.org/wikipedia/commons/b/bc/Juventus_FC_2017_icon_%28black%29.svg',
-        'Napoli': 'upload.wikimedia.org/wikipedia/commons/0/0d/S.S.C._Napoli_logo.svg',
-        'AS Roma': 'upload.wikimedia.org/wikipedia/en/f/f3/AS_Roma_logo_%282017%29.svg',
-        'Lazio': 'upload.wikimedia.org/wikipedia/en/c/ce/S.S._Lazio_badge.svg',
-        'Atalanta': 'upload.wikimedia.org/wikipedia/en/6/66/Atalanta_BC.svg',
-        'Fiorentina': 'upload.wikimedia.org/wikipedia/commons/7/79/ACF_Fiorentina_2022_logo.svg',
-        // Brasil
-        'Flamengo': 'upload.wikimedia.org/wikipedia/pt/2/2e/Flamengo_brazilian_poly_new.svg',
-        'Palmeiras': 'upload.wikimedia.org/wikipedia/pt/1/10/Palmeiras_logo.svg',
-        'São Paulo': 'upload.wikimedia.org/wikipedia/pt/6/6f/Logo_S%C3%A3o_Paulo_FC.svg',
-        'Corinthians': 'upload.wikimedia.org/wikipedia/pt/b/b4/Corinthians_simbolo.png',
-        'Grêmio': 'upload.wikimedia.org/wikipedia/pt/d/d8/Gr%C3%AAmio_FBPA.svg',
-        'Internacional': 'upload.wikimedia.org/wikipedia/commons/f/f1/Escudo_do_Sport_Club_Internacional.svg',
-        'Atlético-MG': 'upload.wikimedia.org/wikipedia/en/5/5f/Clube_Atl%C3%A9tico_Mineiro_logo.svg',
-        'Fluminense': 'upload.wikimedia.org/wikipedia/en/9/9e/Fluminense_FC_escudo.svg',
-        'Botafogo': 'upload.wikimedia.org/wikipedia/en/c/cb/Botafogo_de_Futebol_e_Regatas_logo.svg',
-        'Cruzeiro': 'upload.wikimedia.org/wikipedia/en/3/3c/Cruzeiro_Esporte_Clube_%28logo%29.svg',
-        'Vasco da Gama': 'upload.wikimedia.org/wikipedia/en/a/ac/CRVascoDaGama.svg',
-        'Bahia': 'upload.wikimedia.org/wikipedia/pt/3/39/Esporte_Clube_Bahia_logo.svg',
-        'Fortaleza': 'upload.wikimedia.org/wikipedia/pt/4/41/Fortaleza_Esporte_Clube_logo.svg',
-        'Athletico-PR': 'upload.wikimedia.org/wikipedia/pt/c/c7/Club_Athletico_Paranaense_2019.svg',
-        // Portugal
-        'Benfica': 'upload.wikimedia.org/wikipedia/en/a/a2/SL_Benfica_logo.svg',
-        'FC Porto': 'upload.wikimedia.org/wikipedia/en/f/f1/FC_Porto_logo.svg',
-        'Sporting CP': 'upload.wikimedia.org/wikipedia/en/3/3e/Sporting_Clube_de_Portugal.svg',
-        // Outros
-        'Al-Nassr': 'upload.wikimedia.org/wikipedia/en/2/2b/Al_Nassr_Logo.svg',
-        'Al-Hilal': 'upload.wikimedia.org/wikipedia/en/f/fa/Al-Hilal_Logo.svg',
-        'Al-Ittihad': 'upload.wikimedia.org/wikipedia/en/5/5b/Al-Ittihad_FC_logo.svg',
-        'Al-Ahli': 'upload.wikimedia.org/wikipedia/en/b/b0/Al-Ahli_Saudi_FC_logo.svg',
-        'Inter Miami': 'upload.wikimedia.org/wikipedia/en/5/5c/Inter_Miami_CF_logo.svg',
-        'LA Galaxy': 'upload.wikimedia.org/wikipedia/en/1/1b/LA_Galaxy_logo.svg',
-        'Ajax': 'upload.wikimedia.org/wikipedia/en/7/79/Ajax_Amsterdam.svg',
-        'PSV Eindhoven': 'upload.wikimedia.org/wikipedia/en/0/05/PSV_Eindhoven.svg',
-        'Feyenoord': 'upload.wikimedia.org/wikipedia/en/e/e9/Feyenoord_logo.svg',
-        'Celtic': 'upload.wikimedia.org/wikipedia/en/3/35/Celtic_FC_crest.svg',
-        'Rangers': 'upload.wikimedia.org/wikipedia/en/4/43/Rangers_FC.svg',
-        'Boca Juniors': 'upload.wikimedia.org/wikipedia/en/d/d1/Boca_Juniors_logo.svg',
-        'River Plate': 'upload.wikimedia.org/wikipedia/en/a/ac/River_Plate_crest.svg'
-    };
-
-    if (logos[nameOnly]) return `${proxy}${logos[nameOnly]}`;
-    return getFallbackLogo(nameOnly);
-};
-
-// Função auxiliar para calcular classificação (reutilizada no App e no Home)
-const calculateStandings = (matches) => {
-    const standings = {};
-    matches.forEach(m => {
-        if (m.stage === 'Fase de Grupos' && m.group_name) {
-            if (!standings[m.group_name]) standings[m.group_name] = {};
-            
-            [m.p1, m.p2].forEach(t => {
-                if (!standings[m.group_name][t]) {
-                    standings[m.group_name][t] = { fullName: t, pts: 0, goalsFor: 0, goalsAgainst: 0 };
-                }
-            });
-
-            if (m.status === 'Finalizado') {
-                const s1 = parseInt(m.score1) || 0;
-                const s2 = parseInt(m.score2) || 0;
-                
-                standings[m.group_name][m.p1].goalsFor += s1;
-                standings[m.group_name][m.p1].goalsAgainst += s2;
-                standings[m.group_name][m.p2].goalsFor += s2;
-                standings[m.group_name][m.p2].goalsAgainst += s1;
-
-                if (s1 > s2) {
-                    standings[m.group_name][m.p1].pts += 3;
-                } else if (s2 > s1) {
-                    standings[m.group_name][m.p2].pts += 3;
-                } else {
-                    standings[m.group_name][m.p1].pts += 1;
-                    standings[m.group_name][m.p2].pts += 1;
-                }
-            }
-        }
-    });
-    return standings;
-};
 
 function App() {
-    const [page, setPage] = useState('home'); // home, login, admin, register
+    const [page, setPage] = useState('home'); // home, login, signup, verify, admin, register
     const [isMenuOpen, setIsMenuOpen] = useState(false);
-    // Initialize user from localStorage and set initial page if user exists
-    const [user, setUser] = useState(() => {
+    const [user, setUser] = useState(null);
+    const [session, setSession] = useState(null);
+    const [userRegistration, setUserRegistration] = useState(null);
+    const [showWelcome, setShowWelcome] = useState(false);
+    const [hasBeenWelcomed, setHasBeenWelcomed] = useState(() => {
+        return sessionStorage.getItem('gangster_cup_welcomed') === 'true';
+    });
+    const [tempEmail, setTempEmail] = useState(''); // Armazena email para verificação
+
+    // Monitora o estado da sessão do Supabase
+    useEffect(() => {
+        if (!supabaseClient) return;
+        
+        const checkSession = async () => {
+            const { data: { session: initialSession } } = await supabaseClient.auth.getSession();
+            setSession(initialSession);
+            if (initialSession?.user) await fetchUserProfile(initialSession.user);
+        };
+        checkSession();
+
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, currentSession) => {
+            setSession(currentSession);
+            if (currentSession?.user) {
+                // REMOVIDO AWAIT: Deixa o perfil sincronizar em background para não travar a UI
+                fetchUserProfile(currentSession.user);
+                
+                // Verifica no sessionStorage para persistir mesmo com refresh da página
+                const alreadyWelcomed = sessionStorage.getItem('gangster_cup_welcomed') === 'true';
+                if (event === 'SIGNED_IN' && !alreadyWelcomed) {
+                    sessionStorage.setItem('gangster_cup_welcomed', 'true');
+                    setShowWelcome(true);
+                    setHasBeenWelcomed(true);
+                    setTimeout(() => setShowWelcome(false), 2500);
+                }
+            } else {
+                setUser(null);
+                setUserRegistration(null);
+                sessionStorage.removeItem('gangster_cup_welcomed');
+                setHasBeenWelcomed(false);
+            }
+        });
+
+        return () => subscription?.unsubscribe();
+    }, []);
+
+    // Effect para gerenciar a navegação automática baseada no estado da sessão
+    useEffect(() => {
+        // Removido 'home' da lista: permite que o usuário logado acesse a tela inicial sem logoff
+        if (session && (page === 'signup' || page === 'verify' || page === 'login')) {
+            setPage('admin');
+        } else if (!session && page === 'admin') { 
+            setPage('home');
+        }
+    }, [session, page]);
+
+    const fetchUserProfile = async (authUser, retryCount = 0) => {
+        if (!supabaseClient || !authUser) return;
+
         try {
-            const storedUser = localStorage.getItem('adminUser');
-            if (storedUser) {
-                const parsedUser = JSON.parse(storedUser);
-                if (parsedUser) setPage('admin'); // Set initial page to 'admin' if user is found
-                return parsedUser;
+            // 0. Tenta obter dados frescos, mas usa o authUser atual como base para não travar a UI
+            const { data: userData } = await supabaseClient.auth.getUser();
+            const activeUser = userData?.user || authUser;
+
+            const metadata = activeUser.user_metadata;
+            const userId = activeUser.id;
+
+            // 1. Define o usuário imediatamente com dados locais para destravar a tela "Quase lá"
+            const username = String(metadata?.playername || metadata?.playerName || activeUser.email?.split('@')[0] || 'Jogador').trim();
+
+            const currentLocalProfile = {
+                id: userId,
+                username: username,
+                role: 'player',
+                is_banned: false
+            };
+            
+            // CRÍTICO: Define o usuário agora para garantir que a tela de carregamento suma
+            setUser(currentLocalProfile);
+
+            // 2. Se não temos metadados de time (comum logo após confirmação), tenta re-sincronizar uma vez
+            if (!metadata?.teamname && !metadata?.teamName && retryCount < 2 && page !== 'login') {
+                await new Promise(r => setTimeout(r, 1500));
+                return fetchUserProfile(activeUser, retryCount + 1);
+            }
+
+            // 3. Tenta buscar o perfil real no banco para atualizar o estado (caso seja Admin/Dev)
+            const { data: dbProfile, error: profileError } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .maybeSingle();
+
+            // 4. Se não existe no banco, tenta salvar o perfil atual
+            if (!dbProfile && !profileError) {
+                const { data: created } = await supabaseClient
+                    .from('profiles')
+                    .upsert([currentLocalProfile])
+                    .select()
+                    .maybeSingle();
+
+                if (created) setUser(created);
+            } else if (dbProfile) {
+                setUser(dbProfile);
+            }
+
+            // 5. Sincroniza a inscrição do campeonato
+            const { data: reg } = await supabaseClient
+                .from('registrations')
+                .select('*')
+                .or(`playername.eq."${username}",playername.eq."${authUser.email}"`) // Busca flexível
+                .maybeSingle();
+
+            if (reg) {
+                setUserRegistration(reg);
+            } else if (metadata?.teamname || metadata?.teamName) {
+                // Se não há registro no banco, mas temos os dados no Auth, forçamos a criação
+                console.log("Criando registro do campeonato para:", username);
+                
+                const payload = {
+                    playername: username,
+                    teamname: metadata.teamname || metadata.teamName,
+                    platform: metadata.platform || 'PS5',
+                    gamertag: metadata.gamertag || 'N/A'
+                };
+
+                const { data: newReg, error: regError } = await supabaseClient
+                    .from('registrations')
+                    .upsert([payload], { onConflict: 'playername' })
+                    .select()
+                    .maybeSingle();
+
+                if (newReg) {
+                    setUserRegistration(newReg);
+                }
+                if (regError) {
+                    console.error("Erro ao persistir inscrição:", regError.message);
+                }
+            }
+
+            if (dbProfile?.is_banned) {
+                alert('Sua conta está banida.');
+                handleLogout();
+                return;
             }
         } catch (error) {
-            console.error("Failed to parse user from localStorage", error);
+            console.error("Erro no fetchUserProfile:", error);
         }
-        return null;
-    });
+    };
+
     const [isLogoAnimated, setIsLogoAnimated] = useState(false);
     const [registrations, setRegistrations] = useState([]);
     const [results, setResults] = useState([]);
@@ -184,6 +178,55 @@ function App() {
     const [drawMessage, setDrawMessage] = useState(null); // Estado para mensagem de sorteio realizado
     const [showDrawConfirm, setShowDrawConfirm] = useState(false); // Estado para o modal de confirmação do sorteio
 
+    // Ref para rastrear o usuário atual dentro de callbacks de eventos (Realtime)
+    const userRef = useRef(user);
+    useEffect(() => {
+        userRef.current = user;
+    }, [user]);
+
+    const handleLogout = useCallback(async () => {
+        try {
+            setLogoutMessage(`Até logo!`);
+            setIsMenuOpen(false);
+            sessionStorage.removeItem('gangster_cup_welcomed');
+            setHasBeenWelcomed(false);
+            setUserRegistration(null);
+            if (supabaseClient) await supabaseClient.auth.signOut();
+            setTimeout(() => {
+                setPage('home');
+                setLogoutMessage(null);
+            }, 2000);
+        } catch (err) {
+            setPage('home');
+        }
+    }, [supabaseClient]);
+
+    // Função de busca de dados movida para o escopo do componente para ser visível em todo o App
+    const fetchData = useCallback(async (initial = false) => {
+        if (!supabaseClient) return setLoading(false);
+        if (initial) setLoading(true);
+
+        // Segurança: Força o fim do carregamento após 5 segundos para não travar o site
+        const safetyTimeout = setTimeout(() => {
+            if (initial) setLoading(false);
+        }, 5000);
+
+        try {
+            const [regRes, matchRes] = await Promise.all([
+                supabaseClient.from('registrations').select('*'),
+                supabaseClient.from('matches').select('*')
+            ]);
+            
+            setRegistrations(regRes.data || []);
+            setResults(matchRes.data || []);
+        } catch (err) {
+            console.error('Falha crítica ao buscar dados:', err);
+        } finally {
+            clearTimeout(safetyTimeout);
+            if (initial) setLoading(false);
+        }
+    }, [supabaseClient]);
+
     // Efeito para buscar o IP público uma vez ao carregar o componente
     useEffect(() => {
         const fetchPublicIp = async () => {
@@ -196,39 +239,25 @@ function App() {
         fetchPublicIp();
     }, []); // Array de dependências vazio para rodar apenas uma vez
 
+    // 1. Carregamento inicial de dados - Executado apenas UMA vez ao montar o componente
     useEffect(() => {
-        const fetchData = async (initial = false) => {
-            if (!supabaseClient) {
-                setLoading(false);
-                return;
-            }
-            if (initial) setLoading(true);
-
-            const { data: fetchedRegistrations, error: regError } = await supabaseClient.from('registrations').select('*');
-            const { data: fetchedMatches, error: matchError } = await supabaseClient.from('matches').select('*');
-            
-            if (regError) console.error('Erro ao buscar inscrições:', regError);
-            if (matchError) console.error('Erro ao buscar partidas:', matchError);
-            
-            setRegistrations(fetchedRegistrations || []);
-            setResults(fetchedMatches || []);
-            
-            if (initial) setLoading(false);
-        };
-
         fetchData(true);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []); 
 
-        // Configuração de atualizações em tempo real
+    // 2. Inscrição em canais Realtime e monitoramento de mudanças de cargo
+    useEffect(() => {
+        if (!supabaseClient) return;
+
         const channel = supabaseClient
             .channel('tournament-updates')
             .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => fetchData())
             .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => fetchData())
-            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'admins' }, (payload) => {
-                // Comparamos o ID e o Cargo usando o estado atual do usuário logado
-                if (user && payload.new.id === user.id) {
-                    // Se o cargo (role) mudou, forçamos o logout
-                    if (payload.new.role !== user.role) {
-                        handleForcedLogout();
+            .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
+                if (userRef.current && payload.new.id === userRef.current.id) {
+                    if (payload.new.role !== userRef.current.role) {
+                        alert("Seu nível de acesso foi alterado. Por segurança, você será deslogado.");
+                        handleLogout();
                     }
                 }
                 fetchData();
@@ -238,42 +267,12 @@ function App() {
         return () => {
             supabaseClient.removeChannel(channel);
         };
-    }, [user]);
+    }, [fetchData, handleLogout]);
 
-    // Effect to persist user data to localStorage whenever 'user' state changes
+    // 3. Atualiza os dados silenciosamente quando o usuário logar (sem mostrar tela de carregamento)
     useEffect(() => {
-        if (user) {
-            localStorage.setItem('adminUser', JSON.stringify(user));
-        } else {
-            localStorage.removeItem('adminUser');
-        }
-    }, [user]); // Dependency array includes 'user'
-
-    const handleLogin = (userData) => {
-        setUser(userData);
-        // Se logou com sucesso, redireciona para o painel de admin
-        setPage('admin');
-    };
-
-    const handleLogout = () => {
-        const adminName = user?.username || 'Administrador';
-        setLogoutMessage(`Até logo, ${adminName}!`);
-        setIsMenuOpen(false);
-        localStorage.removeItem('adminUser'); // Explicitly remove from localStorage on logout
-        // Aguarda 2 segundos com a mensagem de despedida antes de resetar a sessão e navegar
-        setTimeout(() => {
-            setUser(null);
-            setPage('home');
-            setLogoutMessage(null);
-        }, 2000);
-    };
-
-    const handleForcedLogout = () => {
-        localStorage.removeItem('adminUser');
-        setUser(null);
-        setPage('home');
-        alert("Seu cargo foi alterado por um administrador. Por segurança, realize o login novamente.");
-    };
+        if (user) fetchData(false);
+    }, [user, fetchData]);
 
     const updateResult = async (id, field, value) => {
         if (!supabaseClient) return;
@@ -290,13 +289,21 @@ function App() {
             setResults(results.map(r => r.id === id ? data[0] : r));
         }
     };
-
     const addRegistration = async (data) => {
         if (!supabaseClient) return false;
         console.log('Tentando registrar:', data);
+        
+        // Limpa os dados para evitar conflitos de colunas inexistentes vindas do spread (...)
+        const payload = {
+            playername: (data.playername || data.playerName || '').trim(),
+            teamname: data.teamname || data.teamName,
+            platform: data.platform,
+            gamertag: (data.gamertag || '').trim()
+        };
+
         const { data: newRegistration, error } = await supabaseClient
             .from('registrations')
-            .insert([data])
+            .insert([payload])
             .select();
 
         if (error) {
@@ -308,7 +315,6 @@ function App() {
         }
         return false; // Indica falha
     };
-
     const drawMatches = () => {
         if (registrations.length < 2) {
             alert("É necessário pelo menos 2 inscritos para realizar o sorteio!");
@@ -317,7 +323,6 @@ function App() {
         if (!supabaseClient) return;
         setShowDrawConfirm(true);
     };
-
     // Sorteio inicial apenas da Fase de Grupos
     const executeGroupDraw = async () => {
         setShowDrawConfirm(false);
@@ -354,8 +359,8 @@ function App() {
             for (let j = 0; j < groupTeams.length; j++) {
                 for (let k = j + 1; k < groupTeams.length; k++) {
                     newMatches.push({
-                        p1: `${groupTeams[j].teamName} (${groupTeams[j].gamertag} - ${groupTeams[j].platform.toLowerCase()})`,
-                        p2: `${groupTeams[k].teamName} (${groupTeams[k].gamertag} - ${groupTeams[k].platform.toLowerCase()})`,
+                        p1: `${groupTeams[j].teamname} (${groupTeams[j].gamertag} - ${groupTeams[j].platform.toLowerCase()})`,
+                        p2: `${groupTeams[k].teamname} (${groupTeams[k].gamertag} - ${groupTeams[k].platform.toLowerCase()})`,
                         score1: 0,
                         score2: 0,
                         status: 'Agendado',
@@ -384,7 +389,6 @@ function App() {
             }
         }
     };
-
     // Gera a próxima fase do mata-mata baseado nos resultados anteriores
     const executeKnockoutDraw = async () => {
         if (!supabaseClient) return;
@@ -483,7 +487,6 @@ function App() {
             alert("Não foi possível gerar partidas suficientes para o sorteio.");
         }
     };
-
     const deleteMatch = async (id) => {
         if (!supabaseClient || !window.confirm("Deseja realmente apagar esta partida?")) return;
         
@@ -495,12 +498,10 @@ function App() {
             setResults(results.filter(match => match.id !== id));
         }
     };
-
     const deleteAllMatches = () => {
         if (!supabaseClient) return;
         setShowResetConfirm(true);
     };
-
     const executeReset = async () => {
         setShowResetConfirm(false);
         const { error } = await supabaseClient.from('matches').delete().not('id', 'is', null);
@@ -516,36 +517,14 @@ function App() {
             }, 3000); // Fecha automaticamente após 3 segundos
         }
     };
-
     const navigate = (p) => {
         setPage(p);
         setIsMenuOpen(false);
     };
-
     const handleLogoClick = () => {
         setIsLogoAnimated(true);
         setTimeout(() => setIsLogoAnimated(false), 500); // Remove a classe após a animação terminar
         navigate('home');
-    };
-
-    const handleModerationClick = async () => {
-        if (isVerifying) return;
-        setIsVerifying(true);
-        setAccessError(null);
-
-        if (!IP_VERIFICATION_ENABLED) {
-            setIsVerifying(false);
-            navigate('login');
-            return;
-        }
-        // Se IP_VERIFICATION_ENABLED for false, a navegação para 'login' já ocorreu acima.
-        // Se for true, a lógica de verificação de IP será mantida aqui.
-        // Como a requisição é para não usar IP, esta parte será removida.
-        // No entanto, para manter a estrutura original caso o IP_VERIFICATION_ENABLED seja reativado,
-        // vou apenas remover a chamada à API de IP e a verificação no banco de dados.
-        // A verificação de IP no login será tratada pelo Login component.
-        navigate('login'); // Sempre navega para login se IP_VERIFICATION_ENABLED for false
-        setIsVerifying(false); // Finaliza a verificação
     };
 
     return (
@@ -572,8 +551,8 @@ function App() {
                             Estamos trabalhando em melhorias para a <strong>Gangster Cup</strong>. 
                             Voltaremos em breve com o sorteio e as tabelas atualizadas!
                         </p>
-                        <button className="btn-primary" onClick={handleModerationClick} disabled={isVerifying}>
-                            {isVerifying ? 'Verificando...' : 'Acesso Admin'}
+                        <button className="btn-primary" onClick={() => navigate('login')}>
+                            Acesso Admin
                         </button>
                     </div>
                 </div>
@@ -618,18 +597,18 @@ function App() {
 
                     <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
                         <li><a href="#" onClick={() => navigate('home')}>Início</a></li>
-                        <li><a href="#" onClick={() => navigate('register')}>Inscreva-se</a></li>
-                        {user && (
+                        {user && !user.is_banned && (
                             <li>
                                 <a href="#" onClick={() => navigate('admin')}>
-                                    {user.role === 'developer' ? 'Dev' : user.role === 'admin' ? 'Painel Admin' : 'Moderador'}
+                                    {user.role === 'developer' ? 'Dev' : user.role === 'admin' ? 'Painel Admin' : 'Painel do Usuário'}
                                 </a>
                             </li>
                         )}
                         {!user ? (
-                            <li><button className="btn-primary" onClick={handleModerationClick} disabled={isVerifying}>
-                                {isVerifying ? 'Verificando...' : 'Moderação'}
-                            </button></li>
+                            <>
+                                <li><a href="#" onClick={() => navigate('signup')}>Inscreva-se </a></li>
+                                <li><button className="btn-primary" onClick={() => navigate('login')}>Entrar</button></li>
+                            </>
                         ) : (
                             <li><button className="btn-primary" onClick={handleLogout}>Sair</button></li>
                         )}
@@ -700,21 +679,72 @@ function App() {
                     <section className="container section text-center"><h2>Carregando dados...</h2></section>
                 ) : (
                     <div className="fade-in">
-                        {page === 'home' && <Home results={results} onRegisterClick={() => setPage('register')} />}
-                        {page === 'login' && <Login onLogin={handleLogin} currentPublicIp={currentPublicIp} />}
-                        {page === 'admin' && (
-                            <Admin
-                                results={results} 
-                                registrations={registrations} 
-                                updateResult={updateResult} 
-                                onDraw={drawMatches}
-                                onKnockoutDraw={executeKnockoutDraw}
-                                onDeleteMatch={deleteMatch}
-                                onDeleteAll={deleteAllMatches}
-                                user={user}
+                        {page === 'home' && <Home results={results} onRegisterClick={() => setPage('signup')} />}
+                        {page === 'login' && <Login />}
+                        {page === 'signup' && (
+                            <SignUp 
+                                onStepVerify={(email) => { setTempEmail(email); setPage('verify'); }} 
                             />
                         )}
-                        {page === 'register' && <Register onBack={() => setPage('home')} onRegister={addRegistration} />}
+                        {page === 'verify' && tempEmail && (
+                            <VerifyEmail email={tempEmail} onVerified={() => setPage('admin')} />
+                        )}
+                        {page === 'admin' && (
+                            (!user || showWelcome) ? (
+                                <section className="container section text-center">
+                                    <div className="success-overlay">
+                                        <div className="success-modal">
+                                            <div style={{fontSize: '5rem'}}>👋</div>
+                                            {user ? (
+                                                <>
+                                                    <h2>Bem-vindo, {user.role === 'player' ? 'Jogador' : 
+                                                        <span className={`text-${user.role}`} style={{fontWeight: 'bold'}}>
+                                                            {user.role === 'developer' ? 'Desenvolvedor' : 'Administrador'}
+                                                        </span>
+                                                    }!</h2>
+                                                    <h2 style={{fontSize: '1.8rem', marginTop: '15px'}}>{user.username}</h2>
+                                                    <p style={{color: 'var(--text-muted)', marginTop: '15px'}}>Acessando o painel...</p>
+                                                </>
+                                            ) : accessError ? (
+                                                <>
+                                                    <div style={{fontSize: '5rem'}}>⚠️</div>
+                                                    <h2 style={{color: 'var(--primary-color)'}}>Ops! Algo deu errado</h2>
+                                                    <p style={{margin: '15px 0'}}>{accessError}</p>
+                                                    <button className="btn-primary" style={{background: '#444'}} onClick={handleLogout}>Sair</button>
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <h2>Quase lá...</h2>
+                                                    <p style={{fontSize: '1.1rem', marginTop: '10px'}}>
+                                                        Sincronizando perfil de <strong>{session?.user?.user_metadata?.playername || session?.user?.email?.split('@')[0]}</strong>
+                                                    </p>
+                                                    <div className="loading-spinner" style={{margin: '25px auto'}}></div>
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                </section>
+                            ) : (
+                                user.role === 'admin' || user.role === 'developer' ? (
+                                    <Admin
+                                        results={results} 
+                                        registrations={registrations} 
+                                        updateResult={updateResult} 
+                                        onDraw={drawMatches}
+                                        onKnockoutDraw={executeKnockoutDraw}
+                                        onDeleteMatch={deleteMatch}
+                                        onDeleteAll={deleteAllMatches}
+                                        user={user}
+                                    />
+                                ) : (
+                                    <PlayerDashboard 
+                                        user={user} 
+                                        userRegistration={userRegistration} 
+                                        results={results} 
+                                    />
+                                )
+                            )
+                        )}
                     </div>
                 )}
             </section>
@@ -741,882 +771,6 @@ function App() {
                 </div>
             </footer>
         </div>
-    );
-}
-
-function Home({ results, onRegisterClick }) {
-    const [champion, setChampion] = useState(null); // Estado para o campeão
-
-    // Efeito para detectar o campeão quando os resultados mudam
-    useEffect(() => {
-        const finalMatches = results.filter(m => m.stage.startsWith('Final'));
-        if (finalMatches.length > 0 && finalMatches.every(m => m.status === 'Finalizado')) {
-            const scores = {};
-            finalMatches.forEach(m => {
-                scores[m.p1] = (scores[m.p1] || 0) + (parseInt(m.score1) || 0);
-                scores[m.p2] = (scores[m.p2] || 0) + (parseInt(m.score2) || 0);
-            });
-            const teams = Object.keys(scores);
-            if (teams.length === 2) {
-                const [t1, t2] = teams;
-                if (scores[t1] > scores[t2]) setChampion(t1);
-                else if (scores[t2] > scores[t1]) setChampion(t2);
-                else setChampion("Empate! (Decisão por pênaltis)");
-            }
-        } else {
-            setChampion(null); // Resetar campeão se a final não estiver finalizada ou não existir
-        }
-    }, [results]);
-    // Cálculo dinâmico da classificação dos grupos baseado nos resultados
-    const currentStage = useMemo(() => {
-        if (results.length === 0) return 'Fase de Grupos';
-        const stages = [...new Set(results.map(m => m.stage.split(' (')[0]))];
-        const order = ["Fase de Grupos", "Oitavas de Final", "Quartas de Final", "Semifinal", "Final"];
-        let maxIndex = 0;
-        stages.forEach(s => {
-            const idx = order.indexOf(s);
-            if (idx > maxIndex) maxIndex = idx;
-        });
-        return order[maxIndex];
-    }, [results]);
-
-    const groupStandings = useMemo(() => {
-        return currentStage === 'Fase de Grupos' ? calculateStandings(results) : {};
-    }, [results, currentStage]);
-
-    const activeResults = useMemo(() => {
-        return results.filter(m => m.stage.startsWith(currentStage));
-    }, [results, currentStage]);
-
-    const liveMatches = activeResults.filter(m => m.status === 'Ao Vivo');
-    
-    const finishedMatches = useMemo(() => activeResults
-        .filter(m => m.status === 'Finalizado')
-        .sort((a, b) => {
-            const dateA = new Date(`${a.date || '1970-01-01'}T${(a.time || '00:00').padStart(5, '0')}`);
-            const dateB = new Date(`${b.date || '1970-01-01'}T${(b.time || '00:00').padStart(5, '0')}`);
-            return dateB - dateA;
-        }), [activeResults]);
-
-    const upcomingMatches = useMemo(() => activeResults
-        .filter(m => m.status === 'Agendado')
-        .sort((a, b) => {
-            const dateA = new Date(`${a.date || '9999-12-31'}T${(a.time || '23:59').padStart(5, '0')}`);
-            const dateB = new Date(`${b.date || '9999-12-31'}T${(b.time || '23:59').padStart(5, '0')}`);
-            return dateA - dateB;
-        }), [activeResults]);
-
-    // Componente interno para evitar repetição de código
-    const MatchCard = ({ match, showScore }) => (
-        <div key={match.id} className="card match-card">
-            <div className="match-info">
-                <div className="team-display">
-                    <img 
-                        src={getTeamLogo(match.p1)} 
-                        alt={match.p1} 
-                        className="team-logo" 
-                        loading="lazy" // Adicionado lazy loading
-                        onError={(e) => { e.target.src = getFallbackLogo(match.p1.split(' (')[0]); }}
-                    />
-                    <span>{match.p1.split(' (')[0]}</span>
-                    {match.p1.includes(' (') && (
-                        <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '2px', lineHeight: '1.2' }}>
-                            ({match.p1.split(' (')[1]}
-                        </small>
-                    )}
-                </div>
-                
-                {showScore ? (
-                    <span className="score">{match.score1} x {match.score2}</span>
-                ) : (
-                    <span className="score" style={{color: 'var(--text-muted)', fontSize: '1.2rem'}}>VS</span>
-                )}
-
-                <div className="team-display">
-                    <img 
-                        src={getTeamLogo(match.p2)} 
-                        alt={match.p2} 
-                        className="team-logo" 
-                        loading="lazy" // Adicionado lazy loading
-                        onError={(e) => { e.target.src = getFallbackLogo(match.p2.split(' (')[0]); }}
-                    />
-                    <span>{match.p2.split(' (')[0]}</span>
-                    {match.p2.includes(' (') && (
-                        <small style={{ display: 'block', color: 'var(--text-muted)', fontSize: '0.75rem', marginTop: '2px', lineHeight: '1.2' }}>
-                            ({match.p2.split(' (')[1]}
-                        </small>
-                    )}
-                </div>
-            </div>
-            <div className={`status ${match.status.toLowerCase()}`} style={{ textAlign: 'center' }}>
-                {match.stage && <span style={{display: 'block', fontSize: '0.85em', color: 'var(--primary-color)'}}>{match.stage} {match.group_name ? `(${match.group_name})` : ''}</span>}
-                {match.date && match.time && ( // Garante que só aparece se ambos existirem
-                    <span style={{display: 'block', fontSize: '0.9rem', color: 'var(--primary-color)', fontWeight: 'bold', margin: '5px 0'}}>
-                        {new Date(match.date + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'})}
-                        {match.time ? ` às ${match.time}` : ''}
-                    </span>
-                )}
-                <span style={{ display: 'block', fontWeight: 'bold', textTransform: 'uppercase' }}>{match.status}</span>
-            </div>
-        </div>
-    );
-
-    return (
-        <React.Fragment>
-            {/* Seção de Celebração do Campeão - Integrada na Home Page */}
-            {champion && (
-                <section className="champion-section fade-in">
-                    {[...Array(6)].map((_, i) => (
-                        <div key={i} className="firework"></div>
-                    ))}
-                    <div className="champion-modal winner-modal">
-                        <div className="winner-badge">CAMPEÃO</div>
-                        <div className="winner-trophy">🏆</div>
-                        <img 
-                            src={getTeamLogo(champion)} 
-                            alt="Escudo do Campeão" 
-                            className="winner-team-logo"
-                            onError={(e) => { e.target.src = getFallbackLogo(champion.split(' (')[0]); }}
-                        />
-                        <h2 className="winner-name">{champion.split(' (')[0]}</h2>
-                        {champion.includes(' (') && (
-                            <p className="winner-gamertag">({champion.split(' (')[1]}</p>
-                        )}
-                        <p className="winner-congrats">Parabéns por conquistar a Gangster cup!</p>
-                    </div>
-                </section>
-            )}
-
-            <section className="hero">
-                <div className="container">
-                    <h1>Bem vindos a Gangster Cup</h1>
-                    <p>Acompanhe os próximos confrontos e os resultados em tempo real.</p>
-                    <button className="btn-large" style={{marginTop: '20px'}} onClick={onRegisterClick}>Garantir minha vaga</button>
-                </div>
-            </section>
-
-            <section className="container section">
-                {Object.keys(groupStandings).length > 0 && (
-                    <div style={{ marginBottom: '60px' }}>
-                        <h2 style={{ borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px' }}>Classificação dos Grupos</h2>
-                        <div className="groups-grid">
-                            {Object.keys(groupStandings).sort().map(groupName => (
-                                <div key={groupName} className="card group-card">
-                                    <h3>{groupName}</h3>
-                                    <table className="group-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Time</th>
-                                                <th style={{ textAlign: 'right' }}>Pts</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {Object.values(groupStandings[groupName])
-                                                .sort((a, b) => b.pts - a.pts)
-                                                .map((team, idx) => {
-                                                    const teamName = team.fullName.split(' (')[0];
-                                                    const gamertag = team.fullName.includes(' (') ? team.fullName.split(' (')[1] : '';
-                                                    return (
-                                                        <tr key={idx}>
-                                                            <td style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                                <img 
-                                                                    src={getTeamLogo(teamName)} 
-                                                                    className="team-logo-small" 
-                                                                    alt="" 
-                                                                    loading="lazy" // Adicionado lazy loading
-                                                                    onError={(e) => { e.target.src = getFallbackLogo(teamName); }}
-                                                                />
-                                                                <div>
-                                                                    <div style={{ fontWeight: 'bold' }}>{teamName}</div>
-                                                                    {gamertag && <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>({gamertag}</div>}
-                                                                </div>
-                                                            </td>
-                                                            <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--primary-color)' }}>
-                                                                {team.pts}
-                                                            </td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                        </tbody>
-                                    </table>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                )}
-
-                {liveMatches.length > 0 && (
-                    <div style={{marginBottom: '60px'}}>
-                        <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Ao Vivo Agora!</h2>
-                        <div className="results-grid">
-                            {liveMatches.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
-                        </div>
-                    </div>
-                )}
-
-                {finishedMatches.length > 0 && (
-                    <div style={{marginBottom: '60px'}}>
-                        <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Resultados Finais</h2>
-                        <div className="results-grid">
-                            {finishedMatches.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
-                        </div>
-                    </div>
-                )}
-
-                {upcomingMatches.length > 0 && (
-                    <div>
-                        <h2 style={{borderLeft: '5px solid var(--text-muted)', paddingLeft: '15px', marginBottom: '30px'}}>Próximos Jogos</h2>
-                        <div className="results-grid">
-                            {upcomingMatches.map(match => <MatchCard key={match.id} match={match} showScore={false} />)}
-                        </div>
-                    </div>
-                )}
-
-                {results.length === 0 && (
-                    <div className="text-center">
-                        <p style={{color: 'var(--text-muted)', fontSize: '1.2rem'}}>Nenhuma partida gerada. Aguarde o sorteio oficial!</p>
-                    </div>
-                )}
-            </section>
-        </React.Fragment>
-    );
-}
-
-function Login({ onLogin, currentPublicIp }) { // Recebe o IP público como prop
-    const [user, setUser] = useState('');
-    const [pass, setPass] = useState('');
-    const [showPassword, setShowPassword] = useState(false); // Estado para controlar a visibilidade da senha
-    const [error, setError] = useState('');
-    const [showAnimation, setShowAnimation] = useState(false);
-    const [welcomeUser, setWelcomeUser] = useState('');
-    const [welcomeRole, setWelcomeRole] = useState(''); // New state for welcome role
-    const [isChecking, setIsChecking] = useState(false);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setError('');
-        setIsChecking(true);
-
-        try {
-            // Com IP_VERIFICATION_ENABLED = false, a verificação de IP é ignorada aqui.
-            // O login será baseado apenas em usuário e senha.
-            console.log("Tentando login com usuário e senha...");
-
-            let query = supabaseClient
-                .from('admins')
-                .select('*')
-                .eq('username', user)
-                .eq('password', pass);
-
-            const { data, error: dbError } = await query.single();
-            console.log("Query executada. Data:", data, "Erro:", dbError);
-            console.log("Resultado da consulta Supabase:", data);
-            console.log("Erro da consulta Supabase:", dbError);
-
-            if (dbError || !data) {
-                if (dbError && dbError.code === 'PGRST116') { // No rows found for .single()
-                    throw new Error('Acesso negado: Credenciais inválidas ou local não autorizado.');
-                }
-                if (dbError && dbError.code === 'PGRST117') { // More than one row found for .single()
-                    // Isso indica um problema de dados: múltiplas entradas com o mesmo usuário/senha/IP
-                    throw new Error('Erro de configuração: Múltiplos acessos com as mesmas credenciais e IP. Contate o suporte.');
-                }
-                throw new Error(dbError?.message || 'Acesso negado: Credenciais inválidas ou local não autorizado.');
-            }
-
-            setWelcomeUser(data.username);
-            // Capitalize the first letter of the role for display
-            setWelcomeRole(data.role.charAt(0).toUpperCase() + data.role.slice(1)); 
-            setShowAnimation(true);            
-            setTimeout(() => onLogin(data), 2000); // Passa o objeto completo (incluindo ID)
-        } catch (err) {
-            setError(err.message || 'Erro ao validar acesso.');
-        } finally {
-            setIsChecking(false);
-        }
-    };
-
-    return (
-        <section className="container section">
-            {showAnimation && (
-                <div className="success-overlay">
-                    <div className="success-modal">
-                        <div style={{fontSize: '5rem'}}>✅</div>
-                        <h2>Acesso Autorizado!</h2>
-                        <p>Bem-vindo, <strong>{welcomeRole} {welcomeUser}</strong>!</p>
-                    </div>
-                </div>
-            )}
-            <div className="form-container">
-                <form onSubmit={handleSubmit} className="card" style={{ maxWidth: '280px', margin: '0 auto', padding: '20px' }}>
-                    <h2 style={{ textAlign: 'center', marginBottom: '25px', color: 'var(--primary-color)' }}>Login</h2>
-                    {error && (
-                        <p style={{ color: '#ff4444', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>
-                            {error}
-                        </p>
-                    )}
-                    <div className="form-group">
-                        <label>Usuario</label>
-                        <input type="text" value={user} onChange={(e) => setUser(e.target.value)} required />
-                    </div>
-                    <div className="form-group">
-                        <label>Senha</label>
-                        <div style={{ position: 'relative', width: '100%' }}>
-                            <input 
-                                type={showPassword ? "text" : "password"} 
-                                value={pass} 
-                                onChange={(e) => setPass(e.target.value)} 
-                                required 
-                                style={{ width: '100%', paddingRight: '45px' }}
-                            />
-                            <button 
-                                type="button" 
-                                onClick={() => setShowPassword(!showPassword)}
-                                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1.1rem', padding: '0', opacity: 0.4, filter: 'grayscale(1)', transition: 'opacity 0.2s' }}
-                            >
-                                {showPassword ? '👁️' : '◎'}
-                            </button>
-                        </div>
-                    </div>
-                    <button type="submit" className="btn-primary" disabled={isChecking}>
-                        {isChecking ? 'Verificando...' : 'Entrar'}
-                    </button>
-                    <p style={{fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '15px', textAlign: 'center'}}>
-                        Apenas administradores autorizados.
-                    </p>
-                </form>
-            </div>
-        </section>
-    );
-}
-
-function Register({ onBack, onRegister }) { // onRegister agora é assíncrono
-    const [formData, setFormData] = useState({
-        teamName: 'Real Madrid',
-        playerName: '',
-        platform: 'PS5',
-        gamertag: ''
-    });
-    const [acceptedTerms, setAcceptedTerms] = useState(false);
-    const [submitted, setSubmitted] = useState(false);
-
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        if (!acceptedTerms) {
-            alert("Você precisa aceitar os termos de responsabilidade para continuar.");
-            return;
-        }
-        const success = await onRegister(formData);
-        if (success) {
-            setSubmitted(true);
-        }
-    };
-
-    if (submitted) {
-        return (
-            <section className="container section text-center">
-                <div className="card">
-                    <h2 style={{color: 'var(--primary-color)'}}>Inscrição Realizada!</h2>
-                    <p>Boa sorte, {formData.playerName}! Seu time <strong>{formData.teamName}</strong> já está no nosso radar.</p>
-                    <button className="btn-primary" style={{marginTop: '20px'}} onClick={onBack}>Voltar ao Início</button>
-                </div>
-            </section>
-        );
-    }
-
-    return (
-        <section className="container section">
-            <div className="form-container">
-                <h2>Inscrição de Atleta</h2>
-                <form onSubmit={handleSubmit} className="card">
-                    <div className="form-group">
-                        <div style={{textAlign: 'center', marginBottom: '15px'}}>
-                            <img 
-                                src={getTeamLogo(formData.teamName)} 
-                                alt="Preview" 
-                                className="team-logo" 
-                                loading="lazy" // Adicionado lazy loading
-                                onError={(e) => { e.target.src = getFallbackLogo(formData.teamName); }}
-                                style={{width: '80px', height: '80px'}} 
-                            />
-                        </div>
-                        <label>Escolha seu Time</label>
-                        <select value={formData.teamName} onChange={e => setFormData({...formData, teamName: e.target.value})} required>
-                            <optgroup label="Espanha">
-                                <option value="Real Madrid">Real Madrid</option>
-                                <option value="Barcelona">Barcelona</option>
-                                <option value="Atlético de Madrid">Atlético de Madrid</option>
-                                <option value="Sevilla">Sevilla</option>
-                                <option value="Real Sociedad">Real Sociedad</option>
-                                <option value="Villarreal">Villarreal</option>
-                                <option value="Athletic Bilbao">Athletic Bilbao</option>
-                                <option value="Real Betis">Real Betis</option>
-                                <option value="Valencia">Valencia</option>
-                            </optgroup>
-                            <optgroup label="Inglaterra">
-                                <option value="Manchester City">Manchester City</option>
-                                <option value="Arsenal">Arsenal</option>
-                                <option value="Liverpool">Liverpool</option>
-                                <option value="Manchester United">Manchester United</option>
-                                <option value="Chelsea">Chelsea</option>
-                                <option value="Tottenham">Tottenham</option>
-                                <option value="Newcastle United">Newcastle United</option>
-                                <option value="Aston Villa">Aston Villa</option>
-                                <option value="West Ham">West Ham</option>
-                                <option value="Everton">Everton</option>
-                            </optgroup>
-                            <optgroup label="França">
-                                <option value="PSG">PSG</option>
-                                <option value="Marseille">Marseille</option>
-                                <option value="Lyon">Lyon</option>
-                                <option value="Monaco">Monaco</option>
-                                <option value="Lille">Lille</option>
-                                <option value="Nice">Nice</option>
-                                <option value="Rennes">Rennes</option>
-                            </optgroup>
-                            <optgroup label="Alemanha">
-                                <option value="Bayern de Munique">Bayern de Munique</option>
-                                <option value="Borussia Dortmund">Borussia Dortmund</option>
-                                <option value="Bayer Leverkusen">Bayer Leverkusen</option>
-                                <option value="RB Leipzig">RB Leipzig</option>
-                                <option value="Eintracht Frankfurt">Eintracht Frankfurt</option>
-                                <option value="Wolfsburg">Wolfsburg</option>
-                                <option value="Borussia Mönchengladbach">Borussia Mönchengladbach</option>
-                            </optgroup>
-                            <optgroup label="Itália">
-                                <option value="Inter de Milão">Inter de Milão</option>
-                                <option value="AC Milan">AC Milan</option>
-                                <option value="Juventus">Juventus</option>
-                                <option value="Napoli">Napoli</option>
-                                <option value="AS Roma">AS Roma</option>
-                                <option value="Lazio">Lazio</option>
-                                <option value="Atalanta">Atalanta</option>
-                                <option value="Fiorentina">Fiorentina</option>
-                            </optgroup>
-                            <optgroup label="Portugal">
-                                <option value="Benfica">Benfica</option>
-                                <option value="FC Porto">FC Porto</option>
-                                <option value="Sporting CP">Sporting CP</option>
-                            </optgroup>
-                            <optgroup label="Arábia Saudita">
-                                <option value="Al-Nassr">Al-Nassr</option>
-                                <option value="Al-Hilal">Al-Hilal</option>
-                                <option value="Al-Ittihad">Al-Ittihad</option>
-                                <option value="Al-Ahli">Al-Ahli</option>
-                            </optgroup>
-                            <optgroup label="EUA (MLS)">
-                                <option value="Inter Miami">Inter Miami</option>
-                                <option value="LA Galaxy">LA Galaxy</option>
-                            </optgroup>
-                            <optgroup label="Outros">
-                                <option value="Ajax">Ajax</option>
-                                <option value="PSV Eindhoven">PSV Eindhoven</option>
-                                <option value="Feyenoord">Feyenoord</option>
-                                <option value="Celtic">Celtic</option>
-                                <option value="Rangers">Rangers</option>
-                                <option value="Boca Juniors">Boca Juniors</option>
-                                <option value="River Plate">River Plate</option>
-                            </optgroup>
-                        </select>
-                    </div>
-                    <div className="form-group">
-                        <label>Nome do Jogador</label>
-                        <input type="text" value={formData.playerName} onChange={e => setFormData({...formData, playerName: e.target.value})} placeholder="Seu nome completo" required />
-                    </div>
-                    <div className="form-group">
-                        <label>Plataforma</label>
-                        <select value={formData.platform} onChange={e => setFormData({...formData, platform: e.target.value})}>
-                            <option value="PS5">PlayStation 5</option>
-                            <option value="Xbox">Xbox Series X/S</option>
-                            <option value="PC">PC</option>
-                        </select>
-                    </div>
-                    <div className="form-group">
-                        <label>Gamertag / PSN ID</label>
-                        <input type="text" value={formData.gamertag} onChange={e => setFormData({...formData, gamertag: e.target.value})} placeholder="Ex: Player_123" required />
-                    </div>
-                    
-                    <div className="form-group">
-                        <label>Termo de Responsabilidade</label>
-                        <div className="terms-box">
-                            <p><strong>1. Conduta:</strong> O jogador se compromete a manter o fair play e respeitar adversários e organizadores. Ofensas ou comportamentos tóxicos resultarão em desclassificação.</p>
-                            <p><strong>2. Imagem e Transmissão:</strong> Ao participar, você autoriza a exibição do seu nome de usuário e gameplay nas transmissões oficiais da Gangster Cup na Twitch.</p>
-                            <p><strong>3. Conexão:</strong> A estabilidade da internet é de responsabilidade do atleta. Quedas persistentes podem resultar em WO conforme a regra da rodada.</p>
-                            <p><strong>4. Dados:</strong> Seus dados (nome e gamertag) serão armazenados exclusivamente para a organização deste campeonato.</p>
-                        </div>
-                        <label className="checkbox-label">
-                            <input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} required />
-                            <span>Li e concordo com os termos acima</span>
-                        </label>
-                    </div>
-
-                    <button type="submit" className="btn-primary">Finalizar Inscrição</button>
-                </form>
-            </div>
-        </section>
-    );
-}
-
-function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, onDeleteMatch, onDeleteAll, user }) {
-    const [admins, setAdmins] = useState([]);
-    const [newAdmin, setNewAdmin] = useState({ username: '', password: '', role: 'moderator' }); // Removido allowed_ip
-    const [showNewAdminPassword, setShowNewAdminPassword] = useState(false); // Estado para visibilidade da senha do novo admin
-    const [showValidationError, setShowValidationError] = useState(false);
-    const [showAddSuccess, setShowAddSuccess] = useState(false);
-    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
-    const [adminToDelete, setAdminToDelete] = useState(null);
-
-    // Ordenação fixa para evitar que as linhas "saltem" ao editar
-    const sortedMatches = useMemo(() => {
-        if (results.length === 0) return [];
-        const stages = [...new Set(results.map(m => m.stage.split(' (')[0]))];
-        const order = ["Fase de Grupos", "Oitavas de Final", "Quartas de Final", "Semifinal", "Final"];
-        let maxIndex = 0;
-        stages.forEach(s => {
-            const idx = order.indexOf(s);
-            if (idx > maxIndex) maxIndex = idx;
-        });
-        const currentStage = order[maxIndex];
-
-        return [...results]
-            .filter(m => m.stage.startsWith(currentStage))
-            .sort((a, b) => {
-                if (a.stage !== b.stage) {
-                    if (a.stage === 'Fase de Grupos') return -1;
-                    if (b.stage === 'Fase de Grupos') return 1;
-                    return a.stage.localeCompare(b.stage);
-                }
-                if (a.group_name !== b.group_name) return (a.group_name || '').localeCompare(b.group_name || '');
-                return a.id.localeCompare(b.id);
-            });
-    }, [results]);
-
-    // Verifica se a última fase gerada está totalmente finalizada
-    const isLastStageFinished = useMemo(() => {
-        if (results.length === 0) return false;
-        const stages = [...new Set(results.map(m => m.stage.split(' (')[0]))];
-        const lastStage = stages.includes('Final') ? 'Final' :
-                          stages.includes('Semifinal') ? 'Semifinal' :
-                          stages.includes('Quartas de Final') ? 'Quartas de Final' :
-                          stages.includes('Oitavas de Final') ? 'Oitavas de Final' : 'Fase de Grupos';
-        return results.filter(m => m.stage.startsWith(lastStage)).every(m => m.status === 'Finalizado');
-    }, [results]);
-
-    const isDev = user?.role === 'developer';
-    const isAdmin = user?.role === 'admin' || isDev;
-
-    const roleDisplayName = user?.role === 'developer' ? 'Desenvolvedor' : 
-                            user?.role === 'admin' ? 'Administrador' : 'Moderador';
-
-    useEffect(() => {
-        const fetchAdminsData = async () => {
-            const { data } = await supabaseClient.from('admins').select('*');
-            if (data) setAdmins(data);
-        };
-        fetchAdminsData();
-
-        // Mantém a lista de administradores atualizada em tempo real no painel
-        const adminChannel = supabaseClient
-            .channel('admins-sync')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'admins' }, () => fetchAdminsData())
-            .subscribe();
-
-        return () => {
-            supabaseClient.removeChannel(adminChannel);
-        };
-    }, []); // Removido a dependência de myIp, pois não é mais relevante para o acesso
-
-    const handleAddAdmin = async () => {
-        if (!newAdmin.username || !newAdmin.password) { // Removido allowed_ip da validação
-            setShowValidationError(true);
-            return;
-        }
-        const { data, error } = await supabaseClient.from('admins').insert([newAdmin]).select();
-        if (error) alert("Erro: " + error.message);
-        else {
-            setAdmins([...admins, data[0]]);
-            setShowAddSuccess(true);
-            setTimeout(() => {
-                setShowAddSuccess(false);
-            }, 2500);
-            setNewAdmin({ username: '', password: '', role: 'moderator' }); // Removido allowed_ip
-        }
-    };
-
-    const handleUpdateRole = async (id, newRole) => {
-        if (!supabaseClient) return;
-        
-        const { error } = await supabaseClient
-            .from('admins')
-            .update({ role: newRole })
-            .eq('id', id);
-
-        if (error) {
-            alert("Erro ao atualizar cargo: " + error.message);
-        } else {
-            setAdmins(admins.map(a => a.id === id ? { ...a, role: newRole } : a));
-        }
-    };
-
-    const handleDeleteAdmin = async (id) => {
-        setAdminToDelete(id);
-        setShowDeleteConfirm(true);
-    };
-
-    const executeDeleteAdmin = async () => {
-        const id = adminToDelete;
-        setShowDeleteConfirm(false);
-        setAdminToDelete(null);
-        
-        const { error } = await supabaseClient.from('admins').delete().eq('id', id);
-        if (error) alert("Erro ao remover: " + error.message);
-        else setAdmins(admins.filter(a => a.id !== id));
-    };
-
-    return (
-        <section className="container section">
-            {showValidationError && (
-                <div className="success-overlay" onClick={() => setShowValidationError(false)}>
-                    <div className="success-modal" style={{borderColor: 'var(--primary-color)'}} onClick={e => e.stopPropagation()}>
-                        <div style={{fontSize: '5rem'}}>⚠️</div>
-                        <h2>Campos Incompletos</h2>
-                        <p>Por favor, preencha o <strong>Usuário e Senha</strong> para cadastrar um novo administrador.</p>
-                        <div style={{ marginTop: '25px' }}>
-                            <button className="btn-primary" onClick={() => setShowValidationError(false)}>Entendido</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {showAddSuccess && (
-                <div className="success-overlay">
-                    <div className="success-modal">
-                        <div style={{fontSize: '5rem'}}>👤✅</div>
-                        <h2>Admin Adicionado!</h2>
-                        <p>O novo acesso foi configurado com sucesso.</p>
-                    </div>
-                </div>
-            )}
-
-            {showDeleteConfirm && (
-                <div className="success-overlay">
-                    <div className="success-modal" style={{borderColor: 'var(--primary-color)'}}>
-                        <div style={{fontSize: '5rem'}}>👤❌</div>
-                        <h2>Remover Acesso?</h2>
-                        <p>Tem certeza que deseja excluir as credenciais deste administrador?</p>
-                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px', flexWrap: 'wrap' }}>
-                            <button className="btn-primary" onClick={executeDeleteAdmin}>Sim, Remover</button>
-                            <button className="btn-primary" style={{ background: '#444', color: 'white' }} onClick={() => setShowDeleteConfirm(false)}>Cancelar</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            <div className="admin-header">
-                <div>
-                    <h2>Painel do {roleDisplayName}</h2>
-                    <p style={{fontSize: '0.9rem', marginTop: '5px'}}>Logado como: <strong className={`text-${user?.role}`}>{user?.username}</strong></p>
-                </div>
-                <div className="admin-actions">
-                    {isDev && <button className="btn-primary" onClick={onDeleteAll}>Resetar Campeonato</button>}
-                    {isAdmin && <button className="btn-primary" onClick={onDraw}>Sortear Grupos</button>}
-                    {isAdmin && results.length > 0 && !results.some(m => m.stage.startsWith('Final')) && (
-                        <button 
-                            className="btn-primary" 
-                            style={{background: isLastStageFinished ? '#28a745' : '#6c757d'}} 
-                            onClick={onKnockoutDraw}
-                            disabled={!isLastStageFinished}
-                        >
-                            {results.every(m => m.stage === 'Fase de Grupos') ? 'Finalizar Fase de Grupos' : 'Gerar Próxima Fase'}
-                        </button>
-                    )}
-                </div>
-            </div>
-
-            {isDev && (
-            <div className="card" style={{marginBottom: '40px'}}>
-                <h3>Gerenciar Acessos (Admins Autorizados)</h3>
-                <div className="admin-table-container">
-                    <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Usuário</th>
-                                <th>Senha</th>
-                                <th>Cargo</th>
-                                <th>Ações</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {admins.map(adm => (
-                                <tr key={adm.id}>
-                                    <td className={`text-${adm.role}`} style={{fontWeight: 'bold'}}>{adm.username}</td>
-                                    <td>••••••</td>
-                                    <td>
-                                        <select 
-                                            value={adm.role} 
-                                            onChange={(e) => handleUpdateRole(adm.id, e.target.value)}
-                                        >
-                                            <option value="moderator">Moderador</option>
-                                            <option value="admin">Administrador</option>
-                                            <option value="developer">Desenvolvedor</option>
-                                        </select>
-                                    </td>
-                                    <td><button className="btn-icon" onClick={() => handleDeleteAdmin(adm.id)}>🗑️</button></td>
-                                </tr>
-                            ))}
-                            <tr>
-                                <td><input type="text" placeholder="User" value={newAdmin.username} onChange={e => setNewAdmin({...newAdmin, username: e.target.value})} /></td>
-                                <td>
-                                    <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                                        <input 
-                                            type={showNewAdminPassword ? "text" : "password"} 
-                                            placeholder="Senha" 
-                                            value={newAdmin.password} 
-                                            onChange={e => setNewAdmin({...newAdmin, password: e.target.value})} 
-                                            style={{ paddingRight: '35px' }}
-                                        />
-                                        <button 
-                                            type="button" 
-                                            onClick={() => setShowNewAdminPassword(!showNewAdminPassword)}
-                                            style={{ position: 'absolute', right: '8px', background: 'none', border: 'none', cursor: 'pointer', padding: '0', fontSize: '1rem', opacity: 0.4, filter: 'grayscale(1)', transition: 'opacity 0.2s' }}
-                                        >
-                                            {showNewAdminPassword ? '👁️' : '◎'}
-                                        </button>
-                                    </div>
-                                </td>
-                                <td>
-                                    <select value={newAdmin.role} onChange={e => setNewAdmin({...newAdmin, role: e.target.value})}>
-                                        <option value="moderator">Moderador</option>
-                                        <option value="admin">Administrador</option>
-                                        <option value="developer">Desenvolvedor</option>
-                                    </select>
-                                </td>
-                                <td><button className="btn-primary" style={{padding: '5px 15px'}} onClick={handleAddAdmin}>Add</button></td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            )}
-
-            <div className="card" style={{marginBottom: '40px'}}>
-                <h3>Jogadores Inscritos ({registrations.length})</h3>
-                {registrations.length === 0 ? (
-                    <p style={{marginTop: '15px', color: 'var(--text-muted)'}}>Nenhum inscrito até o momento.</p>
-                ) : (
-                    <table className="admin-table">
-                        <thead>
-                            <tr>
-                                <th>Time</th>
-                                <th>Jogador</th>
-                                <th>Plataforma</th>
-                                <th>Gamertag</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {registrations.map((reg, idx) => (
-                                <tr key={idx}>
-                                    <td>
-                                        <img 
-                                            src={getTeamLogo(reg.teamName)} 
-                                            className="team-logo-small" 
-                                            alt="" 
-                                            onError={(e) => { e.target.src = getFallbackLogo(reg.teamName); }}
-                                        />
-                                        {reg.teamName}
-                                    </td>
-                                    <td>{reg.playerName}</td>
-                                    <td>{reg.platform}</td>
-                                    <td>{reg.gamertag}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                )}
-            </div>
-
-            <h3>Gerenciar Partidas</h3>
-            <div className="admin-table-container">
-                <table className="admin-table">
-                    <thead>
-                        <tr>
-                            <th>
-                                Partida
-                                <span style={{fontSize: '0.7em', display: 'block', fontWeight: 'normal', color: 'var(--text-muted)'}}>
-                                    (Fase / Grupo)
-                                </span>
-                            </th>
-                            <th>Data</th>
-                            <th>Hora</th>
-                            <th>Placar 1</th>
-                            <th>Placar 2</th>
-                            <th>Status</th>
-                            <th>Ações</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {sortedMatches.map(match => (
-                            <tr key={match.id}>
-                                <td>
-                                    {match.stage === 'Fase de Grupos' ? (
-                                        <span>{match.group_name}: {match.p1} vs {match.p2}</span>
-                                    ) : (
-                                        <span>{match.stage}: {match.p1} vs {match.p2}</span>
-                                    )}
-                                </td>
-                                <td>
-                                    <input 
-                                        type="date" 
-                                        value={match.date || ''} 
-                                        onChange={(e) => updateResult(match.id, 'date', e.target.value)} 
-                                        style={{padding: '5px', fontSize: '0.85rem'}}
-                                    />
-                                </td>
-                                <td>
-                                    <input 
-                                        type="time" 
-                                        value={match.time || ''} 
-                                        onChange={(e) => updateResult(match.id, 'time', e.target.value)} 
-                                        style={{padding: '5px', fontSize: '0.85rem'}}
-                                    />
-                                </td>
-                                <td>
-                                    <input 
-                                        type="number" 
-                                        value={match.score1} 
-                                        onChange={(e) => updateResult(match.id, 'score1', e.target.value)} 
-                                    />
-                                </td>
-                                <td>
-                                    <input 
-                                        type="number" 
-                                        value={match.score2} 
-                                        onChange={(e) => updateResult(match.id, 'score2', e.target.value)} 
-                                    />
-                                </td>
-                                <td>
-                                    <select 
-                                        value={match.status} 
-                                        onChange={(e) => updateResult(match.id, 'status', e.target.value)}
-                                    >
-                                        <option value="Agendado">Agendado</option>
-                                        <option value="Ao Vivo">Ao Vivo</option>
-                                        <option value="Finalizado">Finalizado</option>
-                                    </select>
-                                </td>
-                                <td>
-                                    {isAdmin && (
-                                        <button className="btn-icon" onClick={() => onDeleteMatch(match.id)} title="Apagar Partida">
-                                            🗑️
-                                        </button>
-                                    )}
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div>
-        </section>
     );
 }
 
