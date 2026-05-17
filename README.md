@@ -35,6 +35,10 @@ O gerenciamento do campeonato possui um sistema de níveis de acesso integrado a
     *   **Admin:** Responsável pela organização do torneio. Pode realizar o sorteio das chaves e gerenciar placares.
     *   **Moderador:** Focado na operação das partidas, com permissão para atualizar placares em tempo real.
 
+## Criado um sistema de usuarios
+Criado um sistema de usuarios, com confirmação por token via email.
+
+       
 ## Link do vercel
 [Vercel](https://site-campeonato-de-fifa-be4j.vercel.app/) (Hospedagem do site)
 
