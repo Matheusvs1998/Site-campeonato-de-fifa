@@ -543,7 +543,17 @@ function App() {
             )}
 
             {MAINTENANCE_MODE && user?.role !== 'admin' && page !== 'login' ? (
-                <div className="maintenance-wrapper">
+                <div className="maintenance-wrapper" style={{
+                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://img.odcdn.com.br/wp-content/uploads/2025/09/EA-Sports-FC-26-jogadores-entrando-em-campo-1024x576.webp')`,
+                    backgroundSize: 'cover',
+                    backgroundPosition: 'center',
+                    minHeight: '80vh',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    textAlign: 'center',
+                    padding: '20px'
+                }}>
                     <div className="maintenance-card">
                         <div style={{fontSize: '5rem', marginBottom: '20px'}}>🛠️</div>
                         <h1 style={{color: 'var(--primary-color)', marginBottom: '15px'}}>Site em Manutenção</h1>
