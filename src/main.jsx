@@ -10,7 +10,7 @@ import Admin from './components/Admin';
 import PlayerDashboard from './components/PlayerDashboard';
 import '../styles.css';
 
-const MAINTENANCE_MODE = true; // Mude para true para ATIVAR; false para DESATIVAR
+const MAINTENANCE_MODE = false; // Mude para true para ATIVAR; false para DESATIVAR
 
 function App() {
     const [page, setPage] = useState('home'); // home, login, signup, verify, admin, register
