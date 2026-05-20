@@ -63,9 +63,13 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
             const targetUser = users.find(u => u.id === id);
             setUsers(users.map(u => u.id === id ? { ...u, ...updates } : u));
             
-            if (updates.role) {
+            if (updates.role || updates.is_banned !== undefined) {
                 const roleNames = { player: 'Jogador', moderador: 'Moderador', admin: 'Administrador', developer: 'Desenvolvedor' };
-                setRoleUpdateMessage(`O cargo de ${targetUser?.username} foi alterado para ${roleNames[updates.role] || updates.role}!`);
+                const message = updates.role 
+                    ? `O cargo de ${targetUser?.username} foi alterado para ${roleNames[updates.role] || updates.role}!`
+                    : `${targetUser?.username} foi ${updates.is_banned ? 'banido' : 'desbanido'} com sucesso!`;
+                
+                setRoleUpdateMessage(message);
                 setTimeout(() => setRoleUpdateMessage(null), 3000);
             }
         }
@@ -76,8 +80,8 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
             {roleUpdateMessage && (
                 <div className="success-overlay">
                     <div className="success-modal">
-                        <div style={{fontSize: '5rem'}}>🛡️</div>
-                        <h2>Cargo Atualizado!</h2>
+                        <div style={{fontSize: '5rem'}}>{roleUpdateMessage.includes('banido') ? '🚫' : '🛡️'}</div>
+                        <h2>{roleUpdateMessage.includes('banido') ? 'Status Atualizado!' : 'Cargo Atualizado!'}</h2>
                         <p>{roleUpdateMessage}</p>
                     </div>
                 </div>
@@ -86,7 +90,10 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
             <div className="admin-header">
                 <div>
                     <h2>Painel Administrativo</h2>
-                    <p>Logado como: <strong className={`text-${user?.role}`}>{user?.username}</strong></p>
+                    <p>Logado como: <strong 
+                        className={`text-${user?.role}`} 
+                        style={{ color: user?.role === 'developer' ? '#28a745' : user?.role === 'admin' ? '#007bff' : user?.role === 'moderador' ? '#ffc107' : '#ffffff' }}
+                    >{user?.username}</strong></p>
                 </div>
                 <div className="admin-actions">
                     {isDev && <button className="btn-primary" style={{ background: '#ff4444' }} onClick={onDeleteAll}>Resetar Campeonato</button>}

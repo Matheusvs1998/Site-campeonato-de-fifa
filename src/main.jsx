@@ -25,6 +25,7 @@ function App() {
     });
     const [tempEmail, setTempEmail] = useState(''); // Armazena email para verificação
     const [roleUpdateNotify, setRoleUpdateNotify] = useState(null); // Notificação de mudança de cargo para o próprio usuário
+    const [banNotify, setBanNotify] = useState(false); // Notificação de banimento
 
     // Monitora o estado da sessão do Supabase
     useEffect(() => {
@@ -95,8 +96,11 @@ function App() {
                 setUser(dbProfile);
                 // Verifica banimento imediatamente
                 if (dbProfile.is_banned) {
-                    alert('Sua conta está banida.');
-                    handleLogout();
+                    setBanNotify(true);
+                    setTimeout(() => {
+                        setBanNotify(false);
+                        handleLogout();
+                    }, 4000);
                     return;
                 }
             } else if (!profileError) {
@@ -250,7 +254,8 @@ function App() {
             .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => fetchData())
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
                 if (userRef.current && payload.new.id === userRef.current.id) {
-                    if (payload.new.role !== userRef.current.role) {
+                    // Detecta mudança de cargo
+                    if (payload.new.role !== userRef.current.role && !payload.new.is_banned) {
                         const roleNames = { player: 'Jogador', moderador: 'Moderador', admin: 'Administrador', developer: 'Desenvolvedor' };
                         setRoleUpdateNotify(roleNames[payload.new.role] || payload.new.role);
                         
@@ -258,6 +263,14 @@ function App() {
                             setRoleUpdateNotify(null);
                             handleLogout();
                         }, 3500);
+                    }
+                    // Detecta banimento em tempo real
+                    if (payload.new.is_banned && !userRef.current.is_banned) {
+                        setBanNotify(true);
+                        setTimeout(() => {
+                            setBanNotify(false);
+                            handleLogout();
+                        }, 4500);
                     }
                 }
                 fetchData();
@@ -635,6 +648,17 @@ function App() {
                 </div>
             )}
 
+            {banNotify && (
+                <div className="success-overlay" style={{ zIndex: 4000 }}>
+                    <div className="success-modal" style={{ borderColor: '#ff4444' }}>
+                        <div style={{fontSize: '5rem'}}>🚫</div>
+                        <h2 style={{color: '#ff4444'}}>CONTA BANIDA</h2>
+                        <p>Sua conta foi suspensa por violar os termos da <strong>Gangster Cup</strong>.</p>
+                        <p style={{ marginTop: '15px', fontSize: '0.9rem', opacity: 0.7 }}>Encerrando sessão...</p>
+                    </div>
+                </div>
+            )}
+
             {logoutMessage && (
                 <div className="success-overlay">
                     <div className="success-modal">
@@ -724,7 +748,10 @@ function App() {
                                             {user ? (
                                                 <>
                                                     <h2>Bem-vindo, {user.role === 'player' ? 'Jogador' : 
-                                                        <span className={`text-${user.role}`} style={{fontWeight: 'bold'}}>
+                                                        <span className={`text-${user.role}`} style={{
+                                                            fontWeight: 'bold',
+                                                            color: user.role === 'developer' ? '#28a745' : user.role === 'admin' ? '#007bff' : user.role === 'moderador' ? '#ffc107' : '#ffffff'
+                                                        }}>
                                                             {user.role === 'developer' ? 'Desenvolvedor' : user.role === 'admin' ? 'Administrador' : 'Moderador'}
                                                         </span>
                                                     }!</h2>
