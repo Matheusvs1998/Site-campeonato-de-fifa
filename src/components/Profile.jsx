@@ -213,7 +213,7 @@ function Profile({ user, userRegistration, onUpdate }) {
                         <small style={{ color: 'var(--text-muted)' }}>O nome não pode ser alterado após a inscrição.</small>
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
+                    <div className="profile-grid-fields">
                         <div className="form-group">
                             <label>Plataforma</label>
                             <select value={formData.platform} onChange={e => setFormData({...formData, platform: e.target.value})}>

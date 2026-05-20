@@ -184,4 +184,41 @@
     .nav-content { padding: 0 20px; }
     .nav-links.active { left: 0; }
     .nav-links li { margin: 25px 0; margin-left: 0; }
+
+    /* Ajustes específicos para o Painel Admin no Mobile */
+    .admin-header {
+        flex-direction: column !important;
+        align-items: stretch !important;
+        text-align: center;
+        gap: 20px;
+    }
+
+    .admin-actions {
+        flex-direction: column;
+        width: 100%;
+        gap: 10px !important;
+    }
+
+    .admin-actions button {
+        width: 100%;
+        margin: 0 !important;
+    }
+
+    /* Melhoria nas tabelas mobile */
+    .admin-table th, .admin-table td {
+        padding: 10px 8px;
+        font-size: 0.85rem;
+    }
+
+    /* Ajustes para o Perfil */
+    .profile-grid-fields {
+        grid-template-columns: 1fr !important; /* Força uma coluna única */
+        gap: 10px !important;
+    }
+
+    .form-container .card {
+        padding: 20px !important;
+        margin: 0 10px !important;
+        width: auto !important;
+    }
 }

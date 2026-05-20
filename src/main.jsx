@@ -24,6 +24,7 @@ function App() {
         return sessionStorage.getItem('gangster_cup_welcomed') === 'true';
     });
     const [tempEmail, setTempEmail] = useState(''); // Armazena email para verificação
+    const [roleUpdateNotify, setRoleUpdateNotify] = useState(null); // Notificação de mudança de cargo para o próprio usuário
 
     // Monitora o estado da sessão do Supabase
     useEffect(() => {
@@ -250,8 +251,13 @@ function App() {
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
                 if (userRef.current && payload.new.id === userRef.current.id) {
                     if (payload.new.role !== userRef.current.role) {
-                        alert("Seu nível de acesso foi alterado. Por segurança, você será deslogado.");
-                        handleLogout();
+                        const roleNames = { player: 'Jogador', moderador: 'Moderador', admin: 'Administrador', developer: 'Desenvolvedor' };
+                        setRoleUpdateNotify(roleNames[payload.new.role] || payload.new.role);
+                        
+                        setTimeout(() => {
+                            setRoleUpdateNotify(null);
+                            handleLogout();
+                        }, 3500);
                     }
                 }
                 fetchData();
@@ -617,6 +623,17 @@ function App() {
                     </ul>
                 </nav>
             </header>
+
+            {roleUpdateNotify && (
+                <div className="success-overlay" style={{ zIndex: 3000 }}>
+                    <div className="success-modal">
+                        <div style={{fontSize: '5rem'}}>🛡️</div>
+                        <h2>Seu Acesso Mudou!</h2>
+                        <p>Seu novo cargo agora é: <strong>{roleUpdateNotify}</strong></p>
+                        <p style={{ marginTop: '10px', fontSize: '0.9rem', opacity: 0.8 }}>Sincronizando novas permissões...</p>
+                    </div>
+                </div>
+            )}
 
             {logoutMessage && (
                 <div className="success-overlay">

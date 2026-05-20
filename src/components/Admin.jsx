@@ -83,12 +83,12 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                 </div>
             )}
 
-            <div className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
+            <div className="admin-header">
                 <div>
                     <h2>Painel Administrativo</h2>
                     <p>Logado como: <strong className={`text-${user?.role}`}>{user?.username}</strong></p>
                 </div>
-                <div className="admin-actions" style={{ display: 'flex', gap: '10px' }}>
+                <div className="admin-actions">
                     {isDev && <button className="btn-primary" style={{ background: '#ff4444' }} onClick={onDeleteAll}>Resetar Campeonato</button>}
                     {isAdmin && <button className="btn-primary" onClick={onDraw}>Sortear Grupos</button>}
                     {isAdmin && results.length > 0 && isLastStageFinished && (
@@ -100,70 +100,72 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
             {isDev && (
                 <div className="card" style={{ marginBottom: '40px', padding: '20px' }}>
                     <h3>Gerenciar Usuários</h3>
-                    <table className="admin-table" style={{ width: '100%', marginTop: '15px' }}>
-                        <thead>
-                            <tr>
-                                <th>Username</th>
-                                <th>Cargo</th>
-                                <th>Status</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            {users.map(u => (
-                                <tr key={u.id}>
-                                    <td>
-                                        <strong 
-                                            className={`text-${u.role}`}
-                                            style={{ 
-                                                color: u.is_banned ? '#6c757d' : (u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : '#ffffff'),
-                                                opacity: u.is_banned ? 0.6 : 1
-                                            }}
-                                        >
-                                            {u.username}
-                                        </strong>
-                                    </td>
-                                    <td>
-                                        <select 
-                                            value={u.role} 
-                                            onChange={(e) => handleUpdateUser(u.id, { role: e.target.value })}
-                                            disabled={u.role === 'developer' && !isDev}
-                                            className={`text-${u.role}`}
-                                            style={{ 
-                                                fontWeight: 'bold', 
-                                                background: 'rgba(0,0,0,0.3)', 
-                                                border: '1px solid rgba(255,255,255,0.1)', 
-                                                padding: '5px', 
-                                                borderRadius: '4px',
-                                                color: u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : '#ffffff'
-                                            }}
-                                        >
-                                            <option value="player" style={{ color: '#ffffff', background: '#222' }}>Jogador</option>
-                                            <option value="moderador" style={{ color: '#ffc107', background: '#222' }}>Moderador</option>
-                                            <option value="admin" style={{ color: '#007bff', background: '#222' }}>Administrador</option>
-                                            {isDev && <option value="developer" style={{ color: '#28a745', background: '#222' }}>Desenvolvedor</option>}
-                                        </select>
-                                    </td>
-                                    <td>
-                                        <button 
-                                            onClick={() => handleUpdateUser(u.id, { is_banned: !u.is_banned })}
-                                            style={{ 
-                                                backgroundColor: 'transparent',
-                                                color: '#ff4444', 
-                                                border: '1px solid #ff4444',
-                                                padding: '4px 12px',
-                                                borderRadius: '4px',
-                                                cursor: 'pointer',
-                                                fontWeight: 'bold',
-                                                fontSize: '0.8rem'
-                                            }}
-                                        >
-                                            {u.is_banned ? 'Desbanir' : 'Banir'}
-                                        </button>
-                                    </td>
+                    <div style={{ overflowX: 'auto' }}>
+                        <table className="admin-table" style={{ width: '100%', marginTop: '15px' }}>
+                            <thead>
+                                <tr>
+                                    <th>Username</th>
+                                    <th>Cargo</th>
+                                    <th>Status</th>
                                 </tr>
-                            ))}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody>
+                                {users.map(u => (
+                                    <tr key={u.id}>
+                                        <td>
+                                            <strong 
+                                                className={`text-${u.role}`}
+                                                style={{ 
+                                                    color: u.is_banned ? '#6c757d' : (u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : '#ffffff'),
+                                                    opacity: u.is_banned ? 0.6 : 1
+                                                }}
+                                            >
+                                                {u.username}
+                                            </strong>
+                                        </td>
+                                        <td>
+                                            <select 
+                                                value={u.role} 
+                                                onChange={(e) => handleUpdateUser(u.id, { role: e.target.value })}
+                                                disabled={u.role === 'developer' && !isDev}
+                                                className={`text-${u.role}`}
+                                                style={{ 
+                                                    fontWeight: 'bold', 
+                                                    background: 'rgba(0,0,0,0.3)', 
+                                                    border: '1px solid rgba(255,255,255,0.1)', 
+                                                    padding: '5px', 
+                                                    borderRadius: '4px',
+                                                    color: u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : '#ffffff'
+                                                }}
+                                            >
+                                                <option value="player" style={{ color: '#ffffff', background: '#222' }}>Jogador</option>
+                                                <option value="moderador" style={{ color: '#ffc107', background: '#222' }}>Moderador</option>
+                                                <option value="admin" style={{ color: '#007bff', background: '#222' }}>Administrador</option>
+                                                {isDev && <option value="developer" style={{ color: '#28a745', background: '#222' }}>Desenvolvedor</option>}
+                                            </select>
+                                        </td>
+                                        <td>
+                                            <button 
+                                                onClick={() => handleUpdateUser(u.id, { is_banned: !u.is_banned })}
+                                                style={{ 
+                                                    backgroundColor: 'transparent',
+                                                    color: '#ff4444', 
+                                                    border: '1px solid #ff4444',
+                                                    padding: '4px 12px',
+                                                    borderRadius: '4px',
+                                                    cursor: 'pointer',
+                                                    fontWeight: 'bold',
+                                                    fontSize: '0.8rem'
+                                                }}
+                                            >
+                                                {u.is_banned ? 'Desbanir' : 'Banir'}
+                                            </button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             )}
 
