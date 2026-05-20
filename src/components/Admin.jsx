@@ -7,6 +7,7 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
     const [users, setUsers] = useState([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [adminToDelete, setAdminToDelete] = useState(null);
+    const [roleUpdateMessage, setRoleUpdateMessage] = useState(null);
 
     const sortedMatches = useMemo(() => {
         if (results.length === 0) return [];
@@ -56,12 +57,32 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
 
     const handleUpdateUser = async (id, updates) => {
         const { error } = await supabaseClient.from('profiles').update(updates).eq('id', id);
-        if (error) alert(error.message);
-        else setUsers(users.map(u => u.id === id ? { ...u, ...updates } : u));
+        if (error) {
+            alert(error.message);
+        } else {
+            const targetUser = users.find(u => u.id === id);
+            setUsers(users.map(u => u.id === id ? { ...u, ...updates } : u));
+            
+            if (updates.role) {
+                const roleNames = { player: 'Jogador', moderador: 'Moderador', admin: 'Administrador', developer: 'Desenvolvedor' };
+                setRoleUpdateMessage(`O cargo de ${targetUser?.username} foi alterado para ${roleNames[updates.role] || updates.role}!`);
+                setTimeout(() => setRoleUpdateMessage(null), 3000);
+            }
+        }
     };
 
     return (
         <section className="container section">
+            {roleUpdateMessage && (
+                <div className="success-overlay">
+                    <div className="success-modal">
+                        <div style={{fontSize: '5rem'}}>🛡️</div>
+                        <h2>Cargo Atualizado!</h2>
+                        <p>{roleUpdateMessage}</p>
+                    </div>
+                </div>
+            )}
+
             <div className="admin-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '30px' }}>
                 <div>
                     <h2>Painel Administrativo</h2>
