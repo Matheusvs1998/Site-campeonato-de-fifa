@@ -40,6 +40,10 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                           stages.includes('Semifinal') ? 'Semifinal' :
                           stages.includes('Quartas de Final') ? 'Quartas de Final' :
                           stages.includes('Oitavas de Final') ? 'Oitavas de Final' : 'Fase de Grupos';
+        
+        // Não mostrar o botão se já estivermos na Final (não há fase seguinte)
+        if (lastStage === 'Final') return false;
+
         return results.filter(m => m.stage.startsWith(lastStage)).every(m => m.status === 'Finalizado');
     }, [results]);
 

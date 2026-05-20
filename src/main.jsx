@@ -406,18 +406,22 @@ function App() {
     const executeKnockoutDraw = async () => {
         if (!supabaseClient) return;
         
-        // Determina qual foi a última fase gerada
-        const stagesPresent = [...new Set(results.map(m => m.stage))];
+        // 1. Identificar todas as fases existentes (normalizadas)
+        const stagesPresent = [...new Set(results.map(m => m.stage.split(' (')[0]))];
+        const order = ["Oitavas de Final", "Quartas de Final", "Semifinal", "Final"];
+        
         let nextStage = "";
         let participants = [];
 
-        if (stagesPresent.length === 1 && stagesPresent[0] === 'Fase de Grupos') {
-            // Gerar primeira fase eliminatória a partir dos grupos
+        // 2. Lógica de transição: Fase de Grupos -> Primeiro Mata-Mata
+        const hasKnockout = stagesPresent.some(s => order.includes(s));
+
+        if (!hasKnockout) {
             const standings = calculateStandings(results);
             const groups = Object.keys(standings).sort();
             groups.forEach(groupName => {
                 const sortedTeams = Object.values(standings[groupName])
-                    .sort((a, b) => (b.pts - a.pts) || ((b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst)));
+                    .sort((a, b) => (b.pts - a.pts) || ((b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst)) || Math.random() - 0.5);
                 if (sortedTeams.length >= 1) participants.push(sortedTeams[0].fullName);
                 if (sortedTeams.length >= 2) participants.push(sortedTeams[1].fullName);
             });
@@ -425,32 +429,43 @@ function App() {
             if (participants.length >= 16) nextStage = "Oitavas de Final";
             else if (participants.length >= 8) nextStage = "Quartas de Final";
             else if (participants.length >= 4) nextStage = "Semifinal";
-            else nextStage = "Final";
+            else if (participants.length === 2) nextStage = "Final";
+            else {
+                alert("Número de participantes insuficiente para gerar mata-mata.");
+                return;
+            }
         } else {
-            // Gerar próxima fase baseada no vencedor do mata-mata anterior
-            const currentStage = results.reduce((last, m) => {
-                const order = ["Oitavas de Final", "Quartas de Final", "Semifinal", "Final"];
-                const mStage = m.stage.split(' (')[0];
-                return order.indexOf(mStage) > order.indexOf(last) ? mStage : last;
-            }, "");
+            // 3. Lógica de transição entre fases de mata-mata
+            const currentStage = order.reduce((last, s) => stagesPresent.includes(s) ? s : last, "");
+            const nextIndex = order.indexOf(currentStage) + 1;
 
-            const order = ["Oitavas de Final", "Quartas de Final", "Semifinal", "Final"];
-            nextStage = order[order.indexOf(currentStage) + 1];
-
-            if (!nextStage) {
+            if (nextIndex >= order.length || !order[nextIndex]) {
                 alert("O campeonato já chegou ao fim!");
                 return;
             }
+            nextStage = order[nextIndex];
 
-            // Lógica para extrair vencedores por placar agregado
+            // Evitar duplicar a próxima fase se ela já existir no banco
+            if (stagesPresent.includes(nextStage)) {
+                alert(`A fase ${nextStage} já foi gerada!`);
+                return;
+            }
+
+            // Pegar os vencedores da fase atual por placar agregado
             const currentStageMatches = results.filter(m => m.stage.startsWith(currentStage));
             const pairings = {};
             
             currentStageMatches.forEach(m => {
                 const teams = [m.p1, m.p2].sort().join(' vs ');
                 if (!pairings[teams]) pairings[teams] = { p1: m.p1, p2: m.p2, s1: 0, s2: 0 };
-                pairings[teams].s1 += m.p1 === pairings[teams].p1 ? m.score1 : m.score2;
-                pairings[teams].s2 += m.p1 === pairings[teams].p2 ? m.score1 : m.score2;
+                
+                if (m.p1 === pairings[teams].p1) {
+                    pairings[teams].s1 += Number(m.score1) || 0;
+                    pairings[teams].s2 += Number(m.score2) || 0;
+                } else {
+                    pairings[teams].s1 += Number(m.score2) || 0;
+                    pairings[teams].s2 += Number(m.score1) || 0;
+                }
             });
 
             Object.values(pairings).forEach(p => {
@@ -458,6 +473,7 @@ function App() {
             });
         }
 
+        // 4. Criação das partidas
         if (participants.length < 2) {
             alert("Não há times suficientes para a próxima fase!");
             return;
@@ -466,20 +482,20 @@ function App() {
         const newMatches = [];
         const defaultMatchDate = new Date().toISOString().split('T')[0];
         const defaultMatchTime = "21:00";
+        const shuffledParticipants = [...participants].sort(() => 0.5 - Math.random());
 
-        for (let i = 0; i < participants.length; i += 2) {
-            const p1 = participants[i];
-            const p2 = participants[i + 1] || "TBD (Aguardando)";
+        for (let i = 0; i < shuffledParticipants.length; i += 2) {
+            const p1 = shuffledParticipants[i];
+            const p2 = shuffledParticipants[i + 1];
+            if (!p2) break; // Garante pares
 
-            const baseMatch = {
-                score1: 0, score2: 0, status: 'Agendado', group_name: '',
-                date: defaultMatchDate, time: defaultMatchTime
-            };
+            const baseMatch = { score1: 0, score2: 0, status: 'Agendado', group_name: '', date: defaultMatchDate, time: defaultMatchTime };
 
-            // Lógica para Final em jogo único e demais fases em Ida e Volta
             if (nextStage === "Final") {
+                // JOGO ÚNICO NA FINAL
                 newMatches.push({ ...baseMatch, p1, p2, stage: nextStage });
             } else {
+                // IDA E VOLTA NAS DEMAIS FASES
                 newMatches.push({ ...baseMatch, p1, p2, stage: `${nextStage} (Ida)` });
                 newMatches.push({ ...baseMatch, p1: p2, p2: p1, stage: `${nextStage} (Volta)` });
             }
