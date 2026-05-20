@@ -7,10 +7,11 @@ import Login from './components/Login';
 import SignUp from './components/SignUp';
 import VerifyEmail from './components/VerifyEmail';
 import Admin from './components/Admin';
+import Profile from './components/Profile';
 import PlayerDashboard from './components/PlayerDashboard';
 import '../styles.css';
 
-const MAINTENANCE_MODE = true; // Mude para true para ATIVAR; false para DESATIVAR
+const MAINTENANCE_MODE = false; // Mude para true para ATIVAR; false para DESATIVAR
 
 function App() {
     const [page, setPage] = useState('home'); // home, login, signup, verify, admin, register
@@ -80,19 +81,38 @@ function App() {
 
             const metadata = activeUser.user_metadata;
             const userId = activeUser.id;
-
-            // 1. Define o usuário imediatamente com dados locais para destravar a tela "Quase lá"
             const username = String(metadata?.playername || metadata?.playerName || activeUser.email?.split('@')[0] || 'Jogador').trim();
 
-            const currentLocalProfile = {
-                id: userId,
-                username: username,
-                role: 'player',
-                is_banned: false
-            };
-            
-            // CRÍTICO: Define o usuário agora para garantir que a tela de carregamento suma
-            setUser(currentLocalProfile);
+            // 1. Busca o perfil no banco PRIMEIRO para garantir o cargo correto (Dev/Admin) sem flickering visual
+            const { data: dbProfile, error: profileError } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .maybeSingle();
+
+            if (dbProfile) {
+                setUser(dbProfile);
+                // Verifica banimento imediatamente
+                if (dbProfile.is_banned) {
+                    alert('Sua conta está banida.');
+                    handleLogout();
+                    return;
+                }
+            } else if (!profileError) {
+                // Caso não exista no banco (primeiro login), cria o perfil com cargo padrão 'player'
+                const currentLocalProfile = {
+                    id: userId,
+                    username: username,
+                    role: 'player',
+                    is_banned: false
+                };
+                const { data: created } = await supabaseClient
+                    .from('profiles')
+                    .upsert([currentLocalProfile], { onConflict: 'id' })
+                    .select()
+                    .maybeSingle();
+                setUser(created || currentLocalProfile);
+            }
 
             // 2. Se não temos metadados de time (comum logo após confirmação), tenta re-sincronizar uma vez
             if (!metadata?.teamname && !metadata?.teamName && retryCount < 2 && page !== 'login') {
@@ -100,27 +120,7 @@ function App() {
                 return fetchUserProfile(activeUser, retryCount + 1);
             }
 
-            // 3. Tenta buscar o perfil real no banco para atualizar o estado (caso seja Admin/Dev)
-            const { data: dbProfile, error: profileError } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .maybeSingle();
-
-            // 4. Se não existe no banco, tenta salvar o perfil atual
-            if (!dbProfile && !profileError) {
-                const { data: created } = await supabaseClient
-                    .from('profiles')
-                    .upsert([currentLocalProfile])
-                    .select()
-                    .maybeSingle();
-
-                if (created) setUser(created);
-            } else if (dbProfile) {
-                setUser(dbProfile);
-            }
-
-            // 5. Sincroniza a inscrição do campeonato
+            // 3. Sincroniza a inscrição do campeonato
             const { data: reg } = await supabaseClient
                 .from('registrations')
                 .select('*')
@@ -152,12 +152,6 @@ function App() {
                 if (regError) {
                     console.error("Erro ao persistir inscrição:", regError.message);
                 }
-            }
-
-            if (dbProfile?.is_banned) {
-                alert('Sua conta está banida.');
-                handleLogout();
-                return;
             }
         } catch (error) {
             console.error("Erro no fetchUserProfile:", error);
@@ -605,11 +599,12 @@ function App() {
                     <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
                         <li><a href="#" onClick={() => navigate('home')}>Início</a></li>
                         {user && !user.is_banned && (
-                            <li>
-                                <a href="#" onClick={() => navigate('admin')}>
-                                    {user.role === 'developer' ? 'Dev' : user.role === 'admin' ? 'Painel Admin' : 'Painel do Usuário'}
-                                </a>
-                            </li>
+                            <Fragment>
+                                <li><a href="#" onClick={() => navigate('admin')}>
+                                    {user.role === 'developer' ? 'Dev' : user.role === 'admin' ? 'Painel Admin' : user.role === 'moderador' ? 'Painel Mod' : 'Painel do Usuário'}
+                                </a></li>
+                                <li><a href="#" onClick={() => navigate('profile')}>Perfil</a></li>
+                            </Fragment>
                         )}
                         {!user ? (
                             <>
@@ -696,6 +691,13 @@ function App() {
                         {page === 'verify' && tempEmail && (
                             <VerifyEmail email={tempEmail} onVerified={() => setPage('admin')} />
                         )}
+                        {page === 'profile' && (
+                            <Profile 
+                                user={session?.user} 
+                                userRegistration={userRegistration} 
+                                onUpdate={async () => { await fetchData(); if (session?.user) await fetchUserProfile(session.user); }} 
+                            />
+                        )}
                         {page === 'admin' && (
                             (!user || showWelcome) ? (
                                 <section className="container section text-center">
@@ -706,7 +708,7 @@ function App() {
                                                 <>
                                                     <h2>Bem-vindo, {user.role === 'player' ? 'Jogador' : 
                                                         <span className={`text-${user.role}`} style={{fontWeight: 'bold'}}>
-                                                            {user.role === 'developer' ? 'Desenvolvedor' : 'Administrador'}
+                                                            {user.role === 'developer' ? 'Desenvolvedor' : user.role === 'admin' ? 'Administrador' : 'Moderador'}
                                                         </span>
                                                     }!</h2>
                                                     <h2 style={{fontSize: '1.8rem', marginTop: '15px'}}>{user.username}</h2>
@@ -732,7 +734,7 @@ function App() {
                                     </div>
                                 </section>
                             ) : (
-                                user.role === 'admin' || user.role === 'developer' ? (
+                                user.role === 'admin' || user.role === 'developer' || user.role === 'moderador' ? (
                                     <Admin
                                         results={results} 
                                         registrations={registrations} 

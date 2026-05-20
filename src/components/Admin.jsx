@@ -44,14 +44,15 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
 
     const isDev = user?.role === 'developer';
     const isAdmin = user?.role === 'admin' || isDev;
+    const isMod = user?.role === 'moderador';
 
     useEffect(() => {
         const fetchUsers = async () => {
             const { data } = await supabaseClient.from('profiles').select('*');
             if (data) setUsers(data);
         };
-        if (isAdmin) fetchUsers();
-    }, [isAdmin]);
+        if (isDev) fetchUsers();
+    }, [isDev]);
 
     const handleUpdateUser = async (id, updates) => {
         const { error } = await supabaseClient.from('profiles').update(updates).eq('id', id);
@@ -75,7 +76,7 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                 </div>
             </div>
 
-            {isAdmin && (
+            {isDev && (
                 <div className="card" style={{ marginBottom: '40px', padding: '20px' }}>
                     <h3>Gerenciar Usuários</h3>
                     <table className="admin-table" style={{ width: '100%', marginTop: '15px' }}>
@@ -93,7 +94,7 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                         <strong 
                                             className={`text-${u.role}`}
                                             style={{ 
-                                                color: u.is_banned ? '#6c757d' : (u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : '#ffffff'),
+                                                color: u.is_banned ? '#6c757d' : (u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : '#ffffff'),
                                                 opacity: u.is_banned ? 0.6 : 1
                                             }}
                                         >
@@ -112,10 +113,11 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                                 border: '1px solid rgba(255,255,255,0.1)', 
                                                 padding: '5px', 
                                                 borderRadius: '4px',
-                                                color: u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : '#ffffff'
+                                                color: u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : '#ffffff'
                                             }}
                                         >
                                             <option value="player" style={{ color: '#ffffff', background: '#222' }}>Jogador</option>
+                                            <option value="moderador" style={{ color: '#ffc107', background: '#222' }}>Moderador</option>
                                             <option value="admin" style={{ color: '#007bff', background: '#222' }}>Administrador</option>
                                             {isDev && <option value="developer" style={{ color: '#28a745', background: '#222' }}>Desenvolvedor</option>}
                                         </select>
