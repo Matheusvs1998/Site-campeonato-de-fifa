@@ -37,6 +37,7 @@ O gerenciamento do campeonato possui um sistema de níveis de acesso integrado a
 
 ## Criado um sistema de usuarios
 Criado um sistema de usuarios, com confirmação por token via email.
+criado um sistema de alterar dados, como usuario e email.
 
        
 ## Link do vercel
