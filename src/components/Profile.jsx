@@ -192,17 +192,59 @@ function Profile({ user, userRegistration, onUpdate }) {
 
                     <div className="form-group" style={{ textAlign: 'center', marginTop: '10px' }}>
                         <img src={getTeamLogo(formData.teamname)} alt="Escudo" style={{ width: '60px', marginBottom: '10px' }} />
+                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--primary-color)', marginBottom: '10px', marginTop: '-5px' }}>{formData.gamertag}</div>
                         <label>Alterar Time</label>
                         <select value={formData.teamname} onChange={e => setFormData({...formData, teamname: e.target.value})} required>
                             <optgroup label="Espanha">
                                 <option value="Real Madrid">Real Madrid</option>
                                 <option value="Barcelona">Barcelona</option>
                                 <option value="Atlético de Madrid">Atlético de Madrid</option>
+                                <option value="Sevilla">Sevilla</option>
+                                <option value="Real Sociedad">Real Sociedad</option>
+                                <option value="Villarreal">Villarreal</option>
+                                <option value="Girona">Girona</option>
                             </optgroup>
                             <optgroup label="Inglaterra">
                                 <option value="Manchester City">Manchester City</option>
                                 <option value="Arsenal">Arsenal</option>
                                 <option value="Liverpool">Liverpool</option>
+                                <option value="Manchester United">Manchester United</option>
+                                <option value="Chelsea">Chelsea</option>
+                                <option value="Tottenham">Tottenham</option>
+                                <option value="Aston Villa">Aston Villa</option>
+                                <option value="Newcastle United">Newcastle United</option>
+                            </optgroup>
+                            <optgroup label="Itália">
+                                <option value="Inter de Milão">Inter de Milão</option>
+                                <option value="AC Milan">AC Milan</option>
+                                <option value="Juventus">Juventus</option>
+                                <option value="Napoli">Napoli</option>
+                                <option value="AS Roma">AS Roma</option>
+                                <option value="Atalanta">Atalanta</option>
+                            </optgroup>
+                            <optgroup label="Alemanha">
+                                <option value="Bayern de Munique">Bayern de Munique</option>
+                                <option value="Borussia Dortmund">Borussia Dortmund</option>
+                                <option value="Bayer Leverkusen">Bayer Leverkusen</option>
+                                <option value="RB Leipzig">RB Leipzig</option>
+                            </optgroup>
+                            <optgroup label="França">
+                                <option value="PSG">PSG</option>
+                                <option value="Marseille">Marseille</option>
+                                <option value="Monaco">Monaco</option>
+                                <option value="Lille">Lille</option>
+                            </optgroup>
+                            <optgroup label="Outras Ligas">
+                                <option value="Benfica">Benfica (Portugal)</option>
+                                <option value="FC Porto">FC Porto (Portugal)</option>
+                                <option value="Sporting CP">Sporting CP (Portugal)</option>
+                                <option value="Ajax">Ajax (Holanda)</option>
+                                <option value="PSV Eindhoven">PSV Eindhoven (Holanda)</option>
+                                <option value="Boca Juniors">Boca Juniors (Argentina)</option>
+                                <option value="River Plate">River Plate (Argentina)</option>
+                                <option value="Inter Miami">Inter Miami (EUA)</option>
+                                <option value="Al-Nassr">Al-Nassr (Arábia)</option>
+                                <option value="Al-Hilal">Al-Hilal (Arábia)</option>
                             </optgroup>
                         </select>
                     </div>

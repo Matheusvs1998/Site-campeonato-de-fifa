@@ -1,12 +1,13 @@
 import React, { useMemo } from 'react';
-import { getTeamLogo } from '../teamLogos';
+import { getTeamLogo, getFallbackLogo } from '../teamLogos';
+import { extractGamertag } from '../helpers';
 
 function PlayerDashboard({ user, userRegistration, results }) {
     const upcomingMatches = useMemo(() => {
         if (!userRegistration) return [];
         return results.filter(m => 
-            m.status === 'Agendado' && 
-            (m.p1.startsWith(userRegistration.teamname) || m.p2.startsWith(userRegistration.teamname))
+            (m.status === 'Agendado' || m.status === 'Ao Vivo') && 
+            (extractGamertag(m.p1) === userRegistration.gamertag || extractGamertag(m.p2) === userRegistration.gamertag)
         ).sort((a, b) => {
              const dateA = new Date(`${a.date || '9999-12-31'}T${(a.time || '23:59').padStart(5, '0')}`);
              const dateB = new Date(`${b.date || '9999-12-31'}T${(b.time || '23:59').padStart(5, '0')}`);
@@ -27,7 +28,10 @@ function PlayerDashboard({ user, userRegistration, results }) {
                 <h3>Sua Inscrição</h3>
                 {userRegistration ? (
                     <div style={{display: 'flex', alignItems: 'center', gap: '20px', marginTop: '20px', flexWrap: 'wrap'}}>
-                        <img src={getTeamLogo(userRegistration.teamname)} alt="Escudo" style={{width: '80px'}} />
+                        <div style={{ textAlign: 'center' }}>
+                            <img src={getTeamLogo(userRegistration.teamname)} alt="Escudo" style={{width: '80px'}} />
+                            <div style={{ fontWeight: 'bold', color: 'var(--primary-color)', fontSize: '1.1rem', marginTop: '5px' }}>{userRegistration.gamertag}</div>
+                        </div>
                         <div style={{flex: 1}}>
                             <p style={{fontSize: '1.1rem'}}><strong>Time:</strong> {userRegistration.teamname}</p>
                             <p><strong>Gamertag:</strong> {userRegistration.gamertag}</p>
@@ -46,13 +50,29 @@ function PlayerDashboard({ user, userRegistration, results }) {
                         <div key={match.id} className="card match-card">
                             <div className="match-info">
                                 <div className="team-display">
-                                    <img src={getTeamLogo(match.p1)} alt="T1" className="team-logo" />
-                                    <span>{match.p1.split(' (')[0]}</span>
+                                    <img 
+                                        src={getTeamLogo(match.p1)} 
+                                        alt="T1" 
+                                        className="team-logo" 
+                                        onError={(e) => { e.target.src = getFallbackLogo(match.p1.split(' (')[0]); }}
+                                    />
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontWeight: 'bold' }}>{match.p1.split(' (')[0]}</span>
+                                        <small style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 'bold', marginTop: '-2px' }}>{extractGamertag(match.p1)}</small>
+                                    </div>
                                 </div>
                                 <span className="score">VS</span>
                                 <div className="team-display">
-                                    <img src={getTeamLogo(match.p2)} alt="T2" className="team-logo" />
-                                    <span>{match.p2.split(' (')[0]}</span>
+                                    <img 
+                                        src={getTeamLogo(match.p2)} 
+                                        alt="T2" 
+                                        className="team-logo" 
+                                        onError={(e) => { e.target.src = getFallbackLogo(match.p2.split(' (')[0]); }}
+                                    />
+                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                        <span style={{ fontWeight: 'bold' }}>{match.p2.split(' (')[0]}</span>
+                                        <small style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 'bold', marginTop: '-2px' }}>{extractGamertag(match.p2)}</small>
+                                    </div>
                                 </div>
                             </div>
                             <div className={`status ${match.status.toLowerCase()}`} style={{textAlign: 'center'}}>

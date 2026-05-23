@@ -1,7 +1,7 @@
 export const calculateStandings = (matches) => {
     const standings = {};
     matches.forEach(m => {
-        if (m.stage === 'Fase de Grupos' && m.group_name) {
+        if (m.stage.startsWith('Fase de Grupos') && m.group_name) {
             if (!standings[m.group_name]) standings[m.group_name] = {};
 
             [m.p1, m.p2].forEach(t => {
@@ -33,6 +33,50 @@ export const calculateStandings = (matches) => {
         }
     });
     return standings;
+};
+
+export const sortGroupTeams = (teams, matches) => {
+    return [...teams].sort((a, b) => {
+        // 1. Pontos
+        if (b.pts !== a.pts) return b.pts - a.pts;
+
+        // 2. Confronto Direto (Pontos ganhos nos jogos entre os times empatados)
+        const h2hMatches = matches.filter(m => 
+            m.status === 'Finalizado' &&
+            ((m.p1 === a.fullName && m.p2 === b.fullName) || (m.p1 === b.fullName && m.p2 === a.fullName))
+        );
+
+        let aH2HPts = 0;
+        let bH2HPts = 0;
+        h2hMatches.forEach(m => {
+            const s1 = Number(m.score1) || 0;
+            const s2 = Number(m.score2) || 0;
+            if (m.p1 === a.fullName) {
+                if (s1 > s2) aH2HPts += 3;
+                else if (s2 > s1) bH2HPts += 3;
+                else { aH2HPts += 1; bH2HPts += 1; }
+            } else {
+                if (s1 > s2) bH2HPts += 3;
+                else if (s2 > s1) aH2HPts += 3;
+                else { aH2HPts += 1; bH2HPts += 1; }
+            }
+        });
+        if (aH2HPts !== bH2HPts) return bH2HPts - aH2HPts;
+
+        // 3. Saldo de Gols Geral
+        const aSG = a.goalsFor - a.goalsAgainst;
+        const bSG = b.goalsFor - b.goalsAgainst;
+        if (bSG !== aSG) return bSG - aSG;
+
+        // 4. Gols Pró Geral
+        return b.goalsFor - a.goalsFor;
+    });
+};
+
+export const extractGamertag = (fullName) => {
+    if (!fullName || typeof fullName !== 'string') return '';
+    const match = fullName.match(/\(([^)]+)\)/);
+    return match ? match[1].split(' - ')[0] : '';
 };
 
 export const translateAuthError = (msg) => {

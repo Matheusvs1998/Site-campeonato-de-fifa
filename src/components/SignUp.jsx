@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { supabaseClient } from '../supabase';
 import { getTeamLogo } from '../teamLogos';
 import { translateAuthError } from '../helpers';
@@ -16,6 +16,23 @@ function SignUp({ onStepVerify }) {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
     const [acceptedTerms, setAcceptedTerms] = useState(false);
+    const [hasRead, setHasRead] = useState(false);
+    const termsRef = useRef(null);
+
+    const handleScroll = () => {
+        const div = termsRef.current;
+        if (div) {
+            // Verifica se chegou ao fim da rolagem com uma margem de erro de 5px
+            const isBottom = div.scrollHeight - div.scrollTop <= div.clientHeight + 5;
+            if (isBottom) setHasRead(true);
+        }
+    };
+
+    useEffect(() => {
+        if (termsRef.current && termsRef.current.scrollHeight <= termsRef.current.clientHeight) {
+            setHasRead(true);
+        }
+    }, []);
 
     const handleSignUp = async (e) => {
         e.preventDefault();
@@ -94,17 +111,59 @@ function SignUp({ onStepVerify }) {
 
                     <div className="form-group" style={{ textAlign: 'center', marginTop: '10px' }}>
                         <img src={getTeamLogo(formData.teamname)} alt="Escudo" style={{ width: '60px', marginBottom: '10px' }} />
+                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--primary-color)', marginBottom: '10px', marginTop: '-5px' }}>{formData.gamertag || 'Seu Nick'}</div>
                         <label>Escolha seu Time</label>
                         <select value={formData.teamname} onChange={e => setFormData({...formData, teamname: e.target.value})} required>
                             <optgroup label="Espanha">
                                 <option value="Real Madrid">Real Madrid</option>
                                 <option value="Barcelona">Barcelona</option>
                                 <option value="Atlético de Madrid">Atlético de Madrid</option>
+                                <option value="Sevilla">Sevilla</option>
+                                <option value="Real Sociedad">Real Sociedad</option>
+                                <option value="Villarreal">Villarreal</option>
+                                <option value="Girona">Girona</option>
                             </optgroup>
                             <optgroup label="Inglaterra">
                                 <option value="Manchester City">Manchester City</option>
                                 <option value="Arsenal">Arsenal</option>
                                 <option value="Liverpool">Liverpool</option>
+                                <option value="Manchester United">Manchester United</option>
+                                <option value="Chelsea">Chelsea</option>
+                                <option value="Tottenham">Tottenham</option>
+                                <option value="Aston Villa">Aston Villa</option>
+                                <option value="Newcastle United">Newcastle United</option>
+                            </optgroup>
+                            <optgroup label="Itália">
+                                <option value="Inter de Milão">Inter de Milão</option>
+                                <option value="AC Milan">AC Milan</option>
+                                <option value="Juventus">Juventus</option>
+                                <option value="Napoli">Napoli</option>
+                                <option value="AS Roma">AS Roma</option>
+                                <option value="Atalanta">Atalanta</option>
+                            </optgroup>
+                            <optgroup label="Alemanha">
+                                <option value="Bayern de Munique">Bayern de Munique</option>
+                                <option value="Borussia Dortmund">Borussia Dortmund</option>
+                                <option value="Bayer Leverkusen">Bayer Leverkusen</option>
+                                <option value="RB Leipzig">RB Leipzig</option>
+                            </optgroup>
+                            <optgroup label="França">
+                                <option value="PSG">PSG</option>
+                                <option value="Marseille">Marseille</option>
+                                <option value="Monaco">Monaco</option>
+                                <option value="Lille">Lille</option>
+                            </optgroup>
+                            <optgroup label="Outras Ligas">
+                                <option value="Benfica">Benfica (Portugal)</option>
+                                <option value="FC Porto">FC Porto (Portugal)</option>
+                                <option value="Sporting CP">Sporting CP (Portugal)</option>
+                                <option value="Ajax">Ajax (Holanda)</option>
+                                <option value="PSV Eindhoven">PSV Eindhoven (Holanda)</option>
+                                <option value="Boca Juniors">Boca Juniors (Argentina)</option>
+                                <option value="River Plate">River Plate (Argentina)</option>
+                                <option value="Inter Miami">Inter Miami (EUA)</option>
+                                <option value="Al-Nassr">Al-Nassr (Arábia)</option>
+                                <option value="Al-Hilal">Al-Hilal (Arábia)</option>
                             </optgroup>
                         </select>
                     </div>
@@ -129,14 +188,62 @@ function SignUp({ onStepVerify }) {
                         </div>
                     </div>
 
-                    <div className="form-group" style={{ marginTop: '15px' }}>
-                        <div className="terms-box" style={{ maxHeight: '80px', overflowY: 'auto', fontSize: '0.75rem', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '4px' }}>
-                            Ao criar esta conta, você concorda com o regulamento do campeonato Gangster Cup, autoriza o uso de sua imagem/gameplay em transmissões e compromete-se com o fair play.
+                    <div className="form-group" style={{ marginTop: '20px', textAlign: 'left' }}>
+                        <label style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '8px', display: 'block', fontWeight: '600' }}>Regulamento da Gangster Cup</label>
+                        <div 
+                            ref={termsRef}
+                            onScroll={handleScroll}
+                            className="terms-box" 
+                            style={{ 
+                                maxHeight: '120px', 
+                                overflowY: 'auto', 
+                                fontSize: '0.75rem', 
+                                padding: '12px', 
+                                background: 'rgba(0,0,0,0.2)', 
+                                borderRadius: '8px',
+                                border: hasRead ? '1px solid #28a745' : '1px solid rgba(255,255,255,0.1)',
+                                transition: 'all 0.3s ease',
+                                color: '#eee',
+                                lineHeight: '1.5'
+                            }}
+                        >
+                            <p style={{ marginBottom: '10px' }}><strong>1. Inscrição:</strong> Ao criar esta conta, você confirma sua participação na Gangster Cup e aceita que seus dados (Team/Nick) fiquem públicos no site.</p>
+                            <p style={{ marginBottom: '10px' }}><strong>2. Transmissões:</strong> Você autoriza o uso de sua imagem e gameplay em transmissões oficiais na Twitch/YouTube.</p>
+                            <p style={{ marginBottom: '10px' }}><strong>3. Fair Play:</strong> Ofensas, toxicidade ou uso de glitches resultarão em banimento imediato e perda da vaga.</p>
+                            <p style={{ marginBottom: '10px' }}><strong>4. Conexão:</strong> O jogador é responsável por sua conexão. Quedas frequentes podem resultar em W.O.</p>
+                            <p><strong>5. Privacidade:</strong> Seus dados são protegidos e usados apenas para a logística do torneio.</p>
                         </div>
-                        <label className="checkbox-label" style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <input type="checkbox" checked={acceptedTerms} onChange={e => setAcceptedTerms(e.target.checked)} required />
-                            <span style={{ fontSize: '0.85rem' }}>Li e concordo com os termos</span>
-                        </label>
+                        
+                        <div style={{ marginTop: '12px' }}>
+                            <label 
+                                className="checkbox-label" 
+                                style={{ 
+                                    display: 'flex', 
+                                    alignItems: 'center', 
+                                    gap: '12px', 
+                                    opacity: hasRead ? 1 : 0.5, 
+                                    cursor: hasRead ? 'pointer' : 'not-allowed',
+                                    userSelect: 'none'
+                                }}
+                            >
+                                <input 
+                                    type="checkbox" 
+                                    checked={acceptedTerms} 
+                                    onChange={e => setAcceptedTerms(e.target.checked)} 
+                                    disabled={!hasRead}
+                                    required 
+                                    style={{ width: '18px', height: '18px', cursor: hasRead ? 'pointer' : 'not-allowed', margin: 0 }}
+                                />
+                                <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>
+                                    Li e concordo com o regulamento
+                                </span>
+                            </label>
+                            {!hasRead && (
+                                <small style={{ color: 'var(--primary-color)', fontSize: '0.75rem', display: 'block', marginTop: '8px', fontWeight: 'bold' }}>
+                                    ⚠️ Role o texto acima até o final para habilitar o aceite.
+                                </small>
+                            )}
+                        </div>
                     </div>
 
                     <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '20px' }} disabled={loading}>

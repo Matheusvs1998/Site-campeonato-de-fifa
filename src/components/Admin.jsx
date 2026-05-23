@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { supabaseClient } from '../supabase';
 import { getTeamLogo, getFallbackLogo } from '../teamLogos';
-import { calculateStandings } from '../helpers';
+import { calculateStandings, extractGamertag } from '../helpers';
 
 function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, onDeleteMatch, onDeleteAll, user }) {
     const [users, setUsers] = useState([]);
@@ -219,7 +219,33 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                         <tbody>
                             {sortedMatches.map(match => (
                                 <tr key={match.id}>
-                                    <td>{match.p1} vs {match.p2}</td>
+                                    <td>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px', justifyContent: 'center', minWidth: '220px' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, textAlign: 'center' }}>
+                                                <img 
+                                                    src={getTeamLogo(match.p1)} 
+                                                    alt="" 
+                                                    style={{ width: '24px', height: '24px', marginBottom: '2px' }} 
+                                                    onError={(e) => { e.target.src = getFallbackLogo(match.p1.split(' (')[0]); }}
+                                                />
+                                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', lineHeight: '1' }}>{match.p1.split(' (')[0]}</span>
+                                                <small style={{ fontSize: '0.65rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>{extractGamertag(match.p1)}</small>
+                                            </div>
+
+                                            <span style={{ fontSize: '0.7rem', opacity: 0.5, fontWeight: 'bold' }}>VS</span>
+
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, textAlign: 'center' }}>
+                                                <img 
+                                                    src={getTeamLogo(match.p2)} 
+                                                    alt="" 
+                                                    style={{ width: '24px', height: '24px', marginBottom: '2px' }} 
+                                                    onError={(e) => { e.target.src = getFallbackLogo(match.p2.split(' (')[0]); }}
+                                                />
+                                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', lineHeight: '1' }}>{match.p2.split(' (')[0]}</span>
+                                                <small style={{ fontSize: '0.65rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>{extractGamertag(match.p2)}</small>
+                                            </div>
+                                        </div>
+                                    </td>
                                     <td>
                                         <input 
                                             type="number" 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef, Fragment } from 'react';
 import ReactDOM from 'react-dom/client';
 import { supabaseClient } from './supabase.js';
-import { calculateStandings } from './helpers.js';
+import { calculateStandings, sortGroupTeams } from './helpers.js';
 import Home from './components/Home';
 import Login from './components/Login';
 import SignUp from './components/SignUp';
@@ -368,19 +368,36 @@ function App() {
         groups.forEach((groupTeams, i) => {
             const groupName = `Grupo ${String.fromCharCode(65 + i)}`; // Grupo A, B, C...
             
-            // Todos contra todos dentro do grupo (Apenas Ida)
+            // Todos contra todos dentro do grupo (Ida e Volta)
             for (let j = 0; j < groupTeams.length; j++) {
                 for (let k = j + 1; k < groupTeams.length; k++) {
+                    const p1Data = `${groupTeams[j].teamname} (${groupTeams[j].gamertag} - ${groupTeams[j].platform.toLowerCase()})`;
+                    const p2Data = `${groupTeams[k].teamname} (${groupTeams[k].gamertag} - ${groupTeams[k].platform.toLowerCase()})`;
+
+                    // Jogo de Ida
                     newMatches.push({
-                        p1: `${groupTeams[j].teamname} (${groupTeams[j].gamertag} - ${groupTeams[j].platform.toLowerCase()})`,
-                        p2: `${groupTeams[k].teamname} (${groupTeams[k].gamertag} - ${groupTeams[k].platform.toLowerCase()})`,
+                        p1: p1Data,
+                        p2: p2Data,
                         score1: 0,
                         score2: 0,
                         status: 'Agendado',
                         group_name: groupName,
                         date: defaultMatchDate, // Adicionar data padrão
                         time: defaultMatchTime, // Adicionar hora padrão
-                        stage: 'Fase de Grupos'
+                        stage: 'Fase de Grupos (Ida)'
+                    });
+
+                    // Jogo de Volta
+                    newMatches.push({
+                        p1: p2Data,
+                        p2: p1Data,
+                        score1: 0,
+                        score2: 0,
+                        status: 'Agendado',
+                        group_name: groupName,
+                        date: defaultMatchDate,
+                        time: defaultMatchTime,
+                        stage: 'Fase de Grupos (Volta)'
                     });
                 }
             }
@@ -420,8 +437,7 @@ function App() {
             const standings = calculateStandings(results);
             const groups = Object.keys(standings).sort();
             groups.forEach(groupName => {
-                const sortedTeams = Object.values(standings[groupName])
-                    .sort((a, b) => (b.pts - a.pts) || ((b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst)) || Math.random() - 0.5);
+                const sortedTeams = sortGroupTeams(Object.values(standings[groupName]), results);
                 if (sortedTeams.length >= 1) participants.push(sortedTeams[0].fullName);
                 if (sortedTeams.length >= 2) participants.push(sortedTeams[1].fullName);
             });

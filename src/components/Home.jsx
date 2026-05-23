@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { calculateStandings } from '../helpers.js';
+import { calculateStandings, extractGamertag, sortGroupTeams } from '../helpers.js';
 import { getTeamLogo, getFallbackLogo } from '../teamLogos.js';
 
 function Home({ results, onRegisterClick }) {
@@ -74,7 +74,10 @@ function Home({ results, onRegisterClick }) {
                         loading="lazy"
                         onError={(e) => { e.target.src = getFallbackLogo(match.p1.split(' (')[0]); }}
                     />
-                    <span>{match.p1.split(' (')[0]}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 'bold' }}>{match.p1.split(' (')[0]}</span>
+                        <small style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 'bold', marginTop: '-2px' }}>{extractGamertag(match.p1)}</small>
+                    </div>
                 </div>
                 
                 {showScore ? (
@@ -91,7 +94,10 @@ function Home({ results, onRegisterClick }) {
                         loading="lazy"
                         onError={(e) => { e.target.src = getFallbackLogo(match.p2.split(' (')[0]); }}
                     />
-                    <span>{match.p2.split(' (')[0]}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <span style={{ fontWeight: 'bold' }}>{match.p2.split(' (')[0]}</span>
+                        <small style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 'bold', marginTop: '-2px' }}>{extractGamertag(match.p2)}</small>
+                    </div>
                 </div>
             </div>
             <div className={`status ${match.status.toLowerCase()}`} style={{ textAlign: 'center' }}>
@@ -122,6 +128,7 @@ function Home({ results, onRegisterClick }) {
                             onError={(e) => { e.target.src = getFallbackLogo(champion.split(' (')[0]); }}
                         />
                         <h2 className="winner-name">{champion.split(' (')[0]}</h2>
+                        <p style={{ fontWeight: 'bold', color: 'var(--primary-color)', marginTop: '-10px', marginBottom: '15px', fontSize: '1.2rem' }}>{extractGamertag(champion)}</p>
                         <p className="winner-congrats">Parabéns por conquistar a Gangster cup!</p>
                     </div>
                 </section>
@@ -151,8 +158,7 @@ function Home({ results, onRegisterClick }) {
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {Object.values(groupStandings[groupName])
-                                                .sort((a, b) => b.pts - a.pts)
+                                            {sortGroupTeams(Object.values(groupStandings[groupName]), results)
                                                 .map((team, idx) => {
                                                     const teamName = team.fullName.split(' (')[0];
                                                     return (
@@ -165,7 +171,10 @@ function Home({ results, onRegisterClick }) {
                                                                     loading="lazy"
                                                                     onError={(e) => { e.target.src = getFallbackLogo(teamName); }}
                                                                 />
-                                                                <div><div style={{ fontWeight: 'bold' }}>{teamName}</div></div>
+                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                    <div style={{ fontWeight: 'bold' }}>{teamName}</div>
+                                                                    <small style={{ fontSize: '0.7rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>{extractGamertag(team.fullName)}</small>
+                                                                </div>
                                                             </td>
                                                             <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--primary-color)' }}>{team.pts}</td>
                                                         </tr>
