@@ -207,11 +207,12 @@ function SignUp({ onStepVerify }) {
                                 lineHeight: '1.5'
                             }}
                         >
-                            <p style={{ marginBottom: '10px' }}><strong>1. Inscrição:</strong> Ao criar esta conta, você confirma sua participação na Gangster Cup e aceita que seus dados (Team/Nick) fiquem públicos no site.</p>
-                            <p style={{ marginBottom: '10px' }}><strong>2. Transmissões:</strong> Você autoriza o uso de sua imagem e gameplay em transmissões oficiais na Twitch/YouTube.</p>
-                            <p style={{ marginBottom: '10px' }}><strong>3. Fair Play:</strong> Ofensas, toxicidade ou uso de glitches resultarão em banimento imediato e perda da vaga.</p>
-                            <p style={{ marginBottom: '10px' }}><strong>4. Conexão:</strong> O jogador é responsável por sua conexão. Quedas frequentes podem resultar em W.O.</p>
-                            <p><strong>5. Privacidade:</strong> Seus dados são protegidos e usados apenas para a logística do torneio.</p>
+                            <p style={{ marginBottom: '10px' }}><strong>1. Tratamento de Dados (LGPD):</strong> Ao se inscrever, você consente com a coleta de seu e-mail, nome e gamertag para fins exclusivos de gestão do torneio, conforme a Lei 13.709/2018.</p>
+                            <p style={{ marginBottom: '10px' }}><strong>2. Dados Públicos:</strong> Você está ciente de que seu Time e Gamertag serão exibidos publicamente nas tabelas de classificação e resultados.</p>
+                            <p style={{ marginBottom: '10px' }}><strong>3. Transmissões:</strong> Você autoriza o uso de sua imagem (gameplay) em transmissões oficiais nas plataformas Twitch/YouTube.</p>
+                            <p style={{ marginBottom: '10px' }}><strong>4. Seus Direitos:</strong> Você pode, a qualquer momento, retificar seus dados no painel de perfil ou solicitar a exclusão de sua conta entrando em contato com a organização.</p>
+                            <p style={{ marginBottom: '10px' }}><strong>5. Fair Play:</strong> Ofensas ou condutas tóxicas resultarão em banimento e exclusão dos dados da competição.</p>
+                            <p><strong>6. Segurança:</strong> Utilizamos o Supabase para armazenamento seguro e criptografado de suas credenciais.</p>
                         </div>
                         
                         <div style={{ marginTop: '12px' }}>

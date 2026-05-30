@@ -255,6 +255,13 @@ function Profile({ user, userRegistration, onUpdate }) {
                         <small style={{ color: 'var(--text-muted)' }}>O nome não pode ser alterado após a inscrição.</small>
                     </div>
 
+                    <div className="form-group" style={{ marginBottom: '15px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                        <label style={{ fontSize: '0.8rem', color: 'var(--primary-color)' }}>Privacidade e Dados</label>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '5px 0' }}>
+                            Em conformidade com a LGPD, você pode solicitar a exclusão permanente de seus dados e conta entrando em contato com o suporte através do nosso Discord oficial.
+                        </p>
+                    </div>
+
                     <div className="profile-grid-fields">
                         <div className="form-group">
                             <label>Plataforma</label>
