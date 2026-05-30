@@ -70,7 +70,12 @@ function Login() {
                                 <img 
                                     src="https://cdn-icons-png.flaticon.com/128/158/158746.png" 
                                     alt="Ver senha" 
-                                    style={{ width: '22px', height: 'auto', opacity: showPassword ? '1' : '0.3', filter: showPassword ? 'none' : 'grayscale(1)' }} 
+                                    style={{ 
+                                        width: '22px', 
+                                        height: 'auto', 
+                                        opacity: showPassword ? '1' : '0.5', 
+                                        filter: showPassword ? 'invert(11%) sepia(87%) saturate(6964%) hue-rotate(357deg) brightness(97%) contrast(114%)' : 'invert(100%)' 
+                                    }} 
                                 />
                             </button>
                         </div>

@@ -104,7 +104,12 @@ function SignUp({ onStepVerify }) {
                                 onClick={() => setShowPassword(!showPassword)}
                                 style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex' }}
                             >
-                                <img src="https://cdn-icons-png.flaticon.com/128/158/158746.png" alt="Olho" style={{ width: '20px', opacity: showPassword ? '1' : '0.3' }} />
+                                <img 
+                                    src="https://cdn-icons-png.flaticon.com/128/158/158746.png" 
+                                    alt="Olho" 
+                                    style={{ width: '20px', opacity: showPassword ? '1' : '0.5', 
+                                    filter: showPassword ? 'invert(11%) sepia(87%) saturate(6964%) hue-rotate(357deg) brightness(97%) contrast(114%)' : 'invert(100%)' }} 
+                                />
                             </button>
                         </div>
                     </div>

@@ -19,6 +19,8 @@ function Profile({ user, userRegistration, onUpdate }) {
     const [emailOtp, setEmailOtp] = useState('');
     const [emailChangePending, setEmailChangePending] = useState(false); // True if email change requested, waiting for OTP
     const [emailMessage, setEmailMessage] = useState({ text: '', type: '' }); // For email-specific messages
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+    const [isDeleted, setIsDeleted] = useState(false);
 
     useEffect(() => {
         if (userRegistration) {
@@ -122,6 +124,38 @@ function Profile({ user, userRegistration, onUpdate }) {
             }
             setMessage({ text: translateAuthError(err.message), type: 'error' });
         } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        setLoading(true);
+        try {
+            // 1. Deleta a inscrição do campeonato
+            if (userRegistration?.id) {
+                const { error: regError } = await supabaseClient
+                    .from('registrations')
+                    .delete()
+                    .eq('id', userRegistration.id);
+                if (regError) throw regError;
+            }
+
+            // 2. Deleta o perfil do usuário
+            const { error: profileError } = await supabaseClient
+                .from('profiles')
+                .delete()
+                .eq('id', user.id);
+            if (profileError) throw profileError;
+
+            // 3. Encerra a sessão
+            await supabaseClient.auth.signOut();
+            setShowDeleteConfirm(false);
+            setIsDeleted(true);
+            setTimeout(() => {
+                window.location.reload(); // Recarrega para limpar o estado global da aplicação
+            }, 2500);
+        } catch (err) {
+            setMessage({ text: 'Erro ao excluir conta: ' + translateAuthError(err.message), type: 'error' });
             setLoading(false);
         }
     };
@@ -258,7 +292,7 @@ function Profile({ user, userRegistration, onUpdate }) {
                     <div className="form-group" style={{ marginBottom: '15px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--primary-color)' }}>Privacidade e Dados</label>
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '5px 0' }}>
-                            Em conformidade com a LGPD, você pode solicitar a exclusão permanente de seus dados e conta entrando em contato com o suporte através do nosso Discord oficial.
+                            Em conformidade com a LGPD, você pode gerenciar ou excluir seus dados permanentemente através das opções abaixo.
                         </p>
                     </div>
 
@@ -280,8 +314,57 @@ function Profile({ user, userRegistration, onUpdate }) {
                     <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '20px' }} disabled={loading}>
                         {loading ? 'Salvando...' : (emailChangePending ? 'Confirmar E-mail e Salvar' : 'Salvar Alterações')}
                     </button>
+
+                    <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                        <h4 style={{ color: '#ff4444', marginBottom: '5px', fontSize: '0.9rem', textTransform: 'uppercase' }}>Zona de Perigo</h4>
+                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '15px' }}>
+                            Esta ação apagará permanentemente seu perfil e todas as suas participações em campeonatos.
+                        </p>
+                        <button 
+                            type="button" 
+                            className="btn-primary" 
+                            style={{ background: 'rgba(255, 68, 68, 0.1)', border: '1px solid #ff4444', color: '#ff4444', width: '100%' }}
+                            onClick={() => setShowDeleteConfirm(true)}
+                        >
+                            Excluir minha conta e dados permanentemente
+                        </button>
+                    </div>
                 </form>
             </div>
+
+            {showDeleteConfirm && (
+                <div className="success-overlay" style={{ zIndex: 5000 }}>
+                    <div className="success-modal" style={{ borderColor: '#ff4444' }}>
+                        <div style={{ fontSize: '5rem' }}>⚠️</div>
+                        <h2 style={{ color: '#ff4444' }}>Excluir Conta?</h2>
+                        <p>Esta ação é <strong>irreversível</strong>. Todos os seus dados de perfil e inscrições em campeonatos serão apagados.</p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px', flexWrap: 'wrap' }}>
+                            <button 
+                                className="btn-primary" 
+                                style={{ background: '#ff4444' }} 
+                                onClick={handleDeleteAccount} 
+                                disabled={loading}
+                            >
+                                {loading ? 'Processando...' : 'Sim, Excluir Tudo'}
+                            </button>
+                            <button className="btn-primary" style={{ background: '#444' }} onClick={() => setShowDeleteConfirm(false)}>
+                                Cancelar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {isDeleted && (
+                <div className="success-overlay" style={{ zIndex: 6000 }}>
+                    <div className="success-modal" style={{ borderColor: '#ff4444' }}>
+                        <div style={{ fontSize: '5rem' }}>👋</div>
+                        <h2 style={{ color: '#ff4444' }}>Conta Excluída</h2>
+                        <p>Seus dados foram removidos com sucesso de nossos servidores.</p>
+                        <p style={{ marginTop: '10px', fontSize: '0.9rem', opacity: 0.7 }}>Esperamos te ver em breve!</p>
+                    </div>
+                </div>
+            )}
         </section>
     );
 }

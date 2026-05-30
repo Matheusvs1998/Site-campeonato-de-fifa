@@ -7,6 +7,8 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
     const [users, setUsers] = useState([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [adminToDelete, setAdminToDelete] = useState(null);
+    const [showDeleteUserConfirm, setShowDeleteUserConfirm] = useState(false);
+    const [userToDelete, setUserToDelete] = useState(null);
     const [roleUpdateMessage, setRoleUpdateMessage] = useState(null);
 
     const sortedMatches = useMemo(() => {
@@ -76,6 +78,28 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                 setRoleUpdateMessage(message);
                 setTimeout(() => setRoleUpdateMessage(null), 3000);
             }
+        }
+    };
+
+    const handleDeleteUser = async () => {
+        if (!userToDelete) return;
+        try {
+            // 1. Remove a inscrição do campeonato vinculada ao usuário
+            const userReg = registrations.find(r => r.playername === userToDelete.username);
+            if (userReg) {
+                await supabaseClient.from('registrations').delete().eq('id', userReg.id);
+            }
+
+            // 2. Remove o perfil da tabela de perfis
+            const { error: profileError } = await supabaseClient.from('profiles').delete().eq('id', userToDelete.id);
+            if (profileError) throw profileError;
+
+            setUsers(users.filter(u => u.id !== userToDelete.id));
+            setRoleUpdateMessage(`Usuário ${userToDelete.username} removido com sucesso.`);
+            setShowDeleteUserConfirm(false);
+            setUserToDelete(null);
+        } catch (err) {
+            alert("Erro ao excluir usuário: " + err.message);
         }
     };
 
@@ -156,21 +180,37 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                             </select>
                                         </td>
                                         <td>
-                                            <button 
-                                                onClick={() => handleUpdateUser(u.id, { is_banned: !u.is_banned })}
-                                                style={{ 
-                                                    backgroundColor: 'transparent',
-                                                    color: '#ff4444', 
-                                                    border: '1px solid #ff4444',
-                                                    padding: '4px 12px',
-                                                    borderRadius: '4px',
-                                                    cursor: 'pointer',
-                                                    fontWeight: 'bold',
-                                                    fontSize: '0.8rem'
-                                                }}
-                                            >
-                                                {u.is_banned ? 'Desbanir' : 'Banir'}
-                                            </button>
+                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
+                                                <button 
+                                                    onClick={() => handleUpdateUser(u.id, { is_banned: !u.is_banned })}
+                                                    style={{ 
+                                                        backgroundColor: 'transparent',
+                                                        color: '#ff4444', 
+                                                        border: '1px solid #ff4444',
+                                                        padding: '4px 12px',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer',
+                                                        fontWeight: 'bold',
+                                                        fontSize: '0.8rem'
+                                                    }}
+                                                >
+                                                    {u.is_banned ? 'Desbanir' : 'Banir'}
+                                                </button>
+                                                <button 
+                                                    onClick={() => { setUserToDelete(u); setShowDeleteUserConfirm(true); }}
+                                                    style={{ 
+                                                        backgroundColor: 'transparent',
+                                                        color: '#ff4444', 
+                                                        border: '1px solid #ff4444',
+                                                        padding: '4px 8px',
+                                                        borderRadius: '4px',
+                                                        cursor: 'pointer'
+                                                    }}
+                                                    title="Excluir Permanentemente"
+                                                >
+                                                    🗑️
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}
@@ -282,6 +322,21 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                     </table>
                 </div>
             </div>
+
+            {showDeleteUserConfirm && (
+                <div className="success-overlay" style={{ zIndex: 5000 }}>
+                    <div className="success-modal" style={{ borderColor: '#ff4444' }}>
+                        <div style={{ fontSize: '5rem' }}>⚠️</div>
+                        <h2 style={{ color: '#ff4444' }}>Excluir Usuário?</h2>
+                        <p>Deseja realmente apagar o perfil de <strong>{userToDelete?.username}</strong>?</p>
+                        <p style={{ fontSize: '0.8rem', marginTop: '10px', opacity: 0.8 }}>Esta ação é irreversível e removerá todos os dados do jogador e suas inscrições.</p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px', flexWrap: 'wrap' }}>
+                            <button className="btn-primary" style={{ background: '#ff4444' }} onClick={handleDeleteUser}>Sim, Excluir</button>
+                            <button className="btn-primary" style={{ background: '#444' }} onClick={() => setShowDeleteUserConfirm(false)}>Cancelar</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </section>
     );
 }
