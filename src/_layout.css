@@ -1,4 +1,13 @@
 /* Garante que o app ocupe a tela toda e o footer fique no fim */
+html, body {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    /* Adiciona um background padrão para evitar tela preta caso variáveis falhem */
+    background-color: var(--bg-dark, #0a0a0a); /* Fallback escuro para o tema FIFA */
+    color: var(--text-main, #333); /* Fallback para cor do texto */
+}
+
 .app-wrapper {
     display: flex;
     flex-direction: column;
@@ -11,12 +20,45 @@
 }
 
 .header-nav {
-    background: rgba(0, 0, 0, 0.9);
+    background: var(--nav-bg);
     padding: 15px 0;
     position: sticky;
     top: 0;
     z-index: 1000;
     backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--border-color);
+    transition: var(--transition);
+}
+
+/* Theme Toggle Button */
+.theme-toggle-btn {
+    background: var(--bg-input);
+    border: 1px solid var(--border-color);
+    color: var(--text-main);
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.theme-toggle-btn:hover {
+    background: var(--border-color);
+    transform: scale(1.05);
+    box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle-btn svg {
+    width: 20px;
+    height: 20px;
+    transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.theme-toggle-btn:active svg {
+    transform: rotate(45deg) scale(0.9);
 }
 
 .nav-content {
@@ -26,14 +68,17 @@
 }
 
 .logo {
-    font-size: clamp(1.1rem, 2.5vw, 1.4rem);
-    font-weight: 800;
-    cursor: pointer;
-    white-space: nowrap;
     display: flex;
     align-items: center;
     gap: 12px;
-    line-height: 1;
+    cursor: pointer;
+    user-select: none;
+    transition: var(--transition);
+}
+
+.logo:hover {
+    transform: translateY(-1px);
+    filter: drop-shadow(0 0 8px var(--primary-glow));
 }
 
 .logo-click-animation {
@@ -51,17 +96,32 @@
 }
 
 .nav-logo {
-    height: 40px;
+    height: 45px;
     width: auto;
     object-fit: contain;
     filter: drop-shadow(0 0 5px rgba(243, 9, 9, 0.2));
 }
 
-.logo {
-    color: var(--text-light);
+.logo-prefix {
+    font-weight: 900;
+    color: var(--text-main);
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
 }
-.logo span {
+
+.logo-main {
+    font-weight: 900;
     color: var(--primary-color);
+    font-size: 1.2rem;
+    text-transform: uppercase;
+    letter-spacing: -0.5px;
+}
+
+.nav-right-group {
+    display: flex;
+    align-items: center;
+    gap: 30px;
 }
 
 .nav-links {
@@ -71,6 +131,12 @@
     align-items: center;
 }
 
+.nav-controls {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
 .nav-links li {
     margin-left: 30px;
 }
@@ -78,7 +144,7 @@
 .nav-links a {
     font-size: 0.95rem;
     text-decoration: none;
-    color: var(--text-light);
+    color: var(--text-main);
     transition: var(--transition);
     font-weight: 600;
     text-transform: uppercase;
@@ -89,16 +155,33 @@
 }
 
 .hero {
-    min-height: 60vh;
+    min-height: 70vh;
     display: flex;
     align-items: center;
     text-align: center;
-    background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
-                      url('https://help.ea.com/_images/seegk6e7ypwi/7pYFj8uElQ9JhnU8OPDe7n/c5a8c5bea4cfcb13e8f55b8ddb96d153/fc-26-hero.webp');
+    position: relative;
+    overflow: hidden;
+    padding: 80px 0;
+    color: #ffffff;
+    z-index: 1; /* Estabiliza o contexto de empilhamento */
+}
+
+.hero::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)),
+                      url('/hero-bg.webp');
     background-size: cover;
     background-position: center;
     background-repeat: no-repeat;
-    padding: 60px 0;
+    background-attachment: fixed; /* Efeito de parallax robusto */
+    z-index: -1;
+    filter: blur(calc(var(--scroll-y, 0) * 0.015)); /* Desfoque profissional progressivo */
+    will-change: filter;
 }
 
 .hero h1 {
@@ -106,13 +189,15 @@
     margin-bottom: 20px;
     line-height: 1.1;
     font-weight: 800;
+    position: relative;
 }
 
 .footer-nav {
     padding: 40px 0;
     text-align: center;
-    border-top: 1px solid #333;
-    background-color: var(--bg-dark);
+    border-top: 1px solid var(--border-color);
+    background-color: #000000;
+    color: var(--text-main);
 }
 
 .social-links {
@@ -153,7 +238,7 @@
 .bar {
     width: 25px;
     height: 3px;
-    background-color: var(--text-light);
+    background-color: var(--text-main);
     margin: 5px 0;
     transition: 0.4s;
     border-radius: 2px;
@@ -163,62 +248,38 @@
 .bar.open:nth-child(2) { opacity: 0; }
 .bar.open:nth-child(3) { transform: rotate(45deg) translate(-5px, -6px); }
 
-@media (max-width: 768px) {
-    .mobile-menu-btn { display: block; }
+/* Classes Utilitárias de Visibilidade */
+.mobile-only {
+    display: none !important;
+}
 
-    .nav-links {
-        position: fixed;
-        top: 0;
-        left: -100%;
-        flex-direction: column;
-        background-color: rgba(18, 18, 18, 0.98);
-        width: 100%;
-        height: 100vh;
-        justify-content: flex-start;
-        padding-top: 80px;
-        overflow-y: auto;
-        transition: 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        z-index: 1000;
-    }
+.desktop-only {
+    display: flex !important;
+}
 
-    .nav-content { padding: 0 20px; }
-    .nav-links.active { left: 0; }
-    .nav-links li { margin: 25px 0; margin-left: 0; }
+/* Estilos para o Modal de Recuperação de Senha */
+.success-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.9);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    backdrop-filter: blur(8px);
+}
 
-    /* Ajustes específicos para o Painel Admin no Mobile */
-    .admin-header {
-        flex-direction: column !important;
-        align-items: stretch !important;
-        text-align: center;
-        gap: 20px;
-    }
-
-    .admin-actions {
-        flex-direction: column;
-        width: 100%;
-        gap: 10px !important;
-    }
-
-    .admin-actions button {
-        width: 100%;
-        margin: 0 !important;
-    }
-
-    /* Melhoria nas tabelas mobile */
-    .admin-table th, .admin-table td {
-        padding: 10px 8px;
-        font-size: 0.85rem;
-    }
-
-    /* Ajustes para o Perfil */
-    .profile-grid-fields {
-        grid-template-columns: 1fr !important; /* Força uma coluna única */
-        gap: 10px !important;
-    }
-
-    .form-container .card {
-        padding: 20px !important;
-        margin: 0 10px !important;
-        width: auto !important;
-    }
+.success-modal {
+    background: var(--bg-card, #1a1a1a);
+    padding: 40px;
+    border-radius: 20px;
+    border: 2px solid var(--primary-color);
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+    box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    animation: celebrate 0.5s ease-out;
 }

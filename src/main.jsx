@@ -11,10 +11,10 @@ import Profile from './components/Profile';
 import PlayerDashboard from './components/PlayerDashboard';
 import '../styles.css';
 
-const MAINTENANCE_MODE = false; // Mude para true para ATIVAR; false para DESATIVAR
+const MAINTENANCE_MODE = false;
 
 function App() {
-    const [page, setPage] = useState('home'); // home, login, signup, verify, admin, register
+    const [page, setPage] = useState('home');
     const [isMenuOpen, setIsMenuOpen] = useState(false);
     const [user, setUser] = useState(null);
     const [session, setSession] = useState(null);
@@ -23,189 +23,130 @@ function App() {
     const [hasBeenWelcomed, setHasBeenWelcomed] = useState(() => {
         return sessionStorage.getItem('gangster_cup_welcomed') === 'true';
     });
-    const [tempEmail, setTempEmail] = useState(''); // Armazena email para verificação
-    const [roleUpdateNotify, setRoleUpdateNotify] = useState(null); // Notificação de mudança de cargo para o próprio usuário
-    const [banNotify, setBanNotify] = useState(false); // Notificação de banimento
-
-    // Monitora o estado da sessão do Supabase
-    useEffect(() => {
-        if (!supabaseClient) return;
-        
-        const checkSession = async () => {
-            const { data: { session: initialSession } } = await supabaseClient.auth.getSession();
-            setSession(initialSession);
-            if (initialSession?.user) await fetchUserProfile(initialSession.user);
-        };
-        checkSession();
-
-        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, currentSession) => {
-            setSession(currentSession);
-            if (currentSession?.user) {
-                // REMOVIDO AWAIT: Deixa o perfil sincronizar em background para não travar a UI
-                fetchUserProfile(currentSession.user);
-                
-                // Verifica no sessionStorage para persistir mesmo com refresh da página
-                const alreadyWelcomed = sessionStorage.getItem('gangster_cup_welcomed') === 'true';
-                if (event === 'SIGNED_IN' && !alreadyWelcomed) {
-                    sessionStorage.setItem('gangster_cup_welcomed', 'true');
-                    setShowWelcome(true);
-                    setHasBeenWelcomed(true);
-                    setTimeout(() => setShowWelcome(false), 2500);
-                }
-            } else {
-                setUser(null);
-                setUserRegistration(null);
-                sessionStorage.removeItem('gangster_cup_welcomed');
-                setHasBeenWelcomed(false);
-            }
-        });
-
-        return () => subscription?.unsubscribe();
-    }, []);
-
-    // Effect para gerenciar a navegação automática baseada no estado da sessão
-    useEffect(() => {
-        // Removido 'home' da lista: permite que o usuário logado acesse a tela inicial sem logoff
-        if (session && (page === 'signup' || page === 'verify' || page === 'login')) {
-            setPage('admin');
-        } else if (!session && page === 'admin') { 
-            setPage('home');
-        }
-    }, [session, page]);
-
-    const fetchUserProfile = async (authUser, retryCount = 0) => {
-        if (!supabaseClient || !authUser) return;
-
-        try {
-            // 0. Tenta obter dados frescos, mas usa o authUser atual como base para não travar a UI
-            const { data: userData } = await supabaseClient.auth.getUser();
-            const activeUser = userData?.user || authUser;
-
-            const metadata = activeUser.user_metadata;
-            const userId = activeUser.id;
-            const username = String(metadata?.playername || metadata?.playerName || activeUser.email?.split('@')[0] || 'Jogador').trim();
-
-            // 1. Busca o perfil no banco PRIMEIRO para garantir o cargo correto (Dev/Admin) sem flickering visual
-            const { data: dbProfile, error: profileError } = await supabaseClient
-                .from('profiles')
-                .select('*')
-                .eq('id', userId)
-                .maybeSingle();
-
-            if (dbProfile) {
-                setUser(dbProfile);
-                // Verifica banimento imediatamente
-                if (dbProfile.is_banned) {
-                    setBanNotify(true);
-                    setTimeout(() => {
-                        setBanNotify(false);
-                        handleLogout();
-                    }, 4000);
-                    return;
-                }
-            } else if (!profileError) {
-                // Caso não exista no banco (primeiro login), cria o perfil com cargo padrão 'player'
-                const currentLocalProfile = {
-                    id: userId,
-                    username: username,
-                    role: 'player',
-                    is_banned: false
-                };
-                const { data: created } = await supabaseClient
-                    .from('profiles')
-                    .upsert([currentLocalProfile], { onConflict: 'id' })
-                    .select()
-                    .maybeSingle();
-                setUser(created || currentLocalProfile);
-            }
-
-            // 2. Se não temos metadados de time (comum logo após confirmação), tenta re-sincronizar uma vez
-            if (!metadata?.teamname && !metadata?.teamName && retryCount < 2 && page !== 'login') {
-                await new Promise(r => setTimeout(r, 1500));
-                return fetchUserProfile(activeUser, retryCount + 1);
-            }
-
-            // 3. Sincroniza a inscrição do campeonato
-            const { data: reg } = await supabaseClient
-                .from('registrations')
-                .select('*')
-                .or(`playername.eq."${username}",playername.eq."${authUser.email}"`) // Busca flexível
-                .maybeSingle();
-
-            if (reg) {
-                setUserRegistration(reg);
-            } else if (metadata?.teamname || metadata?.teamName) {
-                // Se não há registro no banco, mas temos os dados no Auth, forçamos a criação
-                console.log("Criando registro do campeonato para:", username);
-                
-                const payload = {
-                    playername: username,
-                    teamname: metadata.teamname || metadata.teamName,
-                    platform: metadata.platform || 'PS5',
-                    gamertag: metadata.gamertag || 'N/A'
-                };
-
-                const { data: newReg, error: regError } = await supabaseClient
-                    .from('registrations')
-                    .upsert([payload], { onConflict: 'playername' })
-                    .select()
-                    .maybeSingle();
-
-                if (newReg) {
-                    setUserRegistration(newReg);
-                }
-                if (regError) {
-                    console.error("Erro ao persistir inscrição:", regError.message);
-                }
-            }
-        } catch (error) {
-            console.error("Erro no fetchUserProfile:", error);
-        }
-    };
-
+    const [tempEmail, setTempEmail] = useState('');
+    const [roleUpdateNotify, setRoleUpdateNotify] = useState(null);
+    const [banNotify, setBanNotify] = useState(false);
     const [isLogoAnimated, setIsLogoAnimated] = useState(false);
+    const [theme, setTheme] = useState(() => localStorage.getItem('gangster_cup_theme') || 'dark');
     const [registrations, setRegistrations] = useState([]);
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showLiveAlert, setShowLiveAlert] = useState(true);
     const [isVerifying, setIsVerifying] = useState(false);
     const [accessError, setAccessError] = useState(null);
-    const [currentPublicIp, setCurrentPublicIp] = useState(null); // Novo estado para armazenar o IP público
-    const [logoutMessage, setLogoutMessage] = useState(null); // Estado para mensagem de despedida
-    const [resetMessage, setResetMessage] = useState(null); // Estado para mensagem de reset
-    const [showResetConfirm, setShowResetConfirm] = useState(false); // Estado para o modal de confirmação
-    const [drawMessage, setDrawMessage] = useState(null); // Estado para mensagem de sorteio realizado
-    const [showDrawConfirm, setShowDrawConfirm] = useState(false); // Estado para o modal de confirmação do sorteio
+    const [currentPublicIp, setCurrentPublicIp] = useState(null);
+    const [logoutMessage, setLogoutMessage] = useState(null);
+    const [resetMessage, setResetMessage] = useState(null);
+    const [showResetConfirm, setShowResetConfirm] = useState(false);
+    const [drawMessage, setDrawMessage] = useState(null);
+    const [showDrawConfirm, setShowDrawConfirm] = useState(false);
+    const [toasts, setToasts] = useState([]);
+    const [scrollY, setScrollY] = useState(0);
+    const [isRecoveringPassword, setIsRecoveringPassword] = useState(false);
+    const [newPassword, setNewPassword] = useState('');
 
-    // Ref para rastrear o usuário atual dentro de callbacks de eventos (Realtime)
+    useEffect(() => {
+        const handleScroll = () => {
+            setScrollY(window.scrollY);
+            document.documentElement.style.setProperty('--scroll-y', `${window.scrollY}px`);
+        };
+        window.addEventListener('scroll', handleScroll, { passive: true });
+        
+        // Listener de Recuperação de Senha
+        const { data: authListener } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
+            if (event === 'PASSWORD_RECOVERY') {
+                setIsRecoveringPassword(true);
+                setPage('login');
+            }
+        });
+
+        // Configuração de Realtime (Atualizações ao Vivo)
+        const matchesChannel = supabaseClient
+            .channel('realtime-matches')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, (payload) => {
+                console.log('Mudança detectada em matches:', payload);
+                fetchData();
+            })
+            .subscribe();
+
+        const registrationsChannel = supabaseClient
+            .channel('realtime-registrations')
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, (payload) => {
+                console.log('Mudança detectada em registrations:', payload);
+                fetchData();
+            })
+            .subscribe();
+
+        return () => {
+            window.removeEventListener('scroll', handleScroll);
+            if (authListener) authListener.subscription.unsubscribe();
+            supabaseClient.removeChannel(matchesChannel);
+            supabaseClient.removeChannel(registrationsChannel);
+        };
+    }, []);
+
+    const handleUpdatePassword = async (e) => {
+        e.preventDefault();
+        try {
+            const { error } = await supabaseClient.auth.updateUser({ password: newPassword });
+            if (error) throw error;
+            addToast('Senha atualizada com sucesso!', 'success');
+            setIsRecoveringPassword(false);
+            setPage('login');
+        } catch (err) {
+            addToast(err.message, 'error');
+        }
+    };
+
+    const addToast = useCallback((message, type = 'info') => {
+        const id = Date.now();
+        setToasts(prev => [...prev, { id, message, type }]);
+        setTimeout(() => {
+            setToasts(prev => prev.filter(t => t.id !== id));
+        }, 4000);
+    }, []);
+
     const userRef = useRef(user);
     useEffect(() => {
         userRef.current = user;
     }, [user]);
 
+    useEffect(() => {
+        document.documentElement.setAttribute('data-theme', theme);
+        localStorage.setItem('gangster_cup_theme', theme);
+    }, [theme]);
+
+    const toggleTheme = () => {
+        setTheme(prev => prev === 'dark' ? 'light' : 'dark');
+        addToast(`Tema ${theme === 'dark' ? 'Claro' : 'Escuro'} ativado!`, 'info');
+    };
+
     const handleLogout = useCallback(async () => {
         try {
-            setLogoutMessage(`Até logo!`);
+            const currentUser = userRef.current;
+            setLogoutMessage({ 
+                username: currentUser?.username || 'Competidor', 
+                role: currentUser?.role || 'player' 
+            });
             setIsMenuOpen(false);
             sessionStorage.removeItem('gangster_cup_welcomed');
             setHasBeenWelcomed(false);
             setUserRegistration(null);
             if (supabaseClient) await supabaseClient.auth.signOut();
+            addToast('Sessão encerrada com sucesso.', 'success');
             setTimeout(() => {
                 setPage('home');
                 setLogoutMessage(null);
-            }, 2000);
+            }, 2500);
         } catch (err) {
             setPage('home');
         }
-    }, [supabaseClient]);
+    }, [addToast]);
 
-    // Função de busca de dados movida para o escopo do componente para ser visível em todo o App
     const fetchData = useCallback(async (initial = false) => {
         if (!supabaseClient) return setLoading(false);
         if (initial) setLoading(true);
 
-        // Segurança: Força o fim do carregamento após 5 segundos para não travar o site
         const safetyTimeout = setTimeout(() => {
             if (initial) setLoading(false);
         }, 5000);
@@ -220,53 +161,181 @@ function App() {
             setResults(matchRes.data || []);
         } catch (err) {
             console.error('Falha crítica ao buscar dados:', err);
+            addToast('Erro ao sincronizar dados com o servidor.', 'error');
         } finally {
             clearTimeout(safetyTimeout);
             if (initial) setLoading(false);
         }
-    }, [supabaseClient]);
+    }, [addToast]);
 
-    // Efeito para buscar o IP público uma vez ao carregar o componente
+    const fetchUserProfile = async (authUser, retryCount = 0) => {
+        if (!supabaseClient || !authUser) return;
+
+        try {
+            const { data: userData } = await supabaseClient.auth.getUser();
+            const activeUser = userData?.user || authUser;
+
+            const metadata = activeUser.user_metadata;
+            const userId = activeUser.id;
+            const username = String(metadata?.playername || metadata?.playerName || activeUser.email?.split('@')[0] || 'Jogador').trim();
+
+            const { data: dbProfile, error: profileError } = await supabaseClient
+                .from('profiles')
+                .select('*')
+                .eq('id', userId)
+                .maybeSingle();
+
+            let activeProfile = dbProfile;
+
+            if (!dbProfile && !profileError) {
+                const { data: created, error: createError } = await supabaseClient
+                    .from('profiles')
+                    .upsert([{
+                        id: userId,
+                        username: username,
+                        role: 'player',
+                        is_banned: false
+                    }], { onConflict: 'id' })
+                    .select()
+                    .maybeSingle();
+
+                if (createError) throw createError;
+                activeProfile = created;
+                addToast('Perfil criado com sucesso!', 'success');
+            }
+
+            if (activeProfile) {
+                setUser(activeProfile);
+                if (activeProfile.is_banned) {
+                    setBanNotify(true);
+                    setTimeout(() => {
+                        setBanNotify(false);
+                        handleLogout();
+                    }, 4000);
+                    return;
+                }
+            } else {
+                return;
+            }
+
+            if (!metadata?.teamname && !metadata?.teamName && retryCount < 2 && page !== 'login') {
+                await new Promise(r => setTimeout(r, 1500));
+                return fetchUserProfile(activeUser, retryCount + 1);
+            }
+
+            const validatedUsername = activeProfile.username;
+
+            const { data: reg } = await supabaseClient
+                .from('registrations')
+                .select('*')
+                .or(`playername.eq."${validatedUsername}",playername.eq."${activeUser.email}"`)
+                .maybeSingle();
+
+            if (reg) {
+                setUserRegistration(reg);
+            } else if (metadata?.teamname || metadata?.teamName) {
+                const payload = {
+                    playername: validatedUsername,
+                    teamname: metadata.teamname || metadata.teamName,
+                    platform: metadata.platform || 'PS5',
+                    gamertag: metadata.gamertag || 'N/A'
+                };
+
+                const { data: newReg, error: regError } = await supabaseClient
+                    .from('registrations')
+                    .upsert([payload], { onConflict: 'playername' })
+                    .select()
+                    .maybeSingle();
+
+                if (newReg) setUserRegistration(newReg);
+                if (regError) console.error("Erro ao persistir inscrição:", regError.message);
+            }
+        } catch (error) {
+            console.error("Erro no fetchUserProfile:", error);
+        }
+    };
+
     useEffect(() => {
-        const fetchPublicIp = async () => {
-            try {
-                const ipResponse = await fetch('https://api.ipify.org?format=json');
-                const { ip } = await ipResponse.json();
-                setCurrentPublicIp(ip);
-            } catch (e) { /* Ignorar erro, será tratado na verificação */ }
+        if (!supabaseClient) return;
+        
+        const checkSession = async () => {
+            const { data: { session: initialSession } } = await supabaseClient.auth.getSession();
+            setSession(initialSession);
+            if (initialSession?.user) await fetchUserProfile(initialSession.user);
         };
-        fetchPublicIp();
-    }, []); // Array de dependências vazio para rodar apenas uma vez
+        checkSession();
 
-    // 1. Carregamento inicial de dados - Executado apenas UMA vez ao montar o componente
+        const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, currentSession) => {
+            setSession(currentSession);
+            
+            // Trata Recuperação de Senha
+            if (event === 'PASSWORD_RECOVERY') {
+                setIsRecoveringPassword(true);
+                setPage('login');
+                addToast('Link de recuperação validado! Defina sua nova senha.', 'info');
+            }
+
+            if (currentSession?.user) {
+                fetchUserProfile(currentSession.user);
+                const alreadyWelcomed = sessionStorage.getItem('gangster_cup_welcomed') === 'true';
+                if (event === 'SIGNED_IN' && !alreadyWelcomed) {
+                    sessionStorage.setItem('gangster_cup_welcomed', 'true');
+                    setShowWelcome(true);
+                    setHasBeenWelcomed(true);
+                    addToast(`Bem-vindo, ${currentSession.user.user_metadata?.playername || 'Competidor'}!`, 'success');
+                    setTimeout(() => setShowWelcome(false), 2500);
+                }
+            } else {
+                setUser(null);
+                setUserRegistration(null);
+                sessionStorage.removeItem('gangster_cup_welcomed');
+                setHasBeenWelcomed(false);
+            }
+        });
+
+        return () => subscription?.unsubscribe();
+    }, [addToast]);
+
+    useEffect(() => {
+        if (session && (page === 'signup' || page === 'verify' || page === 'login')) {
+            setPage('admin');
+        } else if (!session && page === 'admin') { 
+            setPage('home');
+        }
+    }, [session, page]);
+
     useEffect(() => {
         fetchData(true);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []); 
+    }, [fetchData]); 
 
-    // 2. Inscrição em canais Realtime e monitoramento de mudanças de cargo
     useEffect(() => {
         if (!supabaseClient) return;
 
         const channel = supabaseClient
             .channel('tournament-updates')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, () => fetchData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, (payload) => {
+                fetchData();
+                if (payload.eventType === 'UPDATE') {
+                    addToast('Um placar foi atualizado em tempo real!', 'info');
+                }
+            })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => fetchData())
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
                 if (userRef.current && payload.new.id === userRef.current.id) {
-                    // Detecta mudança de cargo
                     if (payload.new.role !== userRef.current.role && !payload.new.is_banned) {
                         const roleNames = { player: 'Jogador', moderador: 'Moderador', admin: 'Administrador', developer: 'Desenvolvedor' };
-                        setRoleUpdateNotify(roleNames[payload.new.role] || payload.new.role);
+                        const newRole = roleNames[payload.new.role] || payload.new.role;
+                        setRoleUpdateNotify(newRole);
+                        addToast(`Seu cargo mudou para: ${newRole}`, 'info');
                         
                         setTimeout(() => {
                             setRoleUpdateNotify(null);
                             handleLogout();
                         }, 3500);
                     }
-                    // Detecta banimento em tempo real
                     if (payload.new.is_banned && !userRef.current.is_banned) {
                         setBanNotify(true);
+                        addToast('Sua conta foi banida.', 'error');
                         setTimeout(() => {
                             setBanNotify(false);
                             handleLogout();
@@ -280,9 +349,8 @@ function App() {
         return () => {
             supabaseClient.removeChannel(channel);
         };
-    }, [fetchData, handleLogout]);
+    }, [fetchData, handleLogout, addToast]);
 
-    // 3. Atualiza os dados silenciosamente quando o usuário logar (sem mostrar tela de carregamento)
     useEffect(() => {
         if (user) fetchData(false);
     }, [user, fetchData]);
@@ -291,22 +359,21 @@ function App() {
         if (!supabaseClient) return;
         const { data, error } = await supabaseClient
             .from('matches')
-            // Converte para número se for um campo de placar (score1 ou score2)
             .update({ [field]: (field.startsWith('score') ? parseInt(value) || 0 : value) })
             .eq('id', id)
-            .select(); // Adicionado .select() para retornar o item atualizado
+            .select();
 
         if (error) {
             console.error('Erro ao atualizar resultado:', error);
+            addToast('Erro ao salvar placar.', 'error');
         } else if (data && data.length > 0) {
             setResults(results.map(r => r.id === id ? data[0] : r));
+            addToast('Placar atualizado com sucesso!', 'success');
         }
     };
+
     const addRegistration = async (data) => {
         if (!supabaseClient) return false;
-        console.log('Tentando registrar:', data);
-        
-        // Limpa os dados para evitar conflitos de colunas inexistentes vindas do spread (...)
         const payload = {
             playername: (data.playername || data.playerName || '').trim(),
             teamname: data.teamname || data.teamName,
@@ -320,35 +387,21 @@ function App() {
             .select();
 
         if (error) {
-            console.error('Erro detalhado do Supabase:', error.message, error.details, error.hint);
-            alert(`Erro ao realizar inscrição: ${error.message}`);
+            addToast(`Erro na inscrição: ${error.message}`, 'error');
         } else if (newRegistration && newRegistration.length > 0) {
             setRegistrations([...registrations, newRegistration[0]]);
-            return true; // Indica sucesso
+            addToast('Inscrição realizada com sucesso!', 'success');
+            return true;
         }
-        return false; // Indica falha
+        return false;
     };
-    const drawMatches = () => {
-        if (registrations.length < 2) {
-            alert("É necessário pelo menos 2 inscritos para realizar o sorteio!");
-            return;
-        }
-        if (!supabaseClient) return;
-        setShowDrawConfirm(true);
-    };
-    // Sorteio inicial apenas da Fase de Grupos
+
     const executeGroupDraw = async () => {
         setShowDrawConfirm(false);
         if (!supabaseClient) return;
+        setLoading(true);
 
-        // Limpar partidas antigas antes de gerar o novo sorteio
-        // Usando neq com um ID impossível para permitir o delete sem filtro específico
-        const { error: deleteError } = await supabaseClient.from('matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-        if (deleteError) {
-            console.error('Erro ao limpar partidas:', deleteError);
-            alert(`Erro ao limpar partidas: ${deleteError.message}`);
-            return;
-        }
+        await supabaseClient.from('matches').delete().neq('id', '00000000-0000-0000-0000-000000000000');
 
         const shuffled = [...registrations].sort(() => 0.5 - Math.random());
         const newMatches = [];
@@ -356,47 +409,31 @@ function App() {
         const defaultMatchTime = "19:00";
         const GROUP_SIZE = 4;
 
-        // --- FASE DE GRUPOS ---
         const numGroups = Math.ceil(shuffled.length / GROUP_SIZE);
         const groups = Array.from({ length: numGroups }, () => []);
 
-        // Distribui jogadores nos grupos
         shuffled.forEach((reg, i) => {
             groups[i % numGroups].push(reg);
         });
 
         groups.forEach((groupTeams, i) => {
-            const groupName = `Grupo ${String.fromCharCode(65 + i)}`; // Grupo A, B, C...
-            
-            // Todos contra todos dentro do grupo (Ida e Volta)
+            const groupName = `Grupo ${String.fromCharCode(65 + i)}`;
             for (let j = 0; j < groupTeams.length; j++) {
                 for (let k = j + 1; k < groupTeams.length; k++) {
                     const p1Data = `${groupTeams[j].teamname} (${groupTeams[j].gamertag} - ${groupTeams[j].platform.toLowerCase()})`;
                     const p2Data = `${groupTeams[k].teamname} (${groupTeams[k].gamertag} - ${groupTeams[k].platform.toLowerCase()})`;
 
-                    // Jogo de Ida
                     newMatches.push({
-                        p1: p1Data,
-                        p2: p2Data,
-                        score1: 0,
-                        score2: 0,
-                        status: 'Agendado',
-                        group_name: groupName,
-                        date: defaultMatchDate, // Adicionar data padrão
-                        time: defaultMatchTime, // Adicionar hora padrão
+                        p1: p1Data, p2: p2Data, score1: 0, score2: 0,
+                        status: 'Agendado', group_name: groupName,
+                        date: defaultMatchDate, time: defaultMatchTime,
                         stage: 'Fase de Grupos (Ida)'
                     });
 
-                    // Jogo de Volta
                     newMatches.push({
-                        p1: p2Data,
-                        p2: p1Data,
-                        score1: 0,
-                        score2: 0,
-                        status: 'Agendado',
-                        group_name: groupName,
-                        date: defaultMatchDate,
-                        time: defaultMatchTime,
+                        p1: p2Data, p2: p1Data, score1: 0, score2: 0,
+                        status: 'Agendado', group_name: groupName,
+                        date: defaultMatchDate, time: defaultMatchTime,
                         stage: 'Fase de Grupos (Volta)'
                     });
                 }
@@ -404,39 +441,31 @@ function App() {
         });
 
         if (newMatches.length > 0) {
-            const { data, error } = await supabaseClient
-                .from('matches')
-                .insert(newMatches)
-                .select();
-
+            const { data, error } = await supabaseClient.from('matches').insert(newMatches).select();
             if (error) {
-                console.error('Erro ao sortear partidas:', error);
-                alert('Erro ao realizar sorteio: ' + (error.message || 'Verifique se as colunas "date" e "time" foram criadas no Supabase.'));
+                addToast('Erro ao realizar sorteio.', 'error');
             } else {
-                setResults(data); // Atualiza com as partidas inseridas (com IDs do Supabase)
-                setDrawMessage("Fase de Grupos gerada com sucesso!");
-                setTimeout(() => setDrawMessage(null), 2500);
+                setResults(data);
+                addToast('Fase de Grupos gerada com sucesso!', 'success');
             }
         }
+        setLoading(false);
     };
-    // Gera a próxima fase do mata-mata baseado nos resultados anteriores
+
     const executeKnockoutDraw = async () => {
         if (!supabaseClient) return;
-        
-        // 1. Identificar todas as fases existentes (normalizadas)
+        setLoading(true);
         const stagesPresent = [...new Set(results.map(m => m.stage.split(' (')[0]))];
         const order = ["Oitavas de Final", "Quartas de Final", "Semifinal", "Final"];
-        
         let nextStage = "";
         let participants = [];
 
-        // 2. Lógica de transição: Fase de Grupos -> Primeiro Mata-Mata
         const hasKnockout = stagesPresent.some(s => order.includes(s));
 
         if (!hasKnockout) {
             const standings = calculateStandings(results);
-            const groups = Object.keys(standings).sort();
-            groups.forEach(groupName => {
+            const sortedGroups = Object.keys(standings).sort();
+            sortedGroups.forEach(groupName => {
                 const sortedTeams = sortGroupTeams(Object.values(standings[groupName]), results);
                 if (sortedTeams.length >= 1) participants.push(sortedTeams[0].fullName);
                 if (sortedTeams.length >= 2) participants.push(sortedTeams[1].fullName);
@@ -447,34 +476,26 @@ function App() {
             else if (participants.length >= 4) nextStage = "Semifinal";
             else if (participants.length === 2) nextStage = "Final";
             else {
-                alert("Número de participantes insuficiente para gerar mata-mata.");
+                addToast("Número de participantes insuficiente para o mata-mata.", 'error');
+                setLoading(false);
                 return;
             }
         } else {
-            // 3. Lógica de transição entre fases de mata-mata
             const currentStage = order.reduce((last, s) => stagesPresent.includes(s) ? s : last, "");
             const nextIndex = order.indexOf(currentStage) + 1;
 
-            if (nextIndex >= order.length || !order[nextIndex]) {
-                alert("O campeonato já chegou ao fim!");
+            if (nextIndex >= order.length) {
+                addToast("O campeonato já terminou!", 'info');
+                setLoading(false);
                 return;
             }
             nextStage = order[nextIndex];
 
-            // Evitar duplicar a próxima fase se ela já existir no banco
-            if (stagesPresent.includes(nextStage)) {
-                alert(`A fase ${nextStage} já foi gerada!`);
-                return;
-            }
-
-            // Pegar os vencedores da fase atual por placar agregado
             const currentStageMatches = results.filter(m => m.stage.startsWith(currentStage));
             const pairings = {};
-            
             currentStageMatches.forEach(m => {
                 const teams = [m.p1, m.p2].sort().join(' vs ');
                 if (!pairings[teams]) pairings[teams] = { p1: m.p1, p2: m.p2, s1: 0, s2: 0 };
-                
                 if (m.p1 === pairings[teams].p1) {
                     pairings[teams].s1 += Number(m.score1) || 0;
                     pairings[teams].s2 += Number(m.score2) || 0;
@@ -483,16 +504,7 @@ function App() {
                     pairings[teams].s2 += Number(m.score1) || 0;
                 }
             });
-
-            Object.values(pairings).forEach(p => {
-                participants.push(p.s1 >= p.s2 ? p.p1 : p.p2);
-            });
-        }
-
-        // 4. Criação das partidas
-        if (participants.length < 2) {
-            alert("Não há times suficientes para a próxima fase!");
-            return;
+            Object.values(pairings).forEach(p => participants.push(p.s1 >= p.s2 ? p.p1 : p.p2));
         }
 
         const newMatches = [];
@@ -503,15 +515,11 @@ function App() {
         for (let i = 0; i < shuffledParticipants.length; i += 2) {
             const p1 = shuffledParticipants[i];
             const p2 = shuffledParticipants[i + 1];
-            if (!p2) break; // Garante pares
-
+            if (!p2) break;
             const baseMatch = { score1: 0, score2: 0, status: 'Agendado', group_name: '', date: defaultMatchDate, time: defaultMatchTime };
-
             if (nextStage === "Final") {
-                // JOGO ÚNICO NA FINAL
                 newMatches.push({ ...baseMatch, p1, p2, stage: nextStage });
             } else {
-                // IDA E VOLTA NAS DEMAIS FASES
                 newMatches.push({ ...baseMatch, p1, p2, stage: `${nextStage} (Ida)` });
                 newMatches.push({ ...baseMatch, p1: p2, p2: p1, stage: `${nextStage} (Volta)` });
             }
@@ -519,340 +527,308 @@ function App() {
 
         if (newMatches.length > 0) {
             const { data, error } = await supabaseClient.from('matches').insert(newMatches).select();
-            if (error) {
-                alert('Erro ao gerar fase: ' + error.message);
-            } else {
+            if (error) addToast(error.message, 'error');
+            else {
                 setResults([...results, ...data]);
-                setDrawMessage(`${nextStage} gerada com sucesso!`);
-                setTimeout(() => {
-                    setDrawMessage(null);
-                }, 3000);
+                addToast(`${nextStage} gerada com sucesso!`, 'success');
             }
-        } else {
-            alert("Não foi possível gerar partidas suficientes para o sorteio.");
         }
+        setLoading(false);
     };
+
     const deleteMatch = async (id) => {
-        if (!supabaseClient || !window.confirm("Deseja realmente apagar esta partida?")) return;
-        
+        if (!supabaseClient || !window.confirm("Apagar partida?")) return;
         const { error } = await supabaseClient.from('matches').delete().eq('id', id);
-        if (error) {
-            console.error('Erro ao deletar partida:', error);
-            alert(`Erro ao deletar partida: ${error.message}`);
-        } else {
-            setResults(results.filter(match => match.id !== id));
+        if (!error) {
+            setResults(results.filter(m => m.id !== id));
+            addToast('Partida removida.', 'info');
         }
     };
-    const deleteAllMatches = () => {
-        if (!supabaseClient) return;
-        setShowResetConfirm(true);
-    };
+
     const executeReset = async () => {
         setShowResetConfirm(false);
         const { error } = await supabaseClient.from('matches').delete().not('id', 'is', null);
-        if (error) {
-            console.error('Erro ao resetar campeonato:', error);
-            alert(`Erro ao resetar campeonato: ${error.message}`);
-        } else {
+        if (!error) {
             setResults([]);
-            // Ativa a animação visual no meio da tela
-            setResetMessage("O campeonato foi limpo e está pronto para um novo sorteio.");
-            setTimeout(() => {
-                setResetMessage(null);
-            }, 3000); // Fecha automaticamente após 3 segundos
+            addToast('Campeonato resetado com sucesso.', 'info');
         }
     };
+
     const navigate = (p) => {
         setPage(p);
         setIsMenuOpen(false);
     };
+
     const handleLogoClick = () => {
         setIsLogoAnimated(true);
-        setTimeout(() => setIsLogoAnimated(false), 500); // Remove a classe após a animação terminar
+        setTimeout(() => setIsLogoAnimated(false), 500);
         navigate('home');
     };
 
+    const SkeletonLoader = () => (
+        <div className="container section">
+            <div className="skeleton skeleton-card" style={{ height: '300px', marginBottom: '60px' }}></div>
+            <div className="grid">
+                {[1, 2, 3].map(i => <div key={i} className="skeleton skeleton-card"></div>)}
+            </div>
+        </div>
+    );
+
     return (
         <div className="app-wrapper">
+            <div className="toast-container">
+                {toasts.map(t => (
+                    <div key={t.id} className={`toast ${t.type}`}>
+                        <div className="toast-icon">
+                            {t.type === 'success' ? '✅' : t.type === 'error' ? '❌' : 'ℹ️'}
+                        </div>
+                        <div className="toast-content">{t.message}</div>
+                    </div>
+                ))}
+            </div>
+
             {accessError && (
                 <div className="success-overlay" onClick={() => setAccessError(null)}>
-                    <div className="success-modal" style={{borderColor: '#ff4444', boxShadow: '0 0 30px rgba(255, 68, 68, 0.3)'}} onClick={e => e.stopPropagation()}>
+                    <div className="success-modal" style={{borderColor: '#ff4444'}} onClick={e => e.stopPropagation()}>
                         <div style={{fontSize: '5rem'}}>🚫</div>
                         <h2 style={{color: '#ff4444'}}>Acesso Bloqueado</h2>
                         <p>{accessError}</p>
-                        <button className="btn-primary" style={{background: '#ff4444', color: 'white', marginTop: '20px'}} onClick={() => setAccessError(null)}>
-                            Voltar
-                        </button>
+                        <button className="btn-primary" style={{background: '#ff4444', color: '#ffffff'}} onClick={() => setAccessError(null)}>Voltar</button>
                     </div>
                 </div>
             )}
 
             {MAINTENANCE_MODE && user?.role !== 'admin' && page !== 'login' ? (
-                <div className="maintenance-wrapper" style={{
-                    backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('https://img.odcdn.com.br/wp-content/uploads/2025/09/EA-Sports-FC-26-jogadores-entrando-em-campo-1024x576.webp')`,
-                    backgroundSize: 'cover',
-                    backgroundPosition: 'center',
-                    minHeight: '80vh',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    textAlign: 'center',
-                    padding: '20px'
-                }}>
+                <div className="maintenance-wrapper" style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/tela-de-manutencao.png')`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px' }}>
                     <div className="maintenance-card">
-                        <div style={{fontSize: '5rem', marginBottom: '20px'}}>🛠️</div>
-                        <h1 style={{color: 'var(--primary-color)', marginBottom: '15px'}}>Site em Manutenção</h1>
-                        <p style={{color: 'var(--text-light)', marginBottom: '30px', fontSize: '1.1rem'}}>
-                            Estamos trabalhando em melhorias para a <strong>Gangster Cup</strong>. 
-                            Voltaremos em breve com o sorteio e as tabelas atualizadas!
-                        </p>
+                        <div style={{fontSize: '5rem'}}>🛠️</div>
+                        <h1 style={{color: 'var(--primary-color)'}}>Site em Manutenção</h1>
+                        <p>Voltaremos em breve!</p>
                     </div>
                 </div>
             ) : (
                 <>
-            {showLiveAlert && (
-                <div className="live-alert-overlay">
-                    <div className="live-alert-card">
-                        <button className="close-alert" onClick={() => setShowLiveAlert(false)} title="Fechar">×</button>
-                        <div className="live-badge">AO VIVO</div>
-                        <h3>Transmissões da Gangster Cup</h3>
-                        <p>Não perca nenhum lance! Acompanhe as partidas ao vivo agora mesmo no nosso canal oficial da Twitch.</p>
-                        <div style={{ marginTop: '20px' }}>
-                            <a
-                                href="https://twitch.tv/eujohnzinrp"
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="btn-primary"
-                                style={{ display: 'inline-flex', alignItems: 'center', gap: '10px' }}
-                                onClick={() => setShowLiveAlert(false)}
-                            >
-                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16"><path d="M3.857 0 1 2.857v10.286h3.429V16l2.857-2.857H9.57L14.714 8V0H3.857zm9.714 7.429-2.285 2.285H9l-2 2v-2H4.429V1.143h9.142v6.286z"/><path d="M11.857 3.143h-1.143V6.29h1.143V3.143zm-3.143 0H7.571V6.29h1.143V3.143z"/></svg>
-                                Assistir Agora
-                            </a>
+                    {showLiveAlert && (
+                        <div className="live-alert-overlay" onClick={() => setShowLiveAlert(false)}>
+                            <div className="live-alert-card" onClick={e => e.stopPropagation()}>
+                                <button className="close-alert" onClick={() => setShowLiveAlert(false)}>×</button>
+                                <div className="live-badge">AO VIVO</div>
+                                <h3>Transmissões da Gangster Cup</h3>
+                                <p>Acompanhe na Twitch!</p>
+                                <div style={{ marginTop: '20px' }}>
+                                    <a href="https://twitch.tv/eujohnzinrp" target="_blank" rel="noopener noreferrer" className="btn-primary" onClick={() => setShowLiveAlert(false)}>Assistir Agora</a>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            )}
+                    )}
 
-            <header className="header-nav">
-                <nav className="container nav-content" aria-label="Navegação Principal">
-                    <div className={`logo ${isLogoAnimated ? 'logo-click-animation' : ''}`} onClick={handleLogoClick}>
-                        <img src="/logo.png" alt="Logo" className="nav-logo" />
-                        EA FC 26 <span>GANGSTER CUP</span>
-                    </div>
-
-                    <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)} aria-label="Abrir Menu">
-                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
-                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
-                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
-                    </button>
-
-                    <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
-                        <li><a href="#" onClick={() => navigate('home')}>Início</a></li>
-                        {user && !user.is_banned && (
-                            <Fragment>
-                                <li><a href="#" onClick={() => navigate('admin')}>
-                                    {user.role === 'developer' ? 'Dev' : user.role === 'admin' ? 'Painel Admin' : user.role === 'moderador' ? 'Painel Mod' : 'Painel do Usuário'}
-                                </a></li>
-                                <li><a href="#" onClick={() => navigate('profile')}>Perfil</a></li>
-                            </Fragment>
-                        )}
-                        {!user ? (
-                            <>
-                                <li><a href="#" onClick={() => navigate('signup')}>Inscreva-se </a></li>
-                                <li><button className="btn-primary" onClick={() => navigate('login')}>Entrar</button></li>
-                            </>
-                        ) : (
-                            <li><button className="btn-primary" onClick={handleLogout}>Sair</button></li>
-                        )}
-                    </ul>
-                </nav>
-            </header>
-
-            {roleUpdateNotify && (
-                <div className="success-overlay" style={{ zIndex: 3000 }}>
-                    <div className="success-modal">
-                        <div style={{fontSize: '5rem'}}>🛡️</div>
-                        <h2>Seu Acesso Mudou!</h2>
-                        <p>Seu novo cargo agora é: <strong>{roleUpdateNotify}</strong></p>
-                        <p style={{ marginTop: '10px', fontSize: '0.9rem', opacity: 0.8 }}>Sincronizando novas permissões...</p>
-                    </div>
-                </div>
-            )}
-
-            {banNotify && (
-                <div className="success-overlay" style={{ zIndex: 4000 }}>
-                    <div className="success-modal" style={{ borderColor: '#ff4444' }}>
-                        <div style={{fontSize: '5rem'}}>🚫</div>
-                        <h2 style={{color: '#ff4444'}}>CONTA BANIDA</h2>
-                        <p>Sua conta foi suspensa por violar os termos da <strong>Gangster Cup</strong>.</p>
-                        <p style={{ marginTop: '15px', fontSize: '0.9rem', opacity: 0.7 }}>Encerrando sessão...</p>
-                    </div>
-                </div>
-            )}
-
-            {logoutMessage && (
-                <div className="success-overlay">
-                    <div className="success-modal">
-                        <div style={{fontSize: '5rem'}}>👋</div>
-                        <h2>{logoutMessage}</h2>
-                        <p>Sua sessão foi encerrada. Redirecionando...</p>
-                    </div>
-                </div>
-            )}
-
-            {showResetConfirm && (
-                <div className="success-overlay">
-                    <div className="success-modal" style={{borderColor: 'var(--primary-color)'}}>
-                        <div style={{fontSize: '5rem'}}>⚠️</div>
-                        <h2>Resetar Campeonato?</h2>
-                        <p>AVISO: Isso apagará TODOS os resultados das partidas atuais. Deseja continuar?</p>
-                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px', flexWrap: 'wrap' }}>
-                            <button className="btn-primary" onClick={executeReset}>Sim, Resetar</button>
-                            <button className="btn-primary" style={{ background: '#444', color: 'white' }} onClick={() => setShowResetConfirm(false)}>Cancelar</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {showDrawConfirm && (
-                <div className="success-overlay">
-                    <div className="success-modal" style={{borderColor: 'var(--primary-color)'}}>
-                        <div style={{fontSize: '5rem'}}>⚽</div>
-                        <h2>Realizar Novo Sorteio?</h2>
-                        <p>Isso apagará todas as partidas atuais para gerar o novo torneio (Grupos + Mata-Mata). Deseja continuar?</p>
-                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '25px', flexWrap: 'wrap' }}>
-                            <button className="btn-primary" onClick={executeGroupDraw}>Sim, Gerar Grupos</button>
-                            <button className="btn-primary" style={{ background: '#444', color: 'white' }} onClick={() => setShowDrawConfirm(false)}>Cancelar</button>
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {drawMessage && (
-                <div className="success-overlay">
-                    <div className="success-modal">
-                        <div style={{fontSize: '5rem'}}>🏆</div>
-                        <h2>Torneio Gerado!</h2>
-                        <p>{drawMessage}</p>
-                    </div>
-                </div>
-            )}
-
-            {resetMessage && (
-                <div className="success-overlay">
-                    <div className="success-modal">
-                        <div style={{fontSize: '5rem'}}>✅</div>
-                        <h2>Campeonato Resetado!</h2>
-                        <p>{resetMessage}</p>
-                    </div>
-                </div>
-            )}
-
-            <section className="page-content">
-                {loading ? (
-                    <section className="container section text-center"><h2>Carregando dados...</h2></section>
-                ) : (
-                    <div className="fade-in">
-                        {page === 'home' && <Home results={results} onRegisterClick={() => setPage('signup')} />}
-                        {page === 'login' && <Login />}
-                        {page === 'signup' && (
-                            <SignUp 
-                                onStepVerify={(email) => { setTempEmail(email); setPage('verify'); }} 
-                            />
-                        )}
-                        {page === 'verify' && tempEmail && (
-                            <VerifyEmail email={tempEmail} onVerified={() => setPage('admin')} />
-                        )}
-                        {page === 'profile' && (
-                            <Profile 
-                                user={session?.user} 
-                                userRegistration={userRegistration} 
-                                onUpdate={async () => { await fetchData(); if (session?.user) await fetchUserProfile(session.user); }} 
-                            />
-                        )}
-                        {page === 'admin' && (
-                            (!user || showWelcome) ? (
-                                <section className="container section text-center">
-                                    <div className="success-overlay">
-                                        <div className="success-modal">
-                                            <div style={{fontSize: '5rem'}}>👋</div>
-                                            {user ? (
-                                                <>
-                                                    <h2>Bem-vindo, {user.role === 'player' ? 'Jogador' : 
-                                                        <span className={`text-${user.role}`} style={{
-                                                            fontWeight: 'bold',
-                                                            color: user.role === 'developer' ? '#28a745' : user.role === 'admin' ? '#007bff' : user.role === 'moderador' ? '#ffc107' : '#ffffff'
-                                                        }}>
-                                                            {user.role === 'developer' ? 'Desenvolvedor' : user.role === 'admin' ? 'Administrador' : 'Moderador'}
-                                                        </span>
-                                                    }!</h2>
-                                                    <h2 style={{fontSize: '1.8rem', marginTop: '15px'}}>{user.username}</h2>
-                                                    <p style={{color: 'var(--text-muted)', marginTop: '15px'}}>Acessando o painel...</p>
-                                                </>
-                                            ) : accessError ? (
-                                                <>
-                                                    <div style={{fontSize: '5rem'}}>⚠️</div>
-                                                    <h2 style={{color: 'var(--primary-color)'}}>Ops! Algo deu errado</h2>
-                                                    <p style={{margin: '15px 0'}}>{accessError}</p>
-                                                    <button className="btn-primary" style={{background: '#444'}} onClick={handleLogout}>Sair</button>
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <h2>Quase lá...</h2>
-                                                    <p style={{fontSize: '1.1rem', marginTop: '10px'}}>
-                                                        Sincronizando perfil de <strong>{session?.user?.user_metadata?.playername || session?.user?.email?.split('@')[0]}</strong>
-                                                    </p>
-                                                    <div className="loading-spinner" style={{margin: '25px auto'}}></div>
-                                                </>
-                                            )}
-                                        </div>
+                    {isRecoveringPassword && (
+                        <div className="success-overlay" style={{ zIndex: 9000 }}>
+                            <div className="success-modal" style={{ maxWidth: '400px' }}>
+                                <div style={{ fontSize: '4rem' }}>🔐</div>
+                                <h2>Definir Nova Senha</h2>
+                                <p>Digite sua nova senha de acesso abaixo:</p>
+                                <form onSubmit={handleUpdatePassword} style={{ marginTop: '20px', padding: 0, background: 'none', boxShadow: 'none' }}>
+                                    <div className="form-group">
+                                        <input 
+                                            type="password" 
+                                            value={newPassword} 
+                                            onChange={(e) => setNewPassword(e.target.value)} 
+                                            placeholder="Nova Senha (mín. 6 caracteres)" 
+                                            required 
+                                            minLength="6"
+                                        />
                                     </div>
-                                </section>
-                            ) : (
-                                user.role === 'admin' || user.role === 'developer' || user.role === 'moderador' ? (
-                                    <Admin
-                                        results={results} 
-                                        registrations={registrations} 
-                                        updateResult={updateResult} 
-                                        onDraw={drawMatches}
-                                        onKnockoutDraw={executeKnockoutDraw}
-                                        onDeleteMatch={deleteMatch}
-                                        onDeleteAll={deleteAllMatches}
-                                        user={user}
-                                    />
-                                ) : (
-                                    <PlayerDashboard 
-                                        user={user} 
-                                        userRegistration={userRegistration} 
-                                        results={results} 
-                                    />
-                                )
-                            )
+                                    <button type="submit" className="btn-primary" style={{ width: '100%' }}>Atualizar Senha</button>
+                                </form>
+                            </div>
+                        </div>
+                    )}
+
+                    <header className="header-nav">
+                        <nav className="container nav-content">
+                            <div className={`logo ${isLogoAnimated ? 'logo-click-animation' : ''}`} onClick={handleLogoClick}>
+                                <img src="/logo.png" alt="Logo" className="nav-logo" />
+                                <span className="logo-prefix">EA FC 26</span> <span className="logo-main">GANGSTER CUP</span>
+                            </div>
+
+                            <div className="nav-right-group">
+                                <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
+                                    {/* Botão de Tema visível apenas no Mobile dentro do menu */}
+                                    <li className="mobile-only" style={{ marginBottom: '20px' }}>
+                                        <button className="theme-toggle-btn" onClick={toggleTheme} style={{ width: '100%', justifyContent: 'center', gap: '10px' }}>
+                                            {theme === 'dark' ? (
+                                                <Fragment>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: '20px' }}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                                    </svg>
+                                                    <span>Modo Claro</span>
+                                                </Fragment>
+                                            ) : (
+                                                <Fragment>
+                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: '20px' }}>
+                                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                                    </svg>
+                                                    <span>Modo Escuro</span>
+                                                </Fragment>
+                                            )}
+                                        </button>
+                                    </li>
+                                    <li><a href="#" onClick={() => navigate('home')}>Início</a></li>
+                                    {user && !user.is_banned && (
+                                        <Fragment>
+                                            <li><a href="#" onClick={() => navigate('admin')}>
+                                                {user.role === 'developer' ? 'Dev' : user.role === 'admin' ? 'Painel Admin' : user.role === 'moderador' ? 'Painel Mod' : 'Painel do Usuário'}
+                                            </a></li>
+                                            <li><a href="#" onClick={() => navigate('profile')}>Perfil</a></li>
+                                        </Fragment>
+                                    )}
+                                    {!user ? (
+                                        <>
+                                            <li><a href="#" onClick={() => navigate('signup')}>Inscreva-se</a></li>
+                                            <li><button className="btn-primary" onClick={() => navigate('login')}>Entrar</button></li>
+                                        </>
+                                    ) : (
+                                        <li><button className="btn-primary" onClick={handleLogout}>Sair</button></li>
+                                    )}
+                                </ul>
+
+                                <div className="nav-controls">
+                                    {/* Botão de Tema visível apenas no Desktop no cabeçalho */}
+                                    <button className="theme-toggle-btn desktop-only" onClick={toggleTheme} aria-label="Alternar Tema">
+                                        {theme === 'dark' ? (
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                            </svg>
+                                        ) : (
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                            </svg>
+                                        )}
+                                    </button>
+
+                                    <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
+                                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
+                                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
+                                    </button>
+                                </div>
+                            </div>
+                        </nav>
+                    </header>
+
+                    {roleUpdateNotify && (
+                        <div className="success-overlay" style={{ zIndex: 3000 }}>
+                            <div className="success-modal">
+                                <h2>Acesso Mudou!</h2>
+                                <p>Cargo: <strong>{roleUpdateNotify}</strong></p>
+                            </div>
+                        </div>
+                    )}
+
+                    {banNotify && (
+                        <div className="success-overlay" style={{ zIndex: 4000 }}>
+                            <div className="success-modal" style={{ borderColor: '#ff4444' }}>
+                                <h2 style={{color: '#ff4444'}}>CONTA BANIDA</h2>
+                            </div>
+                        </div>
+                    )}
+
+                    {logoutMessage && (
+                        <div className="success-overlay">
+                            <div className={`success-modal welcome-modal role-${logoutMessage.role || 'player'}`}>
+                                <div className="welcome-icon">
+                                    {logoutMessage.role === 'admin' || logoutMessage.role === 'developer' ? '👑' : logoutMessage.role === 'moderador' ? '🛡️' : '⚽'}
+                                </div>
+                                <h2>Até logo, {logoutMessage.username}!</h2>
+                                <p className="welcome-role">Sessão encerrada com segurança.</p>
+                            </div>
+                        </div>
+                    )}
+
+                    {showResetConfirm && (
+                        <div className="success-overlay">
+                            <div className="success-modal">
+                                <h2>Resetar Campeonato?</h2>
+                                <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '20px' }}>
+                                    <button className="btn-primary" onClick={executeReset}>Sim</button>
+                                    <button className="btn-primary" style={{ background: '#444' }} onClick={() => setShowResetConfirm(false)}>Não</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {showDrawConfirm && (
+                        <div className="success-overlay">
+                            <div className="success-modal">
+                                <h2>Novo Sorteio?</h2>
+                                <div style={{ display: 'flex', gap: '15px', justifyContent: 'center', marginTop: '20px' }}>
+                                    <button className="btn-primary" onClick={executeGroupDraw}>Sim</button>
+                                    <button className="btn-primary" style={{ background: '#444' }} onClick={() => setShowDrawConfirm(false)}>Não</button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
+                    <section className="page-content">
+                        {loading ? (
+                            <SkeletonLoader />
+                        ) : (
+                            <div className="fade-in">
+                                {page === 'home' && <Home results={results} loading={loading} onRegisterClick={() => setPage('signup')} />}
+                                {page === 'login' && <Login />}
+                                {page === 'signup' && <SignUp onStepVerify={(email) => { setTempEmail(email); setPage('verify'); }} />}
+                                {page === 'verify' && tempEmail && <VerifyEmail email={tempEmail} onVerified={() => setPage('admin')} />}
+                                {page === 'profile' && <Profile user={session?.user} userRegistration={userRegistration} onUpdate={async () => { await fetchData(); if (session?.user) await fetchUserProfile(session.user); }} />}
+                                {page === 'admin' && (
+                                    (!user || showWelcome) ? (
+                                        <div className="success-overlay">
+                                            <div className={`success-modal welcome-modal role-${user?.role || 'player'}`}>
+                                                {user ? (
+                                                    <Fragment>
+                                                        <div className="welcome-icon">
+                                                            {user.role === 'admin' || user.role === 'developer' ? '👑' : user.role === 'moderador' ? '🛡️' : '⚽'}
+                                                        </div>
+                                                        <h2>Bem-vindo, {user.username}!</h2>
+                                                        <p className="welcome-role">Acesso: <strong>{
+                                                            user.role === 'developer' ? 'Desenvolvedor' : 
+                                                            user.role === 'admin' ? 'Administrador' : 
+                                                            user.role === 'moderador' ? 'Moderador' : 'Competidor'
+                                                        }</strong></p>
+                                                    </Fragment>
+                                                ) : <h2>Carregando perfil...</h2>}
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        user.role === 'admin' || user.role === 'developer' || user.role === 'moderador' ? (
+                                            <Admin results={results} registrations={registrations} updateResult={updateResult} onDraw={() => setShowDrawConfirm(true)} onKnockoutDraw={executeKnockoutDraw} onDeleteMatch={deleteMatch} onDeleteAll={() => setShowResetConfirm(true)} user={user} fetchData={fetchData} />
+                                        ) : (
+                                            <PlayerDashboard user={user} userRegistration={userRegistration} results={results} />
+                                        )
+                                    )
+                                )}
+                            </div>
                         )}
-                    </div>
-                )}
-            </section>
+                    </section>
                 </>
             )}
             <footer className="footer-nav">
                 <div className="container">
-                <div className="social-links">
-                    <a href="https://discord.gg/neQt9DdJVT" className="discord" target="_blank" rel="noopener noreferrer">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M13.545 2.907a13.227 13.227 0 0 0-3.257-1.011.05.05 0 0 0-.052.025c-.141.25-.297.577-.406.833a12.19 12.19 0 0 0-3.658 0 8.258 8.258 0 0 0-.412-.833.051.051 0 0 0-.052-.025c-1.125.194-2.22.534-3.257 1.011a.041.041 0 0 0-.021.018C.356 6.024-.213 9.047.066 12.032c.001.014.01.028.021.037a13.276 13.276 0 0 0 3.995 2.02.05.05 0 0 0 .056-.019c.308-.42.582-.863.818-1.329a.05.05 0 0 0-.027-.07 8.736 8.736 0 0 1-1.29-.614.051.051 0 0 1-.006-.085c.085-.063.17-.13.252-.198a.053.053 0 0 1 .054-.007c2.611 1.195 5.432 1.195 8.002 0a.053.053 0 0 1 .054.007c.082.068.167.135.252.198a.051.051 0 0 1-.006.085 8.746 8.746 0 0 1-1.29.614.05.05 0 0 0-.027.07c.236.465.51.908.817 1.329a.05.05 0 0 0 .056.019 13.235 13.235 0 0 0 4.001-2.02.049.049 0 0 0 .021-.037c.334-3.451-.559-6.449-2.366-9.106a.034.034 0 0 0-.02-.019Zm-8.198 7.307c-.789 0-1.438-.724-1.438-1.612 0-.889.637-1.613 1.438-1.613.807 0 1.45.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612Zm5.316 0c-.788 0-1.438-.724-1.438-1.612 0-.889.637-1.613 1.438-1.613.807 0 1.451.73 1.438 1.613 0 .888-.631 1.612-1.438 1.612Z"/>
-                        </svg>
-                        Discord Oficial
-                    </a>
-                    <a href="https://twitch.tv/eujohnzinrp" className="twitch" target="_blank" rel="noopener noreferrer">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" viewBox="0 0 16 16">
-                            <path d="M3.857 0 1 2.857v10.286h3.429V16l2.857-2.857H9.57L14.714 8V0H3.857zm9.714 7.429-2.285 2.285H9l-2 2v-2H4.429V1.143h9.142v6.286z"/>
-                            <path d="M11.857 3.143h-1.143V6.29h1.143V3.143zm-3.143 0H7.571V6.29h1.143V3.143z"/>
-                        </svg>
-                        Assistir ao Vivo
-                    </a>
-                </div>
-                <p style={{ marginTop: '20px' }}>&copy; 2026 Gangster Cup. </p>
+                    <div className="social-links">
+                        <a href="https://discord.gg/neQt9DdJVT" className="discord" target="_blank" rel="noopener noreferrer">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2758-3.68-.2758-5.4876 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189z"/>
+                            </svg>
+                            Discord
+                        </a>
+                        <a href="https://twitch.tv/eujohnzinrp" className="twitch" target="_blank" rel="noopener noreferrer">
+                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+                            </svg>
+                            Twitch
+                        </a>
+                    </div>
+                    <p style={{ marginTop: '20px' }}>&copy; 2026 Gangster Cup.</p>
                 </div>
             </footer>
         </div>
@@ -860,7 +836,7 @@ function App() {
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(
-  <React.StrictMode>
-    <App />
-  </React.StrictMode>
+    <React.StrictMode>
+        <App />
+    </React.StrictMode>
 );

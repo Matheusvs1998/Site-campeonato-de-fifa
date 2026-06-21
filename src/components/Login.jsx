@@ -9,6 +9,9 @@ function Login() {
     const [error, setError] = useState('');
     const [showAnimation, setShowAnimation] = useState(false);
     const [isChecking, setIsChecking] = useState(false);
+    const [showReset, setShowReset] = useState(false);
+    const [resetEmail, setResetEmail] = useState('');
+    const [resetSent, setResetSent] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
@@ -28,6 +31,63 @@ function Login() {
             setIsChecking(false);
         }
     };
+
+    const handleResetRequest = async (e) => {
+        e.preventDefault();
+        setError('');
+        setIsChecking(true);
+        try {
+            const { error } = await supabaseClient.auth.resetPasswordForEmail(resetEmail, {
+                redirectTo: window.location.origin
+            });
+            if (error) throw error;
+            setResetSent(true);
+        } catch (err) {
+            setError(translateAuthError(err.message));
+        } finally {
+            setIsChecking(false);
+        }
+    };
+
+    if (showReset) {
+        return (
+            <section className="container section">
+                <div className="form-container">
+                    <form onSubmit={handleResetRequest} className="card" style={{ maxWidth: '400px', margin: '0 auto', padding: '25px' }}>
+                        <h2 style={{ textAlign: 'center', marginBottom: '20px', color: 'var(--primary-color)' }}>Recuperar Senha</h2>
+                        
+                        {resetSent ? (
+                            <div style={{ textAlign: 'center' }}>
+                                <div style={{ fontSize: '4rem', marginBottom: '15px' }}>📧</div>
+                                <p style={{ fontWeight: 'bold', marginBottom: '15px' }}>E-mail enviado!</p>
+                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+                                    Enviamos um link de recuperação para <strong>{resetEmail}</strong>. Verifique sua caixa de entrada e spam.
+                                </p>
+                                <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={() => setShowReset(false)}>Voltar para Login</button>
+                            </div>
+                        ) : (
+                            <>
+                                <p style={{ textAlign: 'center', marginBottom: '20px', fontSize: '0.9rem' }}>
+                                    Insira seu e-mail cadastrado para receber o link de redefinição de senha.
+                                </p>
+                                {error && <p style={{ color: '#ff4444', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>{error}</p>}
+                                <div className="form-group">
+                                    <label>E-mail</label>
+                                    <input type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required />
+                                </div>
+                                <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={isChecking}>
+                                    {isChecking ? 'Enviando...' : 'Enviar Link de Recuperação'}
+                                </button>
+                                <button type="button" className="btn-text" style={{ width: '100%', marginTop: '15px', justifyContent: 'center' }} onClick={() => setShowReset(false)}>
+                                    Voltar para o Login
+                                </button>
+                            </>
+                        )}
+                    </form>
+                </div>
+            </section>
+        );
+    }
 
     return (
         <section className="container section">
@@ -70,18 +130,21 @@ function Login() {
                                 <img 
                                     src="https://cdn-icons-png.flaticon.com/128/158/158746.png" 
                                     alt="Ver senha" 
+                                    className="eye-icon"
                                     style={{ 
                                         width: '22px', 
                                         height: 'auto', 
-                                        opacity: showPassword ? '1' : '0.5', 
-                                        filter: showPassword ? 'invert(11%) sepia(87%) saturate(6964%) hue-rotate(357deg) brightness(97%) contrast(114%)' : 'invert(100%)' 
+                                        opacity: showPassword ? '1' : '0.5'
                                     }} 
                                 />
                             </button>
                         </div>
                     </div>
-                    <button type="submit" className="btn-primary" disabled={isChecking}>
+                    <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={isChecking}>
                         {isChecking ? 'Verificando...' : 'Entrar'}
+                    </button>
+                    <button type="button" className="btn-text" style={{ width: '100%', marginTop: '15px', justifyContent: 'center' }} onClick={() => setShowReset(true)}>
+                        🔑 Esqueci minha senha
                     </button>
                 </form>
             </div>

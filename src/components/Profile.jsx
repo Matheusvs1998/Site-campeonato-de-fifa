@@ -218,17 +218,22 @@ function Profile({ user, userRegistration, onUpdate }) {
                             </div>
                         )}
                         {emailChangePending && (
-                            <button type="button" onClick={handleResendOtp} className="btn-text" style={{ fontSize: '0.8rem', marginTop: '5px', textDecoration: 'underline' }}>
-                                Não recebeu? Reenviar código
+                            <button 
+                                type="button" 
+                                onClick={handleResendOtp} 
+                                className="btn-text" 
+                                style={{ marginTop: '15px', width: '100%', justifyContent: 'center' }}
+                            >
+                                📩 Não recebeu o código? <strong>Reenviar agora</strong>
                             </button>
                         )}
                     </div>
 
-                    <div className="form-group" style={{ textAlign: 'center', marginTop: '10px' }}>
+                    <div className="form-group" style={{ textAlign: 'center', marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <img src={getTeamLogo(formData.teamname)} alt="Escudo" style={{ width: '60px', marginBottom: '10px' }} />
-                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--primary-color)', marginBottom: '10px', marginTop: '-5px' }}>{formData.gamertag}</div>
-                        <label>Alterar Time</label>
-                        <select value={formData.teamname} onChange={e => setFormData({...formData, teamname: e.target.value})} required>
+                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--primary-color)', marginBottom: '15px', marginTop: '-5px' }}>{formData.gamertag}</div>
+                        <label style={{ alignSelf: 'flex-start', marginBottom: '8px' }}>Alterar Time</label>
+                        <select value={formData.teamname} onChange={e => setFormData({...formData, teamname: e.target.value})} required style={{ width: '100%' }}>
                             <optgroup label="Espanha">
                                 <option value="Real Madrid">Real Madrid</option>
                                 <option value="Barcelona">Barcelona</option>
@@ -289,7 +294,7 @@ function Profile({ user, userRegistration, onUpdate }) {
                         <small style={{ color: 'var(--text-muted)' }}>O nome não pode ser alterado após a inscrição.</small>
                     </div>
 
-                    <div className="form-group" style={{ marginBottom: '15px', padding: '10px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px' }}>
+                    <div className="form-group" style={{ marginBottom: '15px', padding: '10px', background: 'var(--bg-input)', borderRadius: '8px' }}>
                         <label style={{ fontSize: '0.8rem', color: 'var(--primary-color)' }}>Privacidade e Dados</label>
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '5px 0' }}>
                             Em conformidade com a LGPD, você pode gerenciar ou excluir seus dados permanentemente através das opções abaixo.
@@ -315,7 +320,7 @@ function Profile({ user, userRegistration, onUpdate }) {
                         {loading ? 'Salvando...' : (emailChangePending ? 'Confirmar E-mail e Salvar' : 'Salvar Alterações')}
                     </button>
 
-                    <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid rgba(255,255,255,0.1)' }}>
+                    <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>
                         <h4 style={{ color: '#ff4444', marginBottom: '5px', fontSize: '0.9rem', textTransform: 'uppercase' }}>Zona de Perigo</h4>
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '15px' }}>
                             Esta ação apagará permanentemente seu perfil e todas as suas participações em campeonatos.
@@ -323,7 +328,7 @@ function Profile({ user, userRegistration, onUpdate }) {
                         <button 
                             type="button" 
                             className="btn-primary" 
-                            style={{ background: 'rgba(255, 68, 68, 0.1)', border: '1px solid #ff4444', color: '#ff4444', width: '100%' }}
+                            style={{ background: 'transparent', border: '1px solid #ff4444', color: '#ff4444', width: '100%' }}
                             onClick={() => setShowDeleteConfirm(true)}
                         >
                             Excluir minha conta e dados permanentemente

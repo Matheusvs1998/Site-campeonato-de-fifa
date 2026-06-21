@@ -1,8 +1,43 @@
 :root {
+    /* Cores Compartilhadas */
     --primary-color: #f30909;
-    --bg-dark: #121212;
-    --bg-card: #1e1e1e;
-    --text-light: #f4f4f4;
-    --text-muted: #aaa;
-    --transition: all 0.3s ease;
+    --primary-hover: #ff1a1a;
+    --primary-glow: rgba(243, 9, 9, 0.4);
+    
+    /* Espaçamento */
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 1rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 3rem;
+    --spacing-xl: 5rem;
+    
+    /* Grid */
+    --container-width: 1200px;
+    --grid-gap: 20px;
+}
+
+/* Tema Dark (Padrão) */
+[data-theme='dark'], :root:not([data-theme='light']) {
+    --bg-dark: #0a0a0a;
+    --bg-card: #161616;
+    --bg-input: #1f1f1f;
+    --border-color: #2a2a2a;
+    --text-main: #ffffff;
+    --text-muted: #888888;
+    --glass-bg: rgba(22, 22, 22, 0.8);
+    --nav-bg: rgba(0, 0, 0, 0.9);
+}
+
+/* Tema Light */
+[data-theme='light'] {
+    --bg-dark: #f5f5f7;
+    --bg-card: #ffffff;
+    --bg-input: #f0f0f0;
+    --border-color: #e0e0e0;
+    --text-main: #1d1d1f;
+    --text-muted: #6e6e73;
+    --glass-bg: rgba(255, 255, 255, 0.8);
+    --nav-bg: rgba(255, 255, 255, 0.9);
+    --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+    --shadow-md: 0 8px 24px rgba(0,0,0,0.15);
 }

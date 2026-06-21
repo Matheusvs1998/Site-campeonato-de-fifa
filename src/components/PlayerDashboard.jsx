@@ -1,8 +1,13 @@
 import React, { useMemo } from 'react';
 import { getTeamLogo, getFallbackLogo } from '../teamLogos';
-import { extractGamertag } from '../helpers';
+import { extractGamertag, calculatePlayerStats } from '../helpers';
 
 function PlayerDashboard({ user, userRegistration, results }) {
+    const stats = useMemo(() => {
+        if (!userRegistration) return null;
+        return calculatePlayerStats(userRegistration.gamertag, results);
+    }, [userRegistration, results]);
+
     const upcomingMatches = useMemo(() => {
         if (!userRegistration) return [];
         return results.filter(m => 
@@ -16,13 +21,44 @@ function PlayerDashboard({ user, userRegistration, results }) {
     }, [userRegistration, results]);
 
     return (
-        <section className="container section">
+        <section className="container section fade-in">
             <div className="admin-header">
                 <div>
                     <h2>Olá, {user.username}! 👋</h2>
                     <p style={{marginTop: '5px'}}>Bem-vindo ao seu painel do competidor.</p>
                 </div>
             </div>
+
+            {stats && (
+                <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '40px' }}>
+                    <div className="card text-center" style={{ padding: '20px' }}>
+                        <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold' }}>Aproveitamento</small>
+                        <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--primary-color)' }}>{stats.winRate}%</div>
+                    </div>
+                    <div className="card text-center" style={{ padding: '20px' }}>
+                        <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold' }}>Média de Gols</small>
+                        <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--primary-color)' }}>{stats.avgGoals}</div>
+                    </div>
+                    <div className="card text-center" style={{ padding: '20px' }}>
+                        <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold' }}>Saldo Total</small>
+                        <div style={{ fontSize: '2rem', fontWeight: '800', color: stats.goalsFor - stats.goalsAgainst >= 0 ? '#28a745' : '#ff4444' }}>
+                            {stats.goalsFor - stats.goalsAgainst}
+                        </div>
+                    </div>
+                    <div className="card text-center" style={{ padding: '20px' }}>
+                        <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>Forma Atual</small>
+                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
+                            {stats.form.map((r, i) => (
+                                <span key={i} className="stat-badge" style={{ 
+                                    background: r === 'V' ? '#28a745' : r === 'E' ? '#ffc107' : '#ff4444',
+                                    color: r === 'E' ? '#000' : '#fff',
+                                    width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', fontSize: '0.8rem'
+                                }}>{r}</span>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            )}
 
             <div className="card" style={{marginBottom: '40px', padding: '20px'}}>
                 <h3>Sua Inscrição</h3>

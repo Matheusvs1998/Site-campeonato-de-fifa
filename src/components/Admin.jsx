@@ -3,13 +3,33 @@ import { supabaseClient } from '../supabase';
 import { getTeamLogo, getFallbackLogo } from '../teamLogos';
 import { calculateStandings, extractGamertag } from '../helpers';
 
-function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, onDeleteMatch, onDeleteAll, user }) {
+function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, onDeleteMatch, onDeleteAll, user, fetchData }) {
     const [users, setUsers] = useState([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [adminToDelete, setAdminToDelete] = useState(null);
     const [showDeleteUserConfirm, setShowDeleteUserConfirm] = useState(false);
     const [userToDelete, setUserToDelete] = useState(null);
     const [roleUpdateMessage, setRoleUpdateMessage] = useState(null);
+    const [loading, setLoading] = useState(false);
+    const [showScorersModal, setShowScorersModal] = useState(false);
+    const [selectedMatch, setSelectedMatch] = useState(null);
+    const [newScorer, setNewScorer] = useState({ name: '', team: 1 });
+
+    const handleAddScorer = async () => {
+        if (!newScorer.name || !selectedMatch) return;
+        const currentScorers = selectedMatch.scorers || [];
+        const updatedScorers = [...currentScorers, { name: newScorer.name, team: newScorer.team }];
+        
+        await updateResult(selectedMatch.id, 'scorers', updatedScorers);
+        setSelectedMatch({ ...selectedMatch, scorers: updatedScorers });
+        setNewScorer({ ...newScorer, name: '' });
+    };
+
+    const handleRemoveScorer = async (index) => {
+        const updatedScorers = (selectedMatch.scorers || []).filter((_, i) => i !== index);
+        await updateResult(selectedMatch.id, 'scorers', updatedScorers);
+        setSelectedMatch({ ...selectedMatch, scorers: updatedScorers });
+    };
 
     const sortedMatches = useMemo(() => {
         if (results.length === 0) return [];
@@ -83,34 +103,48 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
 
     const handleDeleteUser = async () => {
         if (!userToDelete) return;
+        setLoading(true);
         try {
-            // 1. Remove a inscrição do campeonato vinculada ao usuário
-            const userReg = registrations.find(r => r.playername === userToDelete.username);
-            if (userReg) {
-                await supabaseClient.from('registrations').delete().eq('id', userReg.id);
-            }
+            // Chama a função mestre que remove de: Auth, Profiles e Registrations de uma vez só
+            const { error: deleteError } = await supabaseClient.rpc('delete_full_user_complete', { 
+                target_user_id: userToDelete.id 
+            });
 
-            // 2. Remove o perfil da tabela de perfis
-            const { error: profileError } = await supabaseClient.from('profiles').delete().eq('id', userToDelete.id);
-            if (profileError) throw profileError;
+            if (deleteError) throw deleteError;
 
+            // Atualiza o estado local
             setUsers(users.filter(u => u.id !== userToDelete.id));
-            setRoleUpdateMessage(`Usuário ${userToDelete.username} removido com sucesso.`);
+            setRoleUpdateMessage(`Usuário ${userToDelete.username} e todos os seus dados foram removidos.`);
             setShowDeleteUserConfirm(false);
             setUserToDelete(null);
+
+            // Sincroniza os dados globais (Inscritos, Partidas, etc)
+            if (fetchData) await fetchData();
+
+            // Limpa a mensagem após 3 segundos
+            setTimeout(() => setRoleUpdateMessage(null), 3000);
         } catch (err) {
-            alert("Erro ao excluir usuário: " + err.message);
+            console.error("Erro na exclusão completa:", err);
+            alert("Erro crítico ao excluir usuário: " + err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
     return (
         <section className="container section">
             {roleUpdateMessage && (
-                <div className="success-overlay">
-                    <div className="success-modal">
-                        <div style={{fontSize: '5rem'}}>{roleUpdateMessage.includes('banido') ? '🚫' : '🛡️'}</div>
-                        <h2>{roleUpdateMessage.includes('banido') ? 'Status Atualizado!' : 'Cargo Atualizado!'}</h2>
+                <div className="success-overlay" onClick={() => setRoleUpdateMessage(null)}>
+                    <div className="success-modal" onClick={e => e.stopPropagation()}>
+                        <div style={{fontSize: '5rem'}}>
+                            {roleUpdateMessage.includes('banido') ? '🚫' : (roleUpdateMessage.includes('removido') ? '🗑️' : '🛡️')}
+                        </div>
+                        <h2>
+                            {roleUpdateMessage.includes('removido') ? 'Usuário Removido!' : 
+                             (roleUpdateMessage.includes('banido') ? 'Status Atualizado!' : 'Cargo Atualizado!')}
+                        </h2>
                         <p>{roleUpdateMessage}</p>
+                        <button className="btn-primary" style={{marginTop: '20px'}} onClick={() => setRoleUpdateMessage(null)}>OK</button>
                     </div>
                 </div>
             )}
@@ -120,7 +154,7 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                     <h2>Painel Administrativo</h2>
                     <p>Logado como: <strong 
                         className={`text-${user?.role}`} 
-                        style={{ color: user?.role === 'developer' ? '#28a745' : user?.role === 'admin' ? '#007bff' : user?.role === 'moderador' ? '#ffc107' : '#ffffff' }}
+                        style={{ color: user?.role === 'developer' ? '#28a745' : user?.role === 'admin' ? '#007bff' : user?.role === 'moderador' ? '#ffc107' : 'var(--text-main)' }}
                     >{user?.username}</strong></p>
                 </div>
                 <div className="admin-actions">
@@ -151,7 +185,7 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                             <strong 
                                                 className={`text-${u.role}`}
                                                 style={{ 
-                                                    color: u.is_banned ? '#6c757d' : (u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : '#ffffff'),
+                                                    color: u.is_banned ? '#6c757d' : (u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : 'var(--text-main)'),
                                                     opacity: u.is_banned ? 0.6 : 1
                                                 }}
                                             >
@@ -166,17 +200,17 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                                 className={`text-${u.role}`}
                                                 style={{ 
                                                     fontWeight: 'bold', 
-                                                    background: 'rgba(0,0,0,0.3)', 
-                                                    border: '1px solid rgba(255,255,255,0.1)', 
+                                                    background: 'var(--bg-input)', 
+                                                    border: '1px solid var(--border-color)', 
                                                     padding: '5px', 
                                                     borderRadius: '4px',
-                                                    color: u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : '#ffffff'
+                                                    color: u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : 'var(--text-main)'
                                                 }}
                                             >
-                                                <option value="player" style={{ color: '#ffffff', background: '#222' }}>Jogador</option>
-                                                <option value="moderador" style={{ color: '#ffc107', background: '#222' }}>Moderador</option>
-                                                <option value="admin" style={{ color: '#007bff', background: '#222' }}>Administrador</option>
-                                                {isDev && <option value="developer" style={{ color: '#28a745', background: '#222' }}>Desenvolvedor</option>}
+                                                <option value="player" style={{ color: 'var(--text-main)', background: 'var(--bg-card)' }}>Jogador</option>
+                                                <option value="moderador" style={{ color: '#ffc107', background: 'var(--bg-card)' }}>Moderador</option>
+                                                <option value="admin" style={{ color: '#007bff', background: 'var(--bg-card)' }}>Administrador</option>
+                                                {isDev && <option value="developer" style={{ color: '#28a745', background: 'var(--bg-card)' }}>Desenvolvedor</option>}
                                             </select>
                                         </td>
                                         <td>
@@ -314,7 +348,10 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                         </select>
                                     </td>
                                     <td>
-                                        <button onClick={() => onDeleteMatch(match.id)}>🗑️</button>
+                                        <div style={{ display: 'flex', gap: '5px' }}>
+                                            <button onClick={() => { setSelectedMatch(match); setShowScorersModal(true); }} title="Registrar Gols" style={{ background: '#28a745', padding: '6px' }}>⚽</button>
+                                            <button onClick={() => onDeleteMatch(match.id)} title="Excluir Partida">🗑️</button>
+                                        </div>
                                     </td>
                                 </tr>
                             ))}
@@ -322,6 +359,73 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                     </table>
                 </div>
             </div>
+
+            {showScorersModal && selectedMatch && (
+                <div className="success-overlay" style={{ zIndex: 6000 }}>
+                    <div className="success-modal" style={{ maxWidth: '500px', width: '95%' }} onClick={e => e.stopPropagation()}>
+                        <button className="close-alert" onClick={() => setShowScorersModal(false)}>×</button>
+                        <h2 style={{ marginBottom: '10px' }}>Artilharia da Partida</h2>
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
+                            {selectedMatch.p1.split(' (')[0]} vs {selectedMatch.p2.split(' (')[0]}
+                        </p>
+
+                        <div className="card" style={{ background: 'var(--bg-input)', padding: '15px', marginBottom: '20px', textAlign: 'left' }}>
+                            <h4 style={{ marginBottom: '10px', fontSize: '0.9rem' }}>Adicionar Gol</h4>
+                            <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                                <select 
+                                    style={{ flex: 2, minWidth: '150px' }}
+                                    value={newScorer.name}
+                                    onChange={e => setNewScorer({ ...newScorer, name: e.target.value })}
+                                >
+                                    <option value="">Selecione o Jogador</option>
+                                    <optgroup label={selectedMatch.p1.split(' (')[0]}>
+                                        <option value={extractGamertag(selectedMatch.p1)}>{extractGamertag(selectedMatch.p1)}</option>
+                                    </optgroup>
+                                    <optgroup label={selectedMatch.p2.split(' (')[0]}>
+                                        <option value={extractGamertag(selectedMatch.p2)}>{extractGamertag(selectedMatch.p2)}</option>
+                                    </optgroup>
+                                </select>
+                                <select 
+                                    style={{ flex: 1 }}
+                                    value={newScorer.team}
+                                    onChange={e => setNewScorer({ ...newScorer, team: parseInt(e.target.value) })}
+                                >
+                                    <option value={1}>Time 1</option>
+                                    <option value={2}>Time 2</option>
+                                </select>
+                                <button className="btn-primary" style={{ padding: '10px 15px' }} onClick={handleAddScorer}>+</button>
+                            </div>
+                        </div>
+
+                        <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                            {(!selectedMatch.scorers || selectedMatch.scorers.length === 0) ? (
+                                <p style={{ opacity: 0.5 }}>Nenhum gol registrado.</p>
+                            ) : (
+                                <table className="admin-table">
+                                    <thead>
+                                        <tr>
+                                            <th>Jogador</th>
+                                            <th>Time</th>
+                                            <th>Ação</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {selectedMatch.scorers.map((s, idx) => (
+                                            <tr key={idx}>
+                                                <td><strong>{s.name}</strong></td>
+                                                <td>{s.team === 1 ? 'Casa' : 'Fora'}</td>
+                                                <td><button onClick={() => handleRemoveScorer(idx)} style={{ padding: '4px 8px', background: '#ff4444' }}>×</button></td>
+                                            </tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            )}
+                        </div>
+
+                        <button className="btn-primary" style={{ width: '100%', marginTop: '20px' }} onClick={() => setShowScorersModal(false)}>Concluir</button>
+                    </div>
+                </div>
+            )}
 
             {showDeleteUserConfirm && (
                 <div className="success-overlay" style={{ zIndex: 5000 }}>

@@ -8,16 +8,47 @@
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     background-color: var(--bg-dark);
-    color: var(--text-light);
+    color: var(--text-main);
     line-height: 1.5;
     font-size: clamp(1rem, 0.95rem + 0.25vw, 1.1rem);
     scroll-behavior: smooth;
+    overflow-x: hidden; /* Previne scroll horizontal acidental */
+}
+
+img {
+    max-width: 100%;
+    height: auto;
+    display: block;
+}
+
+/* Scrollbar Personalizada para um visual mais Profissional */
+::-webkit-scrollbar {
+    width: 10px;
+}
+
+::-webkit-scrollbar-track {
+    background: var(--bg-dark);
+}
+
+::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background: var(--primary-color);
 }
 
 .container {
-    max-width: 1100px;
+    max-width: var(--container-width);
     margin: 0 auto;
-    padding: 0 clamp(10px, 4vw, 20px);
+    padding: 0 var(--spacing-sm);
+}
+
+@media screen and (min-width: 768px) {
+    .container {
+        padding: 0 var(--spacing-md);
+    }
 }
 
 .section {

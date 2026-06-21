@@ -1,53 +1,147 @@
-/* Breakpoint para telas muito pequenas (Smartphones antigos ou com zoom alto) */
-@media screen and (max-width: 380px) {
+/* ==========================================================================
+   Responsividade Fluida e Moderna
+   ========================================================================== */
+
+/* Ajustes Gerais para Tablets e Laptops Pequenos */
+@media screen and (max-width: 1024px) {
     .container {
-        padding: 0 12px;
+        padding: 0 var(--spacing-md);
+    }
+
+    .hero {
+        padding: 60px 0;
+    }
+
+    .results-grid, .groups-grid {
+        gap: 15px;
+    }
+}
+
+/* Ajustes para Tablets (Portrait) e Celulares Grandes */
+@media screen and (max-width: 768px) {
+    .mobile-menu-btn {
+        display: block; /* Mostra o botão hambúrguer */
+    }
+
+    .nav-links {
+        position: fixed;
+        top: 70px;
+        right: -100%;
+        width: 100%;
+        height: calc(100vh - 70px);
+        background: var(--nav-bg);
+        flex-direction: column;
+        justify-content: flex-start;
+        padding: 40px 20px;
+        transition: var(--transition);
+        backdrop-filter: blur(15px);
+        z-index: 999;
+        gap: 20px;
+    }
+
+    .nav-links.active {
+        right: 0;
+    }
+
+    .nav-links li {
+        margin-left: 0;
+        width: 100%;
+    }
+
+    .nav-right-group { gap: 15px; }
+
+    .section {
+        padding: 40px 0;
     }
 
     .hero h1 {
-        font-size: 2rem; /* Redução adicional para não quebrar linhas estranhamente */
+        font-size: clamp(2rem, 8vw, 3rem);
     }
 
-    /* Mudança Drástica: Transforma a exibição da partida em vertical */
+    /* Ajuste nas grids */
+    .results-grid, .groups-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px;
+    }
+
+    /* Alinhamento dos Cartões no Mobile */
     .match-info {
-        flex-direction: column;
+        grid-template-columns: 1fr;
         gap: 15px;
+        text-align: center;
     }
 
     .team-display {
         flex-direction: row;
-        width: 100%;
         justify-content: center;
         gap: 15px;
+        width: 100%;
+    }
+
+    .team-display div {
         text-align: left;
     }
 
-    .team-display span {
-        -webkit-line-clamp: 1; /* Força apenas uma linha para o nome */
-    }
-
     .score {
+        order: -1;
         width: 100%;
-        background: rgba(243, 9, 9, 0.1);
-        padding: 8px 0;
-        border-radius: 4px;
-        order: 3; /* Garante que o placar fique abaixo dos nomes se necessário */
+        background: var(--bg-input);
+        padding: 12px;
+        border-radius: 8px;
+        margin: 5px 0;
+        font-size: 1.5rem;
     }
 
-    /* Botões em largura total para facilitar o clique com o polegar */
-    .btn-large, .btn-primary {
+    .group-table th, .group-table td {
+        font-size: 0.85rem;
+        padding: 10px 5px;
+    }
+
+    .desktop-only { display: none !important; }
+    .mobile-only { display: flex !important; }
+}
+
+/* Ajustes para Celulares Médios/Pequenos */
+@media screen and (max-width: 480px) {
+    .match-card {
+        padding: 15px;
+    }
+
+    .team-display span {
+        font-size: 0.85rem;
+    }
+
+    .btn-large {
+        padding: 14px 30px;
+        font-size: 0.9rem;
+    }
+
+    .search-filter-bar {
+        flex-direction: column;
+    }
+
+    .search-input, .filter-select {
         width: 100%;
-        text-align: center;
+        min-width: 0;
     }
 }
 
-/* Breakpoint para telas muito grandes (Monitores UltraWide / 4K) */
+/* Suporte para Notch (Safe Area) */
+@supports (padding: env(safe-area-inset-top)) {
+    .header-nav {
+        padding-top: max(15px, env(safe-area-inset-top));
+        padding-left: env(safe-area-inset-left);
+        padding-right: env(safe-area-inset-right);
+    }
+    
+    .footer-nav {
+        padding-bottom: max(40px, env(safe-area-inset-bottom));
+    }
+}
+
+/* UltraWide */
 @media screen and (min-width: 1600px) {
     .container {
-        max-width: 1400px; /* Expande o conteúdo em telas gigantes */
-    }
-
-    .hero h1 {
-        font-size: 5.5rem;
+        max-width: 1400px;
     }
 }

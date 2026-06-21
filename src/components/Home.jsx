@@ -1,9 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { calculateStandings, extractGamertag, sortGroupTeams } from '../helpers.js';
+import { calculateStandings, extractGamertag, sortGroupTeams, getTopStats, calculateTopScorers } from '../helpers.js';
 import { getTeamLogo, getFallbackLogo } from '../teamLogos.js';
 
-function Home({ results, onRegisterClick }) {
+function Home({ results, loading, onRegisterClick }) {
     const [champion, setChampion] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filterStatus, setFilterStatus] = useState('all');
+    const [activeTab, setActiveTab] = useState('jogos');
 
     useEffect(() => {
         const finalMatches = results.filter(m => m.stage.startsWith('Final'));
@@ -41,30 +44,46 @@ function Home({ results, onRegisterClick }) {
         return currentStage === 'Fase de Grupos' ? calculateStandings(results) : {};
     }, [results, currentStage]);
 
-    const activeResults = useMemo(() => {
-        return results.filter(m => m.stage.startsWith(currentStage));
-    }, [results, currentStage]);
-
-    const liveMatches = activeResults.filter(m => m.status === 'Ao Vivo');
+    const topStats = useMemo(() => getTopStats(groupStandings), [groupStandings]);
     
-    const finishedMatches = useMemo(() => activeResults
+    const topScorers = useMemo(() => calculateTopScorers(results), [results]);
+
+    const filteredResults = useMemo(() => {
+        return results.filter(m => {
+            const matchString = `${m.p1} ${m.p2} ${m.group_name} ${m.stage}`.toLowerCase();
+            const matchesSearch = matchString.includes(searchTerm.toLowerCase());
+            const matchesStatus = filterStatus === 'all' || m.status.toLowerCase() === filterStatus.toLowerCase();
+            return matchesSearch && matchesStatus;
+        });
+    }, [results, searchTerm, filterStatus]);
+
+    const featuredMatch = useMemo(() => {
+        const live = results.find(m => m.status === 'Ao Vivo');
+        if (live) return live;
+        return results.find(m => m.status === 'Agendado');
+    }, [results]);
+
+    const liveMatches = filteredResults.filter(m => m.status === 'Ao Vivo');
+    
+    const finishedMatches = useMemo(() => filteredResults
         .filter(m => m.status === 'Finalizado')
         .sort((a, b) => {
             const dateA = new Date(`${a.date || '1970-01-01'}T${(a.time || '00:00').padStart(5, '0')}`);
             const dateB = new Date(`${b.date || '1970-01-01'}T${(b.time || '00:00').padStart(5, '0')}`);
             return dateB - dateA;
-        }), [activeResults]);
+        }), [filteredResults]);
 
-    const upcomingMatches = useMemo(() => activeResults
+    const upcomingMatches = useMemo(() => filteredResults
         .filter(m => m.status === 'Agendado')
         .sort((a, b) => {
             const dateA = new Date(`${a.date || '9999-12-31'}T${(a.time || '23:59').padStart(5, '0')}`);
             const dateB = new Date(`${b.date || '9999-12-31'}T${(b.time || '23:59').padStart(5, '0')}`);
             return dateA - dateB;
-        }), [activeResults]);
+        }), [filteredResults]);
 
-    const MatchCard = ({ match, showScore }) => (
-        <div key={match.id} className="card match-card">
+    const MatchCard = ({ match, showScore, isFeatured = false }) => (
+        <div key={match.id} className={`card match-card fade-in-up ${isFeatured ? 'featured-card' : ''}`}>
+            {isFeatured && <div className="featured-badge">DESTAQUE</div>}
             <div className="match-info">
                 <div className="team-display">
                     <img 
@@ -100,6 +119,7 @@ function Home({ results, onRegisterClick }) {
                     </div>
                 </div>
             </div>
+            
             <div className={`status ${match.status.toLowerCase()}`} style={{ textAlign: 'center' }}>
                 {match.stage && <span style={{display: 'block', fontSize: '0.85em', color: 'var(--primary-color)'}}>{match.stage} {match.group_name ? `(${match.group_name})` : ''}</span>}
                 {match.date && match.time && (
@@ -110,8 +130,50 @@ function Home({ results, onRegisterClick }) {
                 )}
                 <span style={{ display: 'block', fontWeight: 'bold', textTransform: 'uppercase' }}>{match.status}</span>
             </div>
+
+            {match.scorers && match.scorers.length > 0 && (
+                <div className="scorers-list">
+                    {match.scorers.map((s, idx) => (
+                        <div key={idx} className="scorer-item">
+                            <span className="scorer-icon">⚽</span>
+                            <span><strong>{s.name}</strong></span>
+                        </div>
+                    ))}
+                </div>
+            )}
         </div>
     );
+
+    const HomeSkeleton = () => (
+        <div className="fade-in">
+            <div className="skeleton skeleton-card" style={{ height: '300px', marginBottom: '60px' }}></div>
+            <div className="grid">
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="card" style={{ padding: '20px' }}>
+                        <div className="skeleton skeleton-circle" style={{ margin: '0 auto 15px' }}></div>
+                        <div className="skeleton skeleton-text" style={{ width: '80%', margin: '0 auto 10px' }}></div>
+                        <div className="skeleton skeleton-text" style={{ width: '50%', margin: '0 auto' }}></div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
+
+    if (loading && results.length === 0) {
+        return (
+            <React.Fragment>
+                <section className="hero skeleton">
+                    <div className="container">
+                        <div className="skeleton skeleton-title" style={{ height: '50px', margin: '0 auto 20px' }}></div>
+                        <div className="skeleton skeleton-text" style={{ width: '40%', margin: '0 auto' }}></div>
+                    </div>
+                </section>
+                <section className="container section">
+                    <HomeSkeleton />
+                </section>
+            </React.Fragment>
+        );
+    }
 
     return (
         <React.Fragment>
@@ -143,75 +205,154 @@ function Home({ results, onRegisterClick }) {
             </section>
 
             <section className="container section">
-                {Object.keys(groupStandings).length > 0 && (
-                    <div style={{ marginBottom: '60px' }}>
-                        <h2 style={{ borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px' }}>Classificação dos Grupos</h2>
-                        <div className="groups-grid">
-                            {Object.keys(groupStandings).sort().map(groupName => (
-                                <div key={groupName} className="card group-card">
-                                    <h3>{groupName}</h3>
-                                    <table className="group-table">
-                                        <thead>
-                                            <tr>
-                                                <th>Time</th>
-                                                <th style={{ textAlign: 'right' }}>Pts</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {sortGroupTeams(Object.values(groupStandings[groupName]), results)
-                                                .map((team, idx) => {
-                                                    const teamName = team.fullName.split(' (')[0];
-                                                    return (
-                                                        <tr key={idx}>
-                                                            <td style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                                                <img 
-                                                                    src={getTeamLogo(teamName)} 
-                                                                    className="team-logo-small" 
-                                                                    alt="" 
-                                                                    loading="lazy"
-                                                                    onError={(e) => { e.target.src = getFallbackLogo(teamName); }}
-                                                                />
-                                                                <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                                                    <div style={{ fontWeight: 'bold' }}>{teamName}</div>
-                                                                    <small style={{ fontSize: '0.7rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>{extractGamertag(team.fullName)}</small>
-                                                                </div>
-                                                            </td>
-                                                            <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--primary-color)' }}>{team.pts}</td>
-                                                        </tr>
-                                                    );
-                                                })}
-                                        </tbody>
-                                    </table>
+                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '40px' }}>
+                    <button className={`btn-text ${activeTab === 'jogos' ? 'active-tab' : ''}`} onClick={() => setActiveTab('jogos')} style={activeTab === 'jogos' ? { color: 'var(--primary-color)', borderBottom: '2px solid var(--primary-color)', borderRadius: 0 } : {}}>Partidas</button>
+                    <button className={`btn-text ${activeTab === 'classificacao' ? 'active-tab' : ''}`} onClick={() => setActiveTab('classificacao')} style={activeTab === 'classificacao' ? { color: 'var(--primary-color)', borderBottom: '2px solid var(--primary-color)', borderRadius: 0 } : {}}>Classificação</button>
+                    <button className={`btn-text ${activeTab === 'stats' ? 'active-tab' : ''}`} onClick={() => setActiveTab('stats')} style={activeTab === 'stats' ? { color: 'var(--primary-color)', borderBottom: '2px solid var(--primary-color)', borderRadius: 0 } : {}}>Artilharia</button>
+                </div>
+
+                {activeTab === 'jogos' && (
+                    <>
+                        {featuredMatch && !champion && (
+                            <div style={{ marginBottom: '60px' }}>
+                                <h2 style={{ borderLeft: '5px solid #ffc107', paddingLeft: '15px', marginBottom: '30px' }}>Partida em Destaque</h2>
+                                <div style={{ maxWidth: '600px', margin: '0 auto' }}>
+                                    <MatchCard match={featuredMatch} showScore={featuredMatch.status !== 'Agendado'} isFeatured={true} />
                                 </div>
-                            ))}
+                            </div>
+                        )}
+
+                        <div className="search-filter-bar">
+                            <input 
+                                type="text" 
+                                placeholder="Buscar time, jogador ou grupo..." 
+                                value={searchTerm} 
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className="search-input"
+                            />
+                            <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="filter-select">
+                                <option value="all">Todos os Status</option>
+                                <option value="ao vivo">Ao Vivo</option>
+                                <option value="agendado">Próximos</option>
+                                <option value="finalizado">Encerrados</option>
+                            </select>
                         </div>
+
+                        {liveMatches.length > 0 && (
+                            <div style={{marginBottom: '60px'}}>
+                                <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Ao Vivo Agora!</h2>
+                                <div className="results-grid">
+                                    {liveMatches.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
+                                </div>
+                            </div>
+                        )}
+
+                        {finishedMatches.length > 0 && (
+                            <div style={{marginBottom: '60px'}}>
+                                <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Resultados Finais</h2>
+                                <div className="results-grid">
+                                    {finishedMatches.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
+                                </div>
+                            </div>
+                        )}
+
+                        {upcomingMatches.length > 0 && (
+                            <div>
+                                <h2 style={{borderLeft: '5px solid var(--text-muted)', paddingLeft: '15px', marginBottom: '30px'}}>Próximos Jogos</h2>
+                                <div className="results-grid">
+                                    {upcomingMatches.map(match => <MatchCard key={match.id} match={match} showScore={false} />)}
+                                </div>
+                            </div>
+                        )}
+
+                        {filteredResults.length === 0 && (
+                            <div className="text-center" style={{ padding: '40px' }}>
+                                <p style={{ color: 'var(--text-muted)' }}>Nenhuma partida encontrada para os filtros selecionados.</p>
+                            </div>
+                        )}
+                    </>
+                )}
+
+                {activeTab === 'classificacao' && (
+                    <div className="fade-in">
+                        {Object.keys(groupStandings).length > 0 ? (
+                            <div className="groups-grid">
+                                {Object.keys(groupStandings).sort().map(groupName => (
+                                    <div key={groupName} className="card group-card">
+                                        <h3>{groupName}</h3>
+                                        <table className="group-table">
+                                            <thead>
+                                                <tr>
+                                                    <th>Time</th>
+                                                    <th style={{ textAlign: 'right' }}>Pts</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                {sortGroupTeams(Object.values(groupStandings[groupName]), results)
+                                                    .map((team, idx) => {
+                                                        const teamName = team.fullName.split(' (')[0];
+                                                        const isTopAttack = topStats.topAttack.teams.includes(team.fullName);
+                                                        const isTopDefense = topStats.topDefense.teams.includes(team.fullName);
+                                                        return (
+                                                            <tr key={idx}>
+                                                                <td style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                                    <img 
+                                                                        src={getTeamLogo(teamName)} 
+                                                                        className="team-logo-small" 
+                                                                        alt="" 
+                                                                        loading="lazy"
+                                                                        onError={(e) => { e.target.src = getFallbackLogo(teamName); }}
+                                                                    />
+                                                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                                                                        <div style={{ fontWeight: 'bold' }}>
+                                                                            {teamName}
+                                                                            {isTopAttack && <span className="stat-badge badge-attack" title="Melhor Ataque">🚀</span>}
+                                                                            {isTopDefense && <span className="stat-badge badge-defense" title="Melhor Defesa">🛡️</span>}
+                                                                        </div>
+                                                                        <small style={{ fontSize: '0.7rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>{extractGamertag(team.fullName)}</small>
+                                                                    </div>
+                                                                </td>
+                                                                <td style={{ textAlign: 'right', fontWeight: 'bold', color: 'var(--primary-color)' }}>{team.pts}</td>
+                                                            </tr>
+                                                        );
+                                                    })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center" style={{ padding: '40px' }}>
+                                <p style={{ color: 'var(--text-muted)' }}>Classificação ainda não disponível.</p>
+                            </div>
+                        )}
                     </div>
                 )}
 
-                {liveMatches.length > 0 && (
-                    <div style={{marginBottom: '60px'}}>
-                        <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Ao Vivo Agora!</h2>
-                        <div className="results-grid">
-                            {liveMatches.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
-                        </div>
-                    </div>
-                )}
-
-                {finishedMatches.length > 0 && (
-                    <div style={{marginBottom: '60px'}}>
-                        <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Resultados Finais</h2>
-                        <div className="results-grid">
-                            {finishedMatches.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
-                        </div>
-                    </div>
-                )}
-
-                {upcomingMatches.length > 0 && (
-                    <div>
-                        <h2 style={{borderLeft: '5px solid var(--text-muted)', paddingLeft: '15px', marginBottom: '30px'}}>Próximos Jogos</h2>
-                        <div className="results-grid">
-                            {upcomingMatches.map(match => <MatchCard key={match.id} match={match} showScore={false} />)}
-                        </div>
+                {activeTab === 'stats' && (
+                    <div className="fade-in" style={{ maxWidth: '800px', margin: '0 auto' }}>
+                        <h2 style={{ textAlign: 'center', marginBottom: '40px', color: 'var(--primary-color)' }}>🏆 Ranking de Artilharia</h2>
+                        {topScorers.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                                {topScorers.map((scorer, idx) => (
+                                    <div key={idx} className="stats-card">
+                                        <div className="rank-number">#{idx + 1}</div>
+                                        <div style={{ flex: 1 }}>
+                                            <div style={{ fontSize: '1.1rem', fontWeight: 'bold' }}>{scorer.name}</div>
+                                            <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Competidor</div>
+                                        </div>
+                                        <div style={{ textAlign: 'right' }}>
+                                            <div style={{ fontSize: '1.5rem', fontWeight: '900', color: 'var(--primary-color)' }}>{scorer.goals}</div>
+                                            <div style={{ fontSize: '0.7rem', fontWeight: 'bold', textTransform: 'uppercase' }}>Gols</div>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div className="text-center" style={{ padding: '40px' }}>
+                                <p style={{ color: 'var(--text-muted)' }}>Nenhum gol registrado até o momento.</p>
+                            </div>
+                        )}
                     </div>
                 )}
             </section>

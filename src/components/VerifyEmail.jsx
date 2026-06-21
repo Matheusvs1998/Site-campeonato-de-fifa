@@ -101,8 +101,8 @@ function VerifyEmail({ email, onVerified }) {
                     <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '15px' }} disabled={loading}>
                         {loading ? 'Verificando...' : 'Confirmar Código'}
                     </button>
-                    <button type="button" onClick={handleResendCode} className="btn-text" style={{ marginTop: '15px', width: '100%', textDecoration: 'underline' }}>
-                        Não recebeu o código? Reenviar
+                    <button type="button" onClick={handleResendCode} className="btn-text" style={{ marginTop: '15px', width: '100%', justifyContent: 'center' }}>
+                        Não recebeu o código? <strong>Reenviar</strong>
                     </button>
                 </form>
             </div>
@@ -111,3 +111,4 @@ function VerifyEmail({ email, onVerified }) {
 }
 
 export default VerifyEmail;
+

@@ -44,7 +44,7 @@ export const TEAM_LOGOS = {
     'Inter de Milão': 'upload.wikimedia.org/wikipedia/commons/0/05/FC_Internazionale_Milano_2021.svg',
     'AC Milan': 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Logo_of_AC_Milan.svg',
     'Juventus': 'https://upload.wikimedia.org/wikipedia/commons/4/4e/Juventus_FC_-_logo_black_%28Italy%2C_2017%29.svg',
-    'Napoli': 'https://www.pngwing.com/pt/free-png-yrhkn',
+    'Napoli': 'upload.wikimedia.org/wikipedia/commons/2/2d/SSC_Napoli_2021.svg',
     'AS Roma': 'upload.wikimedia.org/wikipedia/en/f/f3/AS_Roma_logo_%282017%29.svg',
     'Lazio': 'upload.wikimedia.org/wikipedia/en/c/ce/S.S._Lazio_badge.svg',
     'Atalanta': 'upload.wikimedia.org/wikipedia/en/6/66/Atalanta_BC.svg',

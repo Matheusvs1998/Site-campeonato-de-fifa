@@ -98,3 +98,80 @@ export const translateAuthError = (msg) => {
     
     return msg;
 };
+
+export const calculatePlayerStats = (gamertag, matches) => {
+    const playerMatches = matches.filter(m => 
+        m.status === 'Finalizado' && 
+        (extractGamertag(m.p1) === gamertag || extractGamertag(m.p2) === gamertag)
+    );
+
+    let stats = {
+        total: playerMatches.length,
+        wins: 0,
+        draws: 0,
+        losses: 0,
+        goalsFor: 0,
+        goalsAgainst: 0,
+        form: [] // Last 5 results
+    };
+
+    playerMatches.sort((a, b) => new Date(b.date + 'T' + b.time) - new Date(a.date + 'T' + a.time));
+
+    playerMatches.forEach((m, index) => {
+        const isP1 = extractGamertag(m.p1) === gamertag;
+        const sFor = isP1 ? m.score1 : m.score2;
+        const sAgainst = isP1 ? m.score2 : m.score1;
+
+        stats.goalsFor += sFor;
+        stats.goalsAgainst += sAgainst;
+
+        let result = '';
+        if (sFor > sAgainst) { stats.wins++; result = 'V'; }
+        else if (sFor === sAgainst) { stats.draws++; result = 'E'; }
+        else { stats.losses++; result = 'D'; }
+
+        if (index < 5) stats.form.unshift(result);
+    });
+
+    stats.points = (stats.wins * 3) + stats.draws;
+    stats.winRate = stats.total > 0 ? ((stats.wins / stats.total) * 100).toFixed(1) : 0;
+    stats.avgGoals = stats.total > 0 ? (stats.goalsFor / stats.total).toFixed(2) : 0;
+
+    return stats;
+};
+
+export const getTopStats = (standings) => {
+    let topAttack = { val: -1, teams: [] };
+    let topDefense = { val: 999, teams: [] };
+
+    Object.values(standings).forEach(group => {
+        Object.values(group).forEach(team => {
+            if (team.goalsFor > topAttack.val) {
+                topAttack = { val: team.goalsFor, teams: [team.fullName] };
+            } else if (team.goalsFor === topAttack.val && team.goalsFor > 0) {
+                topAttack.teams.push(team.fullName);
+            }
+
+            if (team.goalsAgainst < topDefense.val) {
+                topDefense = { val: team.goalsAgainst, teams: [team.fullName] };
+            } else if (team.goalsAgainst === topDefense.val) {
+                topDefense.teams.push(team.fullName);
+            }
+        });
+    });
+
+    return { topAttack, topDefense };
+};
+
+export const calculateTopScorers = (matches) => {
+    const scorers = {};
+    matches.forEach(m => {
+        if (m.scorers && Array.isArray(m.scorers)) {
+            m.scorers.forEach(s => {
+                if (!scorers[s.name]) scorers[s.name] = { name: s.name, goals: 0 };
+                scorers[s.name].goals += 1;
+            });
+        }
+    });
+    return Object.values(scorers).sort((a, b) => b.goals - a.goals);
+};

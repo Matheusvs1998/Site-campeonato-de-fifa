@@ -40,9 +40,25 @@ function SignUp({ onStepVerify }) {
         setLoading(true);
         setError('');
         try {
+            const playername = formData.playername.trim();
+            const emailTrimmed = email.trim();
+
+            // 1. Verificar se o Playername já existe
+            const { data: existingUser, error: checkError } = await supabaseClient
+                .from('profiles')
+                .select('username')
+                .eq('username', playername)
+                .maybeSingle();
+
+            if (checkError) throw checkError;
+            if (existingUser) {
+                throw new Error("Este nome de usuário já está em uso. Escolha outro.");
+            }
+
+            // 2. Tentar o cadastro (O Supabase Auth já valida e-mail, mas vamos capturar o erro)
             const signUpMetadata = {
-                playername: formData.playername.trim(),
-                playerName: formData.playername.trim(),
+                playername: playername,
+                playerName: playername,
                 teamname: formData.teamname,
                 teamName: formData.teamname,
                 platform: formData.platform,
@@ -54,7 +70,7 @@ function SignUp({ onStepVerify }) {
             }
 
             const { data, error: authError } = await supabaseClient.auth.signUp({ 
-                email, 
+                email: emailTrimmed, 
                 password: pass,
                 options: { 
                     data: signUpMetadata,
@@ -63,12 +79,19 @@ function SignUp({ onStepVerify }) {
             });
             
             if (authError) {
-                console.error("Erro completo do Supabase Auth:", authError);
+                if (authError.message.includes("User already registered") || authError.status === 422) {
+                    throw new Error("Este e-mail já está cadastrado em nossa base.");
+                }
                 throw authError;
             }
 
+            // Técnica para detectar usuário já existente mesmo com proteção de enumeração ligada
+            if (data?.user && data.user.identities && data.user.identities.length === 0) {
+                throw new Error("Este e-mail já está cadastrado em nossa base.");
+            }
+
             if (data?.user && !data?.session) {
-                onStepVerify(email);
+                onStepVerify(emailTrimmed);
             }
         } catch (err) {
             setError(translateAuthError(err.message));
@@ -107,18 +130,18 @@ function SignUp({ onStepVerify }) {
                                 <img 
                                     src="https://cdn-icons-png.flaticon.com/128/158/158746.png" 
                                     alt="Olho" 
-                                    style={{ width: '20px', opacity: showPassword ? '1' : '0.5', 
-                                    filter: showPassword ? 'invert(11%) sepia(87%) saturate(6964%) hue-rotate(357deg) brightness(97%) contrast(114%)' : 'invert(100%)' }} 
+                                    className="eye-icon"
+                                    style={{ width: '20px', opacity: showPassword ? '1' : '0.5' }} 
                                 />
                             </button>
                         </div>
                     </div>
 
-                    <div className="form-group" style={{ textAlign: 'center', marginTop: '10px' }}>
+                    <div className="form-group" style={{ textAlign: 'center', marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                         <img src={getTeamLogo(formData.teamname)} alt="Escudo" style={{ width: '60px', marginBottom: '10px' }} />
-                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--primary-color)', marginBottom: '10px', marginTop: '-5px' }}>{formData.gamertag || 'Seu Nick'}</div>
-                        <label>Escolha seu Time</label>
-                        <select value={formData.teamname} onChange={e => setFormData({...formData, teamname: e.target.value})} required>
+                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--primary-color)', marginBottom: '15px', marginTop: '-5px' }}>{formData.gamertag || 'Seu Nick'}</div>
+                        <label style={{ alignSelf: 'flex-start', marginBottom: '8px' }}>Escolha seu Time</label>
+                        <select value={formData.teamname} onChange={e => setFormData({...formData, teamname: e.target.value})} required style={{ width: '100%' }}>
                             <optgroup label="Espanha">
                                 <option value="Real Madrid">Real Madrid</option>
                                 <option value="Barcelona">Barcelona</option>
@@ -204,11 +227,11 @@ function SignUp({ onStepVerify }) {
                                 overflowY: 'auto', 
                                 fontSize: '0.75rem', 
                                 padding: '12px', 
-                                background: 'rgba(0,0,0,0.2)', 
+                                background: 'var(--bg-input)', 
                                 borderRadius: '8px',
-                                border: hasRead ? '1px solid #28a745' : '1px solid rgba(255,255,255,0.1)',
+                                border: hasRead ? '1px solid #28a745' : '1px solid var(--border-color)',
                                 transition: 'all 0.3s ease',
-                                color: '#eee',
+                                color: 'var(--text-muted)',
                                 lineHeight: '1.5'
                             }}
                         >
@@ -229,7 +252,8 @@ function SignUp({ onStepVerify }) {
                                     gap: '12px', 
                                     opacity: hasRead ? 1 : 0.5, 
                                     cursor: hasRead ? 'pointer' : 'not-allowed',
-                                    userSelect: 'none'
+                                    userSelect: 'none',
+                                    color: 'var(--text-main)'
                                 }}
                             >
                                 <input 
