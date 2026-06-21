@@ -11,7 +11,7 @@ import Profile from './components/Profile';
 import PlayerDashboard from './components/PlayerDashboard';
 import '../styles.css';
 
-const MAINTENANCE_MODE = false;
+const MAINTENANCE_MODE = true;
 
 function App() {
     const [page, setPage] = useState('home');
@@ -41,17 +41,15 @@ function App() {
     const [drawMessage, setDrawMessage] = useState(null);
     const [showDrawConfirm, setShowDrawConfirm] = useState(false);
     const [toasts, setToasts] = useState([]);
-    const [scrollY, setScrollY] = useState(0);
     const [isRecoveringPassword, setIsRecoveringPassword] = useState(false);
     const [newPassword, setNewPassword] = useState('');
 
     useEffect(() => {
         const handleScroll = () => {
-            setScrollY(window.scrollY);
             document.documentElement.style.setProperty('--scroll-y', `${window.scrollY}px`);
         };
         window.addEventListener('scroll', handleScroll, { passive: true });
-        
+
         // Listener de Recuperação de Senha
         const { data: authListener } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
             if (event === 'PASSWORD_RECOVERY') {
@@ -124,9 +122,9 @@ function App() {
     const handleLogout = useCallback(async () => {
         try {
             const currentUser = userRef.current;
-            setLogoutMessage({ 
-                username: currentUser?.username || 'Competidor', 
-                role: currentUser?.role || 'player' 
+            setLogoutMessage({
+                username: currentUser?.username || 'Competidor',
+                role: currentUser?.role || 'player'
             });
             setIsMenuOpen(false);
             sessionStorage.removeItem('gangster_cup_welcomed');
@@ -156,7 +154,7 @@ function App() {
                 supabaseClient.from('registrations').select('*'),
                 supabaseClient.from('matches').select('*')
             ]);
-            
+
             setRegistrations(regRes.data || []);
             setResults(matchRes.data || []);
         } catch (err) {
@@ -257,7 +255,7 @@ function App() {
 
     useEffect(() => {
         if (!supabaseClient) return;
-        
+
         const checkSession = async () => {
             const { data: { session: initialSession } } = await supabaseClient.auth.getSession();
             setSession(initialSession);
@@ -267,7 +265,7 @@ function App() {
 
         const { data: { subscription } } = supabaseClient.auth.onAuthStateChange(async (event, currentSession) => {
             setSession(currentSession);
-            
+
             // Trata Recuperação de Senha
             if (event === 'PASSWORD_RECOVERY') {
                 setIsRecoveringPassword(true);
@@ -299,14 +297,14 @@ function App() {
     useEffect(() => {
         if (session && (page === 'signup' || page === 'verify' || page === 'login')) {
             setPage('admin');
-        } else if (!session && page === 'admin') { 
+        } else if (!session && page === 'admin') {
             setPage('home');
         }
     }, [session, page]);
 
     useEffect(() => {
         fetchData(true);
-    }, [fetchData]); 
+    }, [fetchData]);
 
     useEffect(() => {
         if (!supabaseClient) return;
@@ -327,7 +325,7 @@ function App() {
                         const newRole = roleNames[payload.new.role] || payload.new.role;
                         setRoleUpdateNotify(newRole);
                         addToast(`Seu cargo mudou para: ${newRole}`, 'info');
-                        
+
                         setTimeout(() => {
                             setRoleUpdateNotify(null);
                             handleLogout();
@@ -589,20 +587,20 @@ function App() {
 
             {accessError && (
                 <div className="success-overlay" onClick={() => setAccessError(null)}>
-                    <div className="success-modal" style={{borderColor: '#ff4444'}} onClick={e => e.stopPropagation()}>
-                        <div style={{fontSize: '5rem'}}>🚫</div>
-                        <h2 style={{color: '#ff4444'}}>Acesso Bloqueado</h2>
+                    <div className="success-modal" style={{ borderColor: '#ff4444' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ fontSize: '5rem' }}>🚫</div>
+                        <h2 style={{ color: '#ff4444' }}>Acesso Bloqueado</h2>
                         <p>{accessError}</p>
-                        <button className="btn-primary" style={{background: '#ff4444', color: '#ffffff'}} onClick={() => setAccessError(null)}>Voltar</button>
+                        <button className="btn-primary" style={{ background: '#ff4444', color: '#ffffff' }} onClick={() => setAccessError(null)}>Voltar</button>
                     </div>
                 </div>
             )}
 
             {MAINTENANCE_MODE && user?.role !== 'admin' && page !== 'login' ? (
-                <div className="maintenance-wrapper" style={{ backgroundImage: `linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)), url('/tela-de-manutencao.png')`, backgroundSize: 'cover', backgroundPosition: 'center', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', textAlign: 'center', padding: '20px' }}>
+                <div className="maintenance-wrapper">
                     <div className="maintenance-card">
-                        <div style={{fontSize: '5rem'}}>🛠️</div>
-                        <h1 style={{color: 'var(--primary-color)'}}>Site em Manutenção</h1>
+                        <div style={{ fontSize: '5rem' }}>🛠️</div>
+                        <h1 style={{ color: 'var(--primary-color)' }}>Site em Manutenção</h1>
                         <p>Voltaremos em breve!</p>
                     </div>
                 </div>
@@ -630,12 +628,12 @@ function App() {
                                 <p>Digite sua nova senha de acesso abaixo:</p>
                                 <form onSubmit={handleUpdatePassword} style={{ marginTop: '20px', padding: 0, background: 'none', boxShadow: 'none' }}>
                                     <div className="form-group">
-                                        <input 
-                                            type="password" 
-                                            value={newPassword} 
-                                            onChange={(e) => setNewPassword(e.target.value)} 
-                                            placeholder="Nova Senha (mín. 6 caracteres)" 
-                                            required 
+                                        <input
+                                            type="password"
+                                            value={newPassword}
+                                            onChange={(e) => setNewPassword(e.target.value)}
+                                            placeholder="Nova Senha (mín. 6 caracteres)"
+                                            required
                                             minLength="6"
                                         />
                                     </div>
@@ -729,7 +727,7 @@ function App() {
                     {banNotify && (
                         <div className="success-overlay" style={{ zIndex: 4000 }}>
                             <div className="success-modal" style={{ borderColor: '#ff4444' }}>
-                                <h2 style={{color: '#ff4444'}}>CONTA BANIDA</h2>
+                                <h2 style={{ color: '#ff4444' }}>CONTA BANIDA</h2>
                             </div>
                         </div>
                     )}
@@ -791,9 +789,9 @@ function App() {
                                                         </div>
                                                         <h2>Bem-vindo, {user.username}!</h2>
                                                         <p className="welcome-role">Acesso: <strong>{
-                                                            user.role === 'developer' ? 'Desenvolvedor' : 
-                                                            user.role === 'admin' ? 'Administrador' : 
-                                                            user.role === 'moderador' ? 'Moderador' : 'Competidor'
+                                                            user.role === 'developer' ? 'Desenvolvedor' :
+                                                                user.role === 'admin' ? 'Administrador' :
+                                                                    user.role === 'moderador' ? 'Moderador' : 'Competidor'
                                                         }</strong></p>
                                                     </Fragment>
                                                 ) : <h2>Carregando perfil...</h2>}
@@ -817,13 +815,13 @@ function App() {
                     <div className="social-links">
                         <a href="https://discord.gg/neQt9DdJVT" className="discord" target="_blank" rel="noopener noreferrer">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2758-3.68-.2758-5.4876 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189z"/>
+                                <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2758-3.68-.2758-5.4876 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189z" />
                             </svg>
                             Discord
                         </a>
                         <a href="https://twitch.tv/eujohnzinrp" className="twitch" target="_blank" rel="noopener noreferrer">
                             <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z"/>
+                                <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
                             </svg>
                             Twitch
                         </a>

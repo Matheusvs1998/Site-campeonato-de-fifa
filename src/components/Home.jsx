@@ -205,10 +205,10 @@ function Home({ results, loading, onRegisterClick }) {
             </section>
 
             <section className="container section">
-                <div style={{ display: 'flex', justifyContent: 'center', gap: '10px', marginBottom: '40px' }}>
-                    <button className={`btn-text ${activeTab === 'jogos' ? 'active-tab' : ''}`} onClick={() => setActiveTab('jogos')} style={activeTab === 'jogos' ? { color: 'var(--primary-color)', borderBottom: '2px solid var(--primary-color)', borderRadius: 0 } : {}}>Partidas</button>
-                    <button className={`btn-text ${activeTab === 'classificacao' ? 'active-tab' : ''}`} onClick={() => setActiveTab('classificacao')} style={activeTab === 'classificacao' ? { color: 'var(--primary-color)', borderBottom: '2px solid var(--primary-color)', borderRadius: 0 } : {}}>Classificação</button>
-                    <button className={`btn-text ${activeTab === 'stats' ? 'active-tab' : ''}`} onClick={() => setActiveTab('stats')} style={activeTab === 'stats' ? { color: 'var(--primary-color)', borderBottom: '2px solid var(--primary-color)', borderRadius: 0 } : {}}>Artilharia</button>
+                <div className="tabs-container">
+                    <button className={`tab-btn ${activeTab === 'jogos' ? 'active' : ''}`} onClick={() => setActiveTab('jogos')}>Partidas</button>
+                    <button className={`tab-btn ${activeTab === 'classificacao' ? 'active' : ''}`} onClick={() => setActiveTab('classificacao')}>Classificação</button>
+                    <button className={`tab-btn ${activeTab === 'stats' ? 'active' : ''}`} onClick={() => setActiveTab('stats')}>Artilharia</button>
                 </div>
 
                 {activeTab === 'jogos' && (

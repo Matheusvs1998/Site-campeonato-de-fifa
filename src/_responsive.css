@@ -19,6 +19,22 @@
 
 /* Ajustes para Tablets (Portrait) e Celulares Grandes */
 @media screen and (max-width: 768px) {
+    .hero::before {
+        background-attachment: scroll !important; /* Desativa parallax no mobile para corrigir o bug de zoom absurdo no fundo */
+    }
+
+    .nav-logo {
+        height: 35px;
+    }
+
+    .logo-prefix, .logo-main {
+        font-size: 0.95rem;
+    }
+
+    .card, .maintenance-card {
+        padding: 20px 15px !important; /* Diminui padding no mobile para ganhar espaço de tela e evitar estouro horizontal */
+    }
+
     .mobile-menu-btn {
         display: block; /* Mostra o botão hambúrguer */
     }
@@ -26,21 +42,26 @@
     .nav-links {
         position: fixed;
         top: 70px;
-        right: -100%;
+        right: 0;
         width: 100%;
         height: calc(100vh - 70px);
         background: var(--nav-bg);
         flex-direction: column;
         justify-content: flex-start;
         padding: 40px 20px;
-        transition: var(--transition);
+        transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease, visibility 0.3s ease;
         backdrop-filter: blur(15px);
         z-index: 999;
         gap: 20px;
+        opacity: 0;
+        visibility: hidden; /* Garante que fique invisível e inativo quando fechado no mobile */
+        transform: translateX(100%); /* Desloca o elemento para fora da tela sem alterar a geometria do layout */
     }
 
     .nav-links.active {
-        right: 0;
+        transform: translateX(0); /* Traz o menu de volta à tela suavemente */
+        opacity: 1;
+        visibility: visible; /* Torna visível e ativo ao abrir o menu hambúrguer */
     }
 
     .nav-links li {
@@ -64,18 +85,32 @@
         gap: 20px;
     }
 
-    /* Alinhamento dos Cartões no Mobile */
+    /* Alinhamento dos Cartões no Mobile (Layout de Placar Verticalizado com Flexbox Padrão) */
     .match-info {
-        grid-template-columns: 1fr;
-        gap: 15px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        align-items: center;
         text-align: center;
+        width: 100%;
     }
 
     .team-display {
+        display: flex;
         flex-direction: row;
+        align-items: center;
         justify-content: center;
-        gap: 15px;
+        gap: 12px;
         width: 100%;
+        padding: 8px 15px;
+        background: rgba(255, 255, 255, 0.02);
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        box-sizing: border-box;
+    }
+
+    [data-theme='light'] .team-display {
+        background: rgba(0, 0, 0, 0.02);
     }
 
     .team-display div {
@@ -83,13 +118,32 @@
     }
 
     .score {
-        order: -1;
-        width: 100%;
         background: var(--bg-input);
-        padding: 12px;
-        border-radius: 8px;
-        margin: 5px 0;
-        font-size: 1.5rem;
+        padding: 8px 20px;
+        border-radius: 20px;
+        font-size: 1.25rem;
+        font-weight: 800;
+        margin: 4px 0;
+        width: auto;
+        min-width: 60px;
+        text-align: center;
+        display: inline-block;
+        border: 1px solid var(--border-color);
+        box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.2);
+    }
+
+    /* Abas Responsivas no Mobile */
+    .tabs-container {
+        width: 100%;
+        max-width: 480px;
+        box-sizing: border-box;
+    }
+
+    .tab-btn {
+        flex: 1;
+        padding: 10px 8px;
+        font-size: 0.85rem;
+        text-align: center;
     }
 
     .group-table th, .group-table td {
@@ -103,6 +157,14 @@
 
 /* Ajustes para Celulares Médios/Pequenos */
 @media screen and (max-width: 480px) {
+    .logo-prefix {
+        display: none !important; /* Oculta o prefixo no mobile muito pequeno para evitar estouro */
+    }
+
+    .logo-main {
+        font-size: 0.9rem !important;
+    }
+
     .match-card {
         padding: 15px;
     }

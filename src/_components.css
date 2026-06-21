@@ -577,3 +577,81 @@ form {
     font-weight: 900;
     letter-spacing: 1px;
 }
+
+/* Tabs Navegação Moderna */
+.tabs-container {
+    display: flex;
+    justify-content: center;
+    background: var(--bg-input);
+    padding: 6px;
+    border-radius: 12px;
+    margin-bottom: 40px;
+    gap: 5px;
+    width: fit-content;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid var(--border-color);
+}
+
+.tab-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    padding: 10px 24px;
+    border-radius: 8px;
+    outline: none;
+}
+
+.tab-btn:hover {
+    color: var(--text-main);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+[data-theme='light'] .tab-btn:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.tab-btn.active {
+    background: var(--primary-color);
+    color: #ffffff;
+    box-shadow: 0 4px 12px var(--primary-glow);
+}
+
+/* Tela de Manutenção Profissional e Responsiva */
+.maintenance-wrapper {
+    background-image: linear-gradient(rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0.85)), url('/hero-bg.webp');
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    min-height: 100vh;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
+
+.maintenance-card {
+    background: rgba(22, 22, 22, 0.85);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+    border: 1px solid var(--border-color);
+    padding: 40px 30px;
+    border-radius: 16px;
+    max-width: 420px;
+    width: 100%;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
+    border-bottom: 4px solid var(--primary-color);
+    animation: fadeInUp 0.5s ease-out;
+}
+
+[data-theme='light'] .maintenance-card {
+    background: rgba(255, 255, 255, 0.85);
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+}
