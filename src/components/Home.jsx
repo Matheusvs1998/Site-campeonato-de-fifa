@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { calculateStandings, extractGamertag, sortGroupTeams, getTopStats, calculateTopScorers } from '../helpers.js';
 import { getTeamLogo, getFallbackLogo } from '../teamLogos.js';
 
-function Home({ results, loading, onRegisterClick }) {
+function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
     const [champion, setChampion] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
@@ -82,7 +82,7 @@ function Home({ results, loading, onRegisterClick }) {
         }), [filteredResults]);
 
     const MatchCard = ({ match, showScore, isFeatured = false }) => (
-        <div key={match.id} className={`card match-card fade-in-up ${isFeatured ? 'featured-card' : ''}`}>
+        <div key={match.id} className={`card match-card ${isFeatured ? 'featured-card' : ''}`}>
             {isFeatured && <div className="featured-badge">DESTAQUE</div>}
             <div className="match-info">
                 <div className="team-display">
@@ -213,7 +213,7 @@ function Home({ results, loading, onRegisterClick }) {
 
                 {activeTab === 'jogos' && (
                     <>
-                        {featuredMatch && !champion && (
+                        {featuredMatch && !champion && showFeaturedMatch && (
                             <div style={{ marginBottom: '60px' }}>
                                 <h2 style={{ borderLeft: '5px solid #ffc107', paddingLeft: '15px', marginBottom: '30px' }}>Partida em Destaque</h2>
                                 <div style={{ maxWidth: '600px', margin: '0 auto' }}>

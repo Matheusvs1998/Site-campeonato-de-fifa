@@ -31,6 +31,9 @@ function App() {
     const [registrations, setRegistrations] = useState([]);
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showFeaturedMatch, setShowFeaturedMatch] = useState(() => {
+        return localStorage.getItem('gangster_cup_featured') !== 'false';
+    });
     const [showLiveAlert, setShowLiveAlert] = useState(true);
     const [isVerifying, setIsVerifying] = useState(false);
     const [accessError, setAccessError] = useState(null);
@@ -58,28 +61,9 @@ function App() {
             }
         });
 
-        // Configuração de Realtime (Atualizações ao Vivo)
-        const matchesChannel = supabaseClient
-            .channel('realtime-matches')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'matches' }, (payload) => {
-                console.log('Mudança detectada em matches:', payload);
-                fetchData();
-            })
-            .subscribe();
-
-        const registrationsChannel = supabaseClient
-            .channel('realtime-registrations')
-            .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, (payload) => {
-                console.log('Mudança detectada em registrations:', payload);
-                fetchData();
-            })
-            .subscribe();
-
         return () => {
             window.removeEventListener('scroll', handleScroll);
             if (authListener) authListener.subscription.unsubscribe();
-            supabaseClient.removeChannel(matchesChannel);
-            supabaseClient.removeChannel(registrationsChannel);
         };
     }, []);
 
@@ -117,6 +101,15 @@ function App() {
     const toggleTheme = () => {
         setTheme(prev => prev === 'dark' ? 'light' : 'dark');
         addToast(`Tema ${theme === 'dark' ? 'Claro' : 'Escuro'} ativado!`, 'info');
+    };
+
+    const toggleFeaturedMatch = () => {
+        setShowFeaturedMatch(prev => {
+            const newVal = !prev;
+            localStorage.setItem('gangster_cup_featured', String(newVal));
+            addToast(newVal ? 'Partida em Destaque ativada!' : 'Partida em Destaque desativada!', 'info');
+            return newVal;
+        });
     };
 
     const handleLogout = useCallback(async () => {
@@ -599,9 +592,22 @@ function App() {
             {MAINTENANCE_MODE && user?.role !== 'admin' && page !== 'login' ? (
                 <div className="maintenance-wrapper">
                     <div className="maintenance-card">
-                        <div style={{ fontSize: '5rem' }}>🛠️</div>
-                        <h1 style={{ color: 'var(--primary-color)' }}>Site em Manutenção</h1>
-                        <p>Voltaremos em breve!</p>
+                        <div className="maintenance-icon-wrapper">
+                            <span>🛠️</span>
+                        </div>
+                        <div className="maintenance-status-bar">
+                            <div className="maintenance-status-dot"></div>
+                            Manutenção em Andamento
+                        </div>
+                        <h1>Site em <span>Manutenção</span></h1>
+                        <p className="maintenance-subtitle">
+                            Estamos realizando melhorias para garantir a melhor experiência no campeonato. Voltaremos em breve!
+                        </p>
+                        <div className="maintenance-divider"></div>
+                        <div className="maintenance-footer">
+                            <img src="/logo.png" alt="Logo" />
+                            <span>Gangster Cup © 2026</span>
+                        </div>
                     </div>
                 </div>
             ) : (
@@ -773,7 +779,7 @@ function App() {
                             <SkeletonLoader />
                         ) : (
                             <div className="fade-in">
-                                {page === 'home' && <Home results={results} loading={loading} onRegisterClick={() => setPage('signup')} />}
+                                {page === 'home' && <Home results={results} loading={loading} onRegisterClick={() => setPage('signup')} showFeaturedMatch={showFeaturedMatch} />}
                                 {page === 'login' && <Login />}
                                 {page === 'signup' && <SignUp onStepVerify={(email) => { setTempEmail(email); setPage('verify'); }} />}
                                 {page === 'verify' && tempEmail && <VerifyEmail email={tempEmail} onVerified={() => setPage('admin')} />}
@@ -799,7 +805,7 @@ function App() {
                                         </div>
                                     ) : (
                                         user.role === 'admin' || user.role === 'developer' || user.role === 'moderador' ? (
-                                            <Admin results={results} registrations={registrations} updateResult={updateResult} onDraw={() => setShowDrawConfirm(true)} onKnockoutDraw={executeKnockoutDraw} onDeleteMatch={deleteMatch} onDeleteAll={() => setShowResetConfirm(true)} user={user} fetchData={fetchData} />
+                                            <Admin results={results} registrations={registrations} updateResult={updateResult} onDraw={() => setShowDrawConfirm(true)} onKnockoutDraw={executeKnockoutDraw} onDeleteMatch={deleteMatch} onDeleteAll={() => setShowResetConfirm(true)} user={user} fetchData={fetchData} showFeaturedMatch={showFeaturedMatch} onToggleFeatured={toggleFeaturedMatch} />
                                         ) : (
                                             <PlayerDashboard user={user} userRegistration={userRegistration} results={results} />
                                         )

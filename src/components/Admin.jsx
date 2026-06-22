@@ -3,7 +3,7 @@ import { supabaseClient } from '../supabase';
 import { getTeamLogo, getFallbackLogo } from '../teamLogos';
 import { calculateStandings, extractGamertag } from '../helpers';
 
-function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, onDeleteMatch, onDeleteAll, user, fetchData }) {
+function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, onDeleteMatch, onDeleteAll, user, fetchData, showFeaturedMatch, onToggleFeatured }) {
     const [users, setUsers] = useState([]);
     const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
     const [adminToDelete, setAdminToDelete] = useState(null);
@@ -149,63 +149,66 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                 </div>
             )}
 
+            {/* Admin Header */}
             <div className="admin-header">
                 <div>
                     <h2>Painel Administrativo</h2>
-                    <p>Logado como: <strong 
-                        className={`text-${user?.role}`} 
-                        style={{ color: user?.role === 'developer' ? '#28a745' : user?.role === 'admin' ? '#007bff' : user?.role === 'moderador' ? '#ffc107' : 'var(--text-main)' }}
-                    >{user?.username}</strong></p>
+                    <p>Logado como: <span className={`role-indicator ${user?.role}`}>
+                        {user?.role === 'developer' ? '🔧 Desenvolvedor' : user?.role === 'admin' ? '👑 Administrador' : user?.role === 'moderador' ? '🛡️ Moderador' : '⚽ Jogador'}
+                    </span> <strong style={{ marginLeft: '6px' }}>{user?.username}</strong></p>
                 </div>
                 <div className="admin-actions">
-                    {isDev && <button className="btn-primary" style={{ background: '#ff4444' }} onClick={onDeleteAll}>Resetar Campeonato</button>}
-                    {isAdmin && <button className="btn-primary" onClick={onDraw}>Sortear Grupos</button>}
+                    {isDev && <button className="btn-primary" style={{ background: '#ff4444' }} onClick={onDeleteAll}>🔄 Resetar</button>}
+                    {isAdmin && <button className="btn-primary" onClick={onDraw}>🎲 Sortear Grupos</button>}
                     {isAdmin && results.length > 0 && isLastStageFinished && (
-                        <button className="btn-primary" style={{ background: '#28a745' }} onClick={onKnockoutDraw}>Próxima Fase</button>
+                        <button className="btn-primary" style={{ background: '#28a745' }} onClick={onKnockoutDraw}>⚡ Próxima Fase</button>
                     )}
                 </div>
             </div>
 
             {isDev && (
-                <div className="card" style={{ marginBottom: '40px', padding: '20px' }}>
-                    <h3>Gerenciar Usuários</h3>
-                    <div style={{ overflowX: 'auto' }}>
-                        <table className="admin-table" style={{ width: '100%', marginTop: '15px' }}>
+                <div className="admin-section-card">
+                    <div className="admin-section-header">
+                        <div className="admin-section-icon users">👥</div>
+                        <h3>Gerenciar Usuários</h3>
+                        <span className="admin-section-count">{users.length} usuários</span>
+                    </div>
+                    <div className="admin-section-body" style={{ overflowX: 'auto' }}>
+                        <table className="admin-table">
                             <thead>
                                 <tr>
                                     <th>Username</th>
                                     <th>Cargo</th>
-                                    <th>Status</th>
+                                    <th style={{ textAlign: 'center' }}>Ações</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {users.map(u => (
                                     <tr key={u.id}>
                                         <td>
-                                            <strong 
-                                                className={`text-${u.role}`}
-                                                style={{ 
-                                                    color: u.is_banned ? '#6c757d' : (u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : 'var(--text-main)'),
-                                                    opacity: u.is_banned ? 0.6 : 1
-                                                }}
-                                            >
-                                                {u.username}
-                                            </strong>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                                <div style={{
+                                                    width: '32px', height: '32px', borderRadius: '8px',
+                                                    background: u.is_banned ? 'rgba(108, 117, 125, 0.12)' : (u.role === 'developer' ? 'rgba(40, 167, 69, 0.12)' : u.role === 'admin' ? 'rgba(0, 123, 255, 0.12)' : u.role === 'moderador' ? 'rgba(255, 193, 7, 0.12)' : 'rgba(255,255,255,0.05)'),
+                                                    display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', flexShrink: 0
+                                                }}>
+                                                    {u.is_banned ? '🚫' : (u.role === 'developer' ? '🔧' : u.role === 'admin' ? '👑' : u.role === 'moderador' ? '🛡️' : '⚽')}
+                                                </div>
+                                                <div>
+                                                    <strong style={{ color: u.is_banned ? '#6c757d' : 'var(--text-main)', opacity: u.is_banned ? 0.6 : 1 }}>
+                                                        {u.username}
+                                                    </strong>
+                                                    {u.is_banned && <span style={{ display: 'block', fontSize: '0.7rem', color: '#ff4444', fontWeight: 700 }}>BANIDO</span>}
+                                                </div>
+                                            </div>
                                         </td>
                                         <td>
                                             <select 
                                                 value={u.role} 
                                                 onChange={(e) => handleUpdateUser(u.id, { role: e.target.value })}
                                                 disabled={u.role === 'developer' && !isDev}
-                                                className={`text-${u.role}`}
-                                                style={{ 
-                                                    fontWeight: 'bold', 
-                                                    background: 'var(--bg-input)', 
-                                                    border: '1px solid var(--border-color)', 
-                                                    padding: '5px', 
-                                                    borderRadius: '4px',
-                                                    color: u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : 'var(--text-main)'
-                                                }}
+                                                className="admin-status-select"
+                                                style={{ color: u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : 'var(--text-main)' }}
                                             >
                                                 <option value="player" style={{ color: 'var(--text-main)', background: 'var(--bg-card)' }}>Jogador</option>
                                                 <option value="moderador" style={{ color: '#ffc107', background: 'var(--bg-card)' }}>Moderador</option>
@@ -214,34 +217,11 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                             </select>
                                         </td>
                                         <td>
-                                            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center' }}>
-                                                <button 
-                                                    onClick={() => handleUpdateUser(u.id, { is_banned: !u.is_banned })}
-                                                    style={{ 
-                                                        backgroundColor: 'transparent',
-                                                        color: '#ff4444', 
-                                                        border: '1px solid #ff4444',
-                                                        padding: '4px 12px',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer',
-                                                        fontWeight: 'bold',
-                                                        fontSize: '0.8rem'
-                                                    }}
-                                                >
+                                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                                <button className="admin-btn danger" onClick={() => handleUpdateUser(u.id, { is_banned: !u.is_banned })}>
                                                     {u.is_banned ? 'Desbanir' : 'Banir'}
                                                 </button>
-                                                <button 
-                                                    onClick={() => { setUserToDelete(u); setShowDeleteUserConfirm(true); }}
-                                                    style={{ 
-                                                        backgroundColor: 'transparent',
-                                                        color: '#ff4444', 
-                                                        border: '1px solid #ff4444',
-                                                        padding: '4px 8px',
-                                                        borderRadius: '4px',
-                                                        cursor: 'pointer'
-                                                    }}
-                                                    title="Excluir Permanentemente"
-                                                >
+                                                <button className="admin-btn danger icon-only" onClick={() => { setUserToDelete(u); setShowDeleteUserConfirm(true); }} title="Excluir Permanentemente">
                                                     🗑️
                                                 </button>
                                             </div>
@@ -254,10 +234,39 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                 </div>
             )}
 
-            <div className="card" style={{ marginBottom: '40px', padding: '20px' }}>
-                <h3>Inscritos ({registrations.length})</h3>
-                <div style={{ overflowX: 'auto' }}>
-                    <table className="admin-table" style={{ width: '100%', marginTop: '15px' }}>
+            {/* Configurações da Home */}
+            {(isAdmin || isDev) && (
+                <div className="admin-section-card">
+                    <div className="admin-section-header">
+                        <div className="admin-section-icon settings">⚙️</div>
+                        <h3>Configurações da Home</h3>
+                    </div>
+                    <div className="admin-section-body">
+                        <div className="settings-toggle-row">
+                            <div className="settings-toggle-info">
+                                <h4>⭐ Partida em Destaque</h4>
+                                <p>Exibir a seção de destaque na página inicial</p>
+                            </div>
+                            <button
+                                className={`toggle-switch ${showFeaturedMatch ? 'active' : 'inactive'}`}
+                                onClick={onToggleFeatured}
+                            >
+                                <span className="toggle-switch-knob" style={{ left: showFeaturedMatch ? '27px' : '3px' }} />
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Inscritos */}
+            <div className="admin-section-card">
+                <div className="admin-section-header">
+                    <div className="admin-section-icon registrations">📋</div>
+                    <h3>Inscritos</h3>
+                    <span className="admin-section-count">{registrations.length} jogadores</span>
+                </div>
+                <div className="admin-section-body" style={{ overflowX: 'auto' }}>
+                    <table className="admin-table">
                         <thead>
                             <tr>
                                 <th>Time</th>
@@ -268,9 +277,9 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                         <tbody>
                             {registrations.map((reg, idx) => (
                                 <tr key={idx}>
-                                    <td>{reg.teamname}</td>
+                                    <td><strong>{reg.teamname}</strong></td>
                                     <td>{reg.playername}</td>
-                                    <td>{reg.gamertag}</td>
+                                    <td style={{ wordBreak: 'break-word', maxWidth: '120px' }}>{reg.gamertag}</td>
                                 </tr>
                             ))}
                         </tbody>
@@ -278,16 +287,23 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                 </div>
             </div>
 
-            <div className="card" style={{ padding: '20px' }}>
-                <h3>Gerenciar Partidas</h3>
-                <div style={{ overflowX: 'auto' }}>
-                    <table className="admin-table" style={{ width: '100%', marginTop: '15px' }}>
+            {/* Gerenciar Partidas */}
+            <div className="admin-section-card">
+                <div className="admin-section-header">
+                    <div className="admin-section-icon matches">⚽</div>
+                    <h3>Gerenciar Partidas</h3>
+                    <span className="admin-section-count">{sortedMatches.length} partidas</span>
+                </div>
+                <div className="admin-section-body" style={{ overflowX: 'auto' }}>
+                    <table className="admin-table">
                         <thead>
                             <tr>
                                 <th>Partida</th>
+                                {isDev && <th>Data</th>}
+                                {isDev && <th>Horário</th>}
                                 <th>Placar</th>
                                 <th>Status</th>
-                                <th>Ações</th>
+                                <th style={{ textAlign: 'center' }}>Ações</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -295,62 +311,61 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                 <tr key={match.id}>
                                     <td>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '15px', justifyContent: 'center', minWidth: '220px' }}>
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, textAlign: 'center' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, textAlign: 'center', minWidth: 0 }}>
                                                 <img 
                                                     src={getTeamLogo(match.p1)} 
                                                     alt="" 
                                                     style={{ width: '24px', height: '24px', marginBottom: '2px' }} 
                                                     onError={(e) => { e.target.src = getFallbackLogo(match.p1.split(' (')[0]); }}
                                                 />
-                                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', lineHeight: '1' }}>{match.p1.split(' (')[0]}</span>
-                                                <small style={{ fontSize: '0.65rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>{extractGamertag(match.p1)}</small>
+                                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', lineHeight: '1', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.p1.split(' (')[0]}</span>
+                                                <small style={{ fontSize: '0.65rem', color: 'var(--primary-color)', fontWeight: 'bold', display: 'block', maxWidth: '85px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={extractGamertag(match.p1)}>{extractGamertag(match.p1)}</small>
                                             </div>
-
                                             <span style={{ fontSize: '0.7rem', opacity: 0.5, fontWeight: 'bold' }}>VS</span>
-
-                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, textAlign: 'center' }}>
+                                            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1, textAlign: 'center', minWidth: 0 }}>
                                                 <img 
                                                     src={getTeamLogo(match.p2)} 
                                                     alt="" 
                                                     style={{ width: '24px', height: '24px', marginBottom: '2px' }} 
                                                     onError={(e) => { e.target.src = getFallbackLogo(match.p2.split(' (')[0]); }}
                                                 />
-                                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', lineHeight: '1' }}>{match.p2.split(' (')[0]}</span>
-                                                <small style={{ fontSize: '0.65rem', color: 'var(--primary-color)', fontWeight: 'bold' }}>{extractGamertag(match.p2)}</small>
+                                                <span style={{ fontSize: '0.8rem', fontWeight: 'bold', lineHeight: '1', width: '100%', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{match.p2.split(' (')[0]}</span>
+                                                <small style={{ fontSize: '0.65rem', color: 'var(--primary-color)', fontWeight: 'bold', display: 'block', maxWidth: '85px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }} title={extractGamertag(match.p2)}>{extractGamertag(match.p2)}</small>
                                             </div>
                                         </div>
                                     </td>
+                                    {isDev && (
+                                        <td>
+                                            <input type="date" className="admin-date-input" value={match.date || ''} onChange={(e) => updateResult(match.id, 'date', e.target.value)} />
+                                        </td>
+                                    )}
+                                    {isDev && (
+                                        <td>
+                                            <input type="time" className="admin-time-input" value={match.time || ''} onChange={(e) => updateResult(match.id, 'time', e.target.value)} />
+                                        </td>
+                                    )}
                                     <td>
-                                        <input 
-                                            type="number" 
-                                            value={match.score1} 
-                                            style={{ width: '40px' }}
-                                            onChange={(e) => updateResult(match.id, 'score1', e.target.value)} 
-                                        />
-                                        x
-                                        <input 
-                                            type="number" 
-                                            value={match.score2} 
-                                            style={{ width: '40px' }}
-                                            onChange={(e) => updateResult(match.id, 'score2', e.target.value)} 
-                                        />
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', justifyContent: 'center' }}>
+                                            <input type="number" className="admin-score-input" value={match.score1} onChange={(e) => updateResult(match.id, 'score1', e.target.value)} />
+                                            <span className="score-separator">×</span>
+                                            <input type="number" className="admin-score-input" value={match.score2} onChange={(e) => updateResult(match.id, 'score2', e.target.value)} />
+                                        </div>
                                     </td>
                                     <td>
                                         <select 
                                             value={match.status} 
                                             onChange={(e) => updateResult(match.id, 'status', e.target.value)}
-                                            className={match.status === 'Ao Vivo' ? 'text-danger' : ''}
-                                            style={match.status === 'Ao Vivo' ? { color: '#ff4444', fontWeight: 'bold' } : {}}
+                                            className={`admin-status-select ${match.status === 'Ao Vivo' ? 'live' : ''}`}
                                         >
                                             <option value="Agendado">Agendado</option>
-                                            <option value="Ao Vivo">Ao Vivo</option>
+                                            <option value="Ao Vivo">🔴 Ao Vivo</option>
                                             <option value="Finalizado">Finalizado</option>
                                         </select>
                                     </td>
                                     <td>
-                                        <div style={{ display: 'flex', gap: '5px' }}>
-                                            <button onClick={() => { setSelectedMatch(match); setShowScorersModal(true); }} title="Registrar Gols" style={{ background: '#28a745', padding: '6px' }}>⚽</button>
-                                            <button onClick={() => onDeleteMatch(match.id)} title="Excluir Partida">🗑️</button>
+                                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                                            <button className="admin-btn success icon-only" onClick={() => { setSelectedMatch(match); setShowScorersModal(true); }} title="Registrar Gols">⚽</button>
+                                            <button className="admin-btn danger icon-only" onClick={() => onDeleteMatch(match.id)} title="Excluir Partida">🗑️</button>
                                         </div>
                                     </td>
                                 </tr>
