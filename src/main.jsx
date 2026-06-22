@@ -653,7 +653,7 @@ function App() {
                         <nav className="container nav-content">
                             <div className={`logo ${isLogoAnimated ? 'logo-click-animation' : ''}`} onClick={handleLogoClick}>
                                 <img src="/logo.png" alt="Logo" className="nav-logo" />
-                                <span className="logo-prefix">EA FC 26</span> <span className="logo-main">GANGSTER CUP</span>
+                                <span className="logo-prefix"></span> <span className="logo-main">GANGSTER CUP</span>
                             </div>
 
                             <div className="nav-right-group">
