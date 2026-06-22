@@ -11,7 +11,7 @@ import Profile from './components/Profile';
 import PlayerDashboard from './components/PlayerDashboard';
 import '../styles.css';
 
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 function App() {
     const [page, setPage] = useState('home');
