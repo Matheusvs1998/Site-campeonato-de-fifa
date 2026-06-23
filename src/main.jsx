@@ -31,9 +31,7 @@ function App() {
     const [registrations, setRegistrations] = useState([]);
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [showFeaturedMatch, setShowFeaturedMatch] = useState(() => {
-        return localStorage.getItem('gangster_cup_featured') !== 'false';
-    });
+    const [showFeaturedMatch, setShowFeaturedMatch] = useState(true);
     const [showLiveAlert, setShowLiveAlert] = useState(true);
     const [isVerifying, setIsVerifying] = useState(false);
     const [accessError, setAccessError] = useState(null);
@@ -103,13 +101,19 @@ function App() {
         addToast(`Tema ${theme === 'dark' ? 'Claro' : 'Escuro'} ativado!`, 'info');
     };
 
-    const toggleFeaturedMatch = () => {
-        setShowFeaturedMatch(prev => {
-            const newVal = !prev;
-            localStorage.setItem('gangster_cup_featured', String(newVal));
-            addToast(newVal ? 'Partida em Destaque ativada!' : 'Partida em Destaque desativada!', 'info');
-            return newVal;
-        });
+    const toggleFeaturedMatch = async () => {
+        const newVal = !showFeaturedMatch;
+        try {
+            const { error } = await supabaseClient
+                .from('site_settings')
+                .upsert({ key: 'show_featured_match', value: String(newVal) }, { onConflict: 'key' });
+            if (error) throw error;
+            setShowFeaturedMatch(newVal);
+            addToast(newVal ? 'Partida em Destaque ativada para todos!' : 'Partida em Destaque desativada para todos!', 'info');
+        } catch (err) {
+            console.error('Erro ao salvar configuração:', err);
+            addToast('Erro ao salvar configuração. Verifique se a tabela site_settings existe.', 'error');
+        }
     };
 
     const handleLogout = useCallback(async () => {
@@ -143,13 +147,19 @@ function App() {
         }, 5000);
 
         try {
-            const [regRes, matchRes] = await Promise.all([
+            const [regRes, matchRes, settingsRes] = await Promise.all([
                 supabaseClient.from('registrations').select('*'),
-                supabaseClient.from('matches').select('*')
+                supabaseClient.from('matches').select('*'),
+                supabaseClient.from('site_settings').select('*').eq('key', 'show_featured_match').maybeSingle()
             ]);
 
             setRegistrations(regRes.data || []);
             setResults(matchRes.data || []);
+
+            // Atualiza a configuração global de partida em destaque
+            if (settingsRes.data) {
+                setShowFeaturedMatch(settingsRes.data.value !== 'false');
+            }
         } catch (err) {
             console.error('Falha crítica ao buscar dados:', err);
             addToast('Erro ao sincronizar dados com o servidor.', 'error');
@@ -311,6 +321,7 @@ function App() {
                 }
             })
             .on('postgres_changes', { event: '*', schema: 'public', table: 'registrations' }, () => fetchData())
+            .on('postgres_changes', { event: '*', schema: 'public', table: 'site_settings' }, () => fetchData())
             .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'profiles' }, (payload) => {
                 if (userRef.current && payload.new.id === userRef.current.id) {
                     if (payload.new.role !== userRef.current.role && !payload.new.is_banned) {
@@ -780,7 +791,7 @@ function App() {
                         ) : (
                             <div className="fade-in">
                                 {page === 'home' && <Home results={results} loading={loading} onRegisterClick={() => setPage('signup')} showFeaturedMatch={showFeaturedMatch} />}
-                                {page === 'login' && <Login />}
+                                {page === 'login' && <Login onGoToSignUp={() => setPage('signup')} />}
                                 {page === 'signup' && <SignUp onStepVerify={(email) => { setTempEmail(email); setPage('verify'); }} />}
                                 {page === 'verify' && tempEmail && <VerifyEmail email={tempEmail} onVerified={() => setPage('admin')} />}
                                 {page === 'profile' && <Profile user={session?.user} userRegistration={userRegistration} onUpdate={async () => { await fetchData(); if (session?.user) await fetchUserProfile(session.user); }} />}

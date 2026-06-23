@@ -131,23 +131,15 @@ function Profile({ user, userRegistration, onUpdate }) {
     const handleDeleteAccount = async () => {
         setLoading(true);
         try {
-            // 1. Deleta a inscrição do campeonato
-            if (userRegistration?.id) {
-                const { error: regError } = await supabaseClient
-                    .from('registrations')
-                    .delete()
-                    .eq('id', userRegistration.id);
-                if (regError) throw regError;
-            }
+            // Usa a mesma RPC server-side que o Admin usa, garantindo que
+            // Auth + Profiles + Registrations sejam removidos de uma vez,
+            // sem depender de políticas de RLS do client.
+            const { error: deleteError } = await supabaseClient.rpc('delete_full_user_complete', {
+                target_user_id: user.id
+            });
+            if (deleteError) throw deleteError;
 
-            // 2. Deleta o perfil do usuário
-            const { error: profileError } = await supabaseClient
-                .from('profiles')
-                .delete()
-                .eq('id', user.id);
-            if (profileError) throw profileError;
-
-            // 3. Encerra a sessão
+            // Encerra a sessão local
             await supabaseClient.auth.signOut();
             setShowDeleteConfirm(false);
             setIsDeleted(true);

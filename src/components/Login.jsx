@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { supabaseClient } from '../supabase.js';
 import { translateAuthError } from '../helpers.js';
 
-function Login() {
+function Login({ onGoToSignUp }) {
     const [email, setEmail] = useState('');
     const [pass, setPass] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -12,10 +12,12 @@ function Login() {
     const [showReset, setShowReset] = useState(false);
     const [resetEmail, setResetEmail] = useState('');
     const [resetSent, setResetSent] = useState(false);
+    const [showSignUpSuggestion, setShowSignUpSuggestion] = useState(false);
 
     const handleSubmit = async (e) => {
         e.preventDefault();
         setError('');
+        setShowSignUpSuggestion(false);
         setIsChecking(true);
         
         try {
@@ -26,7 +28,11 @@ function Login() {
             if (!data.session) throw new Error('Falha ao estabelecer sessão. Tente novamente.');
             setShowAnimation(true);
         } catch (err) {
-            setError(translateAuthError(err?.message) || 'Erro ao validar acesso.');
+            const rawMsg = err?.message || '';
+            if (rawMsg.includes('Invalid login credentials')) {
+                setShowSignUpSuggestion(true);
+            }
+            setError(translateAuthError(rawMsg) || 'Erro ao validar acesso.');
         } finally {
             setIsChecking(false);
         }
@@ -104,9 +110,37 @@ function Login() {
                 <form onSubmit={handleSubmit} className="card" style={{ maxWidth: '350px', margin: '0 auto', padding: '20px' }}>
                     <h2 style={{ textAlign: 'center', marginBottom: '25px', color: 'var(--primary-color)' }}>Entrar</h2>
                     {error && (
-                        <p style={{ color: '#ff4444', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>
+                        <p style={{ color: '#ff4444', marginBottom: showSignUpSuggestion ? '5px' : '15px', textAlign: 'center', fontWeight: 'bold' }}>
                             {error}
                         </p>
+                    )}
+                    {showSignUpSuggestion && onGoToSignUp && (
+                        <div style={{
+                            background: 'rgba(0, 123, 255, 0.1)',
+                            border: '1px solid rgba(0, 123, 255, 0.3)',
+                            borderRadius: '10px',
+                            padding: '15px',
+                            marginBottom: '20px',
+                            textAlign: 'center',
+                            animation: 'fadeIn 0.3s ease'
+                        }}>
+                            <p style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'var(--text-color)' }}>
+                                Não encontramos uma conta com esse e-mail. <br/>
+                                <strong>Deseja criar uma conta?</strong>
+                            </p>
+                            <button
+                                type="button"
+                                className="btn-primary"
+                                style={{ 
+                                    background: 'linear-gradient(135deg, #007bff, #0056b3)',
+                                    width: '100%',
+                                    fontSize: '0.9rem'
+                                }}
+                                onClick={onGoToSignUp}
+                            >
+                                📝 Criar minha conta agora
+                            </button>
+                        </div>
                     )}
                     <div className="form-group">
                         <label>E-mail</label>
