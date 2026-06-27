@@ -214,10 +214,77 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                 {activeTab === 'jogos' && (
                     <>
                         {featuredMatch && !champion && showFeaturedMatch && (
-                            <div style={{ marginBottom: '60px' }}>
-                                <h2 style={{ borderLeft: '5px solid #ffc107', paddingLeft: '15px', marginBottom: '30px' }}>Partida em Destaque</h2>
-                                <div style={{ maxWidth: '600px', margin: '0 auto' }}>
-                                    <MatchCard match={featuredMatch} showScore={featuredMatch.status !== 'Agendado'} isFeatured={true} />
+                            <div className="featured-section fade-in-up">
+                                <div className="section-header-pro">
+                                    <div className="section-header-icon" style={{ background: 'rgba(255, 193, 7, 0.15)' }}>⭐</div>
+                                    <div>
+                                        <h2 style={{ margin: 0 }}>Partida em Destaque</h2>
+                                        <p className="section-subtitle">O confronto mais aguardado</p>
+                                    </div>
+                                    {featuredMatch.status === 'Ao Vivo' && (
+                                        <div className="live-pulse-badge">
+                                            <span className="live-dot"></span> AO VIVO
+                                        </div>
+                                    )}
+                                </div>
+                                <div className="featured-match-hero">
+                                    <div className="featured-glow"></div>
+                                    <div className="featured-match-content">
+                                        <div className="featured-team">
+                                            <img 
+                                                src={getTeamLogo(featuredMatch.p1)} 
+                                                alt={featuredMatch.p1} 
+                                                className="featured-team-logo"
+                                                loading="lazy"
+                                                onError={(e) => { e.target.src = getFallbackLogo(featuredMatch.p1.split(' (')[0]); }}
+                                            />
+                                            <span className="featured-team-name">{featuredMatch.p1.split(' (')[0]}</span>
+                                            <small className="featured-gamertag">{extractGamertag(featuredMatch.p1)}</small>
+                                        </div>
+                                        
+                                        <div className="featured-score-area">
+                                            {featuredMatch.status !== 'Agendado' ? (
+                                                <div className="featured-score">
+                                                    <span>{featuredMatch.score1}</span>
+                                                    <span className="featured-score-divider">:</span>
+                                                    <span>{featuredMatch.score2}</span>
+                                                </div>
+                                            ) : (
+                                                <div className="featured-vs">VS</div>
+                                            )}
+                                            <div className="featured-meta">
+                                                <span className="featured-stage">{featuredMatch.stage} {featuredMatch.group_name ? `• ${featuredMatch.group_name}` : ''}</span>
+                                                {featuredMatch.date && featuredMatch.time && (
+                                                    <span className="featured-datetime">
+                                                        📅 {new Date(featuredMatch.date + 'T12:00:00').toLocaleDateString('pt-BR', {day:'2-digit', month: 'short'})} às {featuredMatch.time}
+                                                    </span>
+                                                )}
+                                                <span className={`featured-status ${featuredMatch.status === 'Ao Vivo' ? 'live' : featuredMatch.status === 'Agendado' ? 'scheduled' : 'finished'}`}>
+                                                    {featuredMatch.status === 'Ao Vivo' && <span className="live-dot"></span>}
+                                                    {featuredMatch.status}
+                                                </span>
+                                            </div>
+                                        </div>
+
+                                        <div className="featured-team">
+                                            <img 
+                                                src={getTeamLogo(featuredMatch.p2)} 
+                                                alt={featuredMatch.p2} 
+                                                className="featured-team-logo"
+                                                loading="lazy"
+                                                onError={(e) => { e.target.src = getFallbackLogo(featuredMatch.p2.split(' (')[0]); }}
+                                            />
+                                            <span className="featured-team-name">{featuredMatch.p2.split(' (')[0]}</span>
+                                            <small className="featured-gamertag">{extractGamertag(featuredMatch.p2)}</small>
+                                        </div>
+                                    </div>
+                                    {featuredMatch.scorers && featuredMatch.scorers.length > 0 && (
+                                        <div className="featured-scorers">
+                                            {featuredMatch.scorers.map((s, idx) => (
+                                                <span key={idx} className="featured-scorer-tag">⚽ {s.name}</span>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         )}
@@ -225,49 +292,80 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                         <div className="search-filter-bar">
                             <input 
                                 type="text" 
-                                placeholder="Buscar time, jogador ou grupo..." 
+                                placeholder="🔍 Buscar time, jogador ou grupo..." 
                                 value={searchTerm} 
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="search-input"
                             />
                             <select value={filterStatus} onChange={(e) => setFilterStatus(e.target.value)} className="filter-select">
                                 <option value="all">Todos os Status</option>
-                                <option value="ao vivo">Ao Vivo</option>
-                                <option value="agendado">Próximos</option>
-                                <option value="finalizado">Encerrados</option>
+                                <option value="ao vivo">🔴 Ao Vivo</option>
+                                <option value="agendado">📅 Próximos</option>
+                                <option value="finalizado">✅ Encerrados</option>
                             </select>
                         </div>
 
                         {liveMatches.length > 0 && (
-                            <div style={{marginBottom: '60px'}}>
-                                <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Ao Vivo Agora!</h2>
+                            <div className="live-section fade-in-up" style={{marginBottom: '60px'}}>
+                                <div className="section-header-pro">
+                                    <div className="section-header-icon live-icon">
+                                        <span className="live-dot"></span>
+                                    </div>
+                                    <div>
+                                        <h2 style={{ margin: 0 }}>Ao Vivo Agora</h2>
+                                        <p className="section-subtitle">{liveMatches.length} {liveMatches.length === 1 ? 'partida em andamento' : 'partidas em andamento'}</p>
+                                    </div>
+                                    <div className="live-pulse-badge">
+                                        <span className="live-dot"></span> LIVE
+                                    </div>
+                                </div>
                                 <div className="results-grid">
                                     {liveMatches.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
                                 </div>
                             </div>
                         )}
 
-                        {finishedMatches.length > 0 && (
-                            <div style={{marginBottom: '60px'}}>
-                                <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Resultados Finais</h2>
-                                <div className="results-grid">
-                                    {finishedMatches.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
-                                </div>
-                            </div>
-                        )}
-
                         {upcomingMatches.length > 0 && (
-                            <div>
-                                <h2 style={{borderLeft: '5px solid var(--text-muted)', paddingLeft: '15px', marginBottom: '30px'}}>Próximos Jogos</h2>
+                            <div className="upcoming-section fade-in-up" style={{marginBottom: '60px'}}>
+                                <div className="section-header-pro">
+                                    <div className="section-header-icon" style={{ background: 'rgba(0, 123, 255, 0.15)' }}>📅</div>
+                                    <div>
+                                        <h2 style={{ margin: 0 }}>Próximos Jogos</h2>
+                                        <p className="section-subtitle">{upcomingMatches.length} {upcomingMatches.length === 1 ? 'confronto agendado' : 'confrontos agendados'}</p>
+                                    </div>
+                                </div>
                                 <div className="results-grid">
                                     {upcomingMatches.map(match => <MatchCard key={match.id} match={match} showScore={false} />)}
                                 </div>
                             </div>
                         )}
 
+                        {finishedMatches.length > 0 && (
+                            <div className="finished-section fade-in-up" style={{marginBottom: '60px'}}>
+                                <div className="section-header-pro">
+                                    <div className="section-header-icon" style={{ background: 'rgba(40, 167, 69, 0.15)' }}>✅</div>
+                                    <div>
+                                        <h2 style={{ margin: 0 }}>Resultados Finais</h2>
+                                        <p className="section-subtitle">{finishedMatches.length} {finishedMatches.length === 1 ? 'partida encerrada' : 'partidas encerradas'}</p>
+                                    </div>
+                                </div>
+                                <div className="results-grid">
+                                    {finishedMatches.map(match => <MatchCard key={match.id} match={match} showScore={true} />)}
+                                </div>
+                            </div>
+                        )}
+
                         {filteredResults.length === 0 && (
-                            <div className="text-center" style={{ padding: '40px' }}>
-                                <p style={{ color: 'var(--text-muted)' }}>Nenhuma partida encontrada para os filtros selecionados.</p>
+                            <div className="empty-state fade-in">
+                                <div style={{ fontSize: '4rem', marginBottom: '15px' }}>🏟️</div>
+                                <p style={{ color: 'var(--text-muted)', fontSize: '1.1rem' }}>Nenhuma partida encontrada para os filtros selecionados.</p>
+                                <button 
+                                    className="btn-text" 
+                                    style={{ marginTop: '15px', justifyContent: 'center' }}
+                                    onClick={() => { setSearchTerm(''); setFilterStatus('all'); }}
+                                >
+                                    Limpar filtros
+                                </button>
                             </div>
                         )}
                     </>

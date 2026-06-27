@@ -105,7 +105,12 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
         if (!userToDelete) return;
         setLoading(true);
         try {
-            // Chama a função mestre que remove de: Auth, Profiles e Registrations de uma vez só
+            // Remove a inscrição do jogador associada ao username para manter a tabela de Inscritos sincronizada
+            await supabaseClient.from('registrations')
+                .delete()
+                .eq('playername', userToDelete.username);
+
+            // Chama a função mestre que remove de: Auth e Profiles
             const { error: deleteError } = await supabaseClient.rpc('delete_full_user_complete', { 
                 target_user_id: userToDelete.id 
             });

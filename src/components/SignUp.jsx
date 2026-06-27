@@ -19,10 +19,17 @@ function SignUp({ onStepVerify }) {
     const [hasRead, setHasRead] = useState(false);
     const termsRef = useRef(null);
 
+    // Estados de validação em tempo real
+    const [fieldStatus, setFieldStatus] = useState({
+        email: { checking: false, taken: false, message: '' },
+        playername: { checking: false, taken: false, message: '' },
+        gamertag: { checking: false, taken: false, message: '' }
+    });
+    const debounceTimers = useRef({});
+
     const handleScroll = () => {
         const div = termsRef.current;
         if (div) {
-            // Verifica se chegou ao fim da rolagem com uma margem de erro de 5px
             const isBottom = div.scrollHeight - div.scrollTop <= div.clientHeight + 5;
             if (isBottom) setHasRead(true);
         }
@@ -34,6 +41,98 @@ function SignUp({ onStepVerify }) {
         }
     }, []);
 
+    // Verificação de disponibilidade com debounce
+    const checkAvailability = (field, value) => {
+        const trimmed = value.trim();
+
+        // Limpa timer anterior
+        if (debounceTimers.current[field]) {
+            clearTimeout(debounceTimers.current[field]);
+        }
+
+        // Se campo vazio, reseta o status
+        if (!trimmed) {
+            setFieldStatus(prev => ({ ...prev, [field]: { checking: false, taken: false, message: '' } }));
+            return;
+        }
+
+        // Marca como verificando
+        setFieldStatus(prev => ({ ...prev, [field]: { checking: true, taken: false, message: '' } }));
+
+        debounceTimers.current[field] = setTimeout(async () => {
+            try {
+                let taken = false;
+                let message = '';
+
+                if (field === 'email') {
+                    // Verifica na tabela profiles (podemos usar auth, mas profiles é acessível)
+                    // O Supabase Auth não expõe busca por email diretamente ao anon,
+                    // mas podemos verificar via registrations + profiles de forma indireta
+                    // A validação principal do email ocorre no signUp (Auth cuida disso)
+                    setFieldStatus(prev => ({ ...prev, email: { checking: false, taken: false, message: '' } }));
+                    return;
+                } else if (field === 'playername') {
+                    const { data } = await supabaseClient
+                        .from('profiles')
+                        .select('username')
+                        .eq('username', trimmed)
+                        .maybeSingle();
+                    if (data) {
+                        taken = true;
+                        message = '⚠️ Este nome de usuário já está em uso.';
+                    }
+                } else if (field === 'gamertag') {
+                    const { data } = await supabaseClient
+                        .from('registrations')
+                        .select('gamertag')
+                        .eq('gamertag', trimmed)
+                        .maybeSingle();
+                    if (data) {
+                        taken = true;
+                        message = '⚠️ Esta Gamertag/PSN ID já está em uso.';
+                    }
+                }
+
+                setFieldStatus(prev => ({ ...prev, [field]: { checking: false, taken, message } }));
+            } catch (err) {
+                console.error(`Erro ao verificar ${field}:`, err);
+                setFieldStatus(prev => ({ ...prev, [field]: { checking: false, taken: false, message: '' } }));
+            }
+        }, 500);
+    };
+
+    // Handlers com verificação automática
+    const handleEmailChange = (value) => {
+        setEmail(value);
+        checkAvailability('email', value);
+    };
+
+    const handlePlayernameChange = (value) => {
+        setFormData(prev => ({ ...prev, playername: value }));
+        checkAvailability('playername', value);
+    };
+
+    const handleGamertagChange = (value) => {
+        setFormData(prev => ({ ...prev, gamertag: value }));
+        checkAvailability('gamertag', value);
+    };
+
+    // Componente inline para indicador de status do campo
+    const FieldIndicator = ({ field }) => {
+        const status = fieldStatus[field];
+        if (status.checking) {
+            return <small style={{ color: 'var(--primary-color)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>🔍 Verificando disponibilidade...</small>;
+        }
+        if (status.taken) {
+            return <small style={{ color: '#ff4444', fontSize: '0.8rem', marginTop: '4px', display: 'block', fontWeight: 'bold' }}>{status.message}</small>;
+        }
+        const fieldValue = field === 'email' ? email.trim() : (field === 'playername' ? formData.playername.trim() : formData.gamertag.trim());
+        if (fieldValue && !status.checking && !status.taken && field !== 'email') {
+            return <small style={{ color: '#28a745', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>✅ Disponível</small>;
+        }
+        return null;
+    };
+
     const handleSignUp = async (e) => {
         e.preventDefault();
         if (!acceptedTerms) return alert("Aceite os termos para continuar.");
@@ -41,6 +140,7 @@ function SignUp({ onStepVerify }) {
         setError('');
         try {
             const playername = formData.playername.trim();
+            const gamertagTrimmed = formData.gamertag.trim();
             const emailTrimmed = email.trim();
 
             // 1. Verificar se o Playername já existe
@@ -55,14 +155,26 @@ function SignUp({ onStepVerify }) {
                 throw new Error("Este nome de usuário já está em uso. Escolha outro.");
             }
 
-            // 2. Tentar o cadastro (O Supabase Auth já valida e-mail, mas vamos capturar o erro)
+            // 2. Verificar se a Gamertag já existe
+            const { data: existingGamertag, error: gamertagError } = await supabaseClient
+                .from('registrations')
+                .select('gamertag')
+                .eq('gamertag', gamertagTrimmed)
+                .maybeSingle();
+
+            if (gamertagError) throw gamertagError;
+            if (existingGamertag) {
+                throw new Error("Esta Gamertag/PSN ID já está em uso. Escolha outra.");
+            }
+
+            // 3. Tentar o cadastro (O Supabase Auth já valida e-mail duplicado)
             const signUpMetadata = {
                 playername: playername,
                 playerName: playername,
                 teamname: formData.teamname,
                 teamName: formData.teamname,
                 platform: formData.platform,
-                gamertag: formData.gamertag.trim()
+                gamertag: gamertagTrimmed
             };
 
             if (!signUpMetadata.playername || !signUpMetadata.gamertag) {
@@ -109,7 +221,8 @@ function SignUp({ onStepVerify }) {
                     
                     <div className="form-group" style={{ marginBottom: '15px' }}>
                         <label>E-mail</label>
-                        <input type="email" value={email} onChange={e => setEmail(e.target.value)} required style={{ width: '100%' }} />
+                        <input type="email" value={email} onChange={e => handleEmailChange(e.target.value)} required style={{ width: '100%' }} />
+                        <FieldIndicator field="email" />
                     </div>
                     
                     <div className="form-group" style={{ marginBottom: '15px' }}>
@@ -198,7 +311,17 @@ function SignUp({ onStepVerify }) {
 
                     <div className="form-group" style={{ marginBottom: '15px' }}>
                         <label>Nome Completo do Jogador</label>
-                        <input type="text" value={formData.playername} onChange={e => setFormData({...formData, playername: e.target.value})} required />
+                        <input 
+                            type="text" 
+                            value={formData.playername} 
+                            onChange={e => handlePlayernameChange(e.target.value)} 
+                            required 
+                            style={{ 
+                                width: '100%',
+                                borderColor: fieldStatus.playername.taken ? '#ff4444' : undefined 
+                            }}
+                        />
+                        <FieldIndicator field="playername" />
                     </div>
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
@@ -212,7 +335,17 @@ function SignUp({ onStepVerify }) {
                         </div>
                         <div className="form-group">
                             <label>Gamertag / PSN ID</label>
-                            <input type="text" value={formData.gamertag} onChange={e => setFormData({...formData, gamertag: e.target.value})} placeholder="Ex: Player_123" required />
+                            <input 
+                                type="text" 
+                                value={formData.gamertag} 
+                                onChange={e => handleGamertagChange(e.target.value)} 
+                                placeholder="Ex: Player_123" 
+                                required 
+                                style={{ 
+                                    borderColor: fieldStatus.gamertag.taken ? '#ff4444' : undefined 
+                                }}
+                            />
+                            <FieldIndicator field="gamertag" />
                         </div>
                     </div>
 
@@ -276,9 +409,19 @@ function SignUp({ onStepVerify }) {
                         </div>
                     </div>
 
-                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '20px' }} disabled={loading}>
+                    <button 
+                        type="submit" 
+                        className="btn-primary" 
+                        style={{ width: '100%', marginTop: '20px' }} 
+                        disabled={loading || fieldStatus.playername.taken || fieldStatus.gamertag.taken || fieldStatus.playername.checking || fieldStatus.gamertag.checking}
+                    >
                         {loading ? 'Processando...' : 'Finalizar Inscrição'}
                     </button>
+                    {(fieldStatus.playername.taken || fieldStatus.gamertag.taken) && (
+                        <p style={{ color: '#ff4444', fontSize: '0.8rem', textAlign: 'center', marginTop: '8px', fontWeight: 'bold' }}>
+                            ⚠️ Corrija os campos destacados em vermelho antes de continuar.
+                        </p>
+                    )}
                 </form>
             </div>
         </section>

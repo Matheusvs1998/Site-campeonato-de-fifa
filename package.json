@@ -2,7 +2,7 @@
   "name": "campeonato-de-fifa",
   "private": true,
   "version": "1.0.0",
-  "type": "module", 
+  "type": "module",
   "description": "Aplicação React para um campeonato de EA FC 26 com Supabase.",
   "main": "src/main.jsx",
   "scripts": {
@@ -25,6 +25,7 @@
   "dependencies": {
     "@supabase/supabase-js": "^2.48.5",
     "@vitejs/plugin-react": "^4.3.4",
+    "dotenv": "^17.4.2",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "vite": "^6.1.0"

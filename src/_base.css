@@ -14,12 +14,18 @@ body,
 }
 
 body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-family: var(--font-main);
     background-color: var(--bg-dark);
+    background-image: 
+        radial-gradient(circle at 15% 50%, rgba(229, 9, 20, 0.05), transparent 25%),
+        radial-gradient(circle at 85% 30%, rgba(229, 9, 20, 0.03), transparent 25%);
+    background-attachment: fixed;
     color: var(--text-main);
-    line-height: 1.5;
+    line-height: 1.6;
     font-size: clamp(1rem, 0.95rem + 0.25vw, 1.1rem);
     scroll-behavior: smooth;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
 img {
@@ -30,7 +36,8 @@ img {
 
 /* Scrollbar Personalizada para um visual mais Profissional */
 ::-webkit-scrollbar {
-    width: 10px;
+    width: 8px;
+    height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -38,12 +45,12 @@ img {
 }
 
 ::-webkit-scrollbar-thumb {
-    background: #333;
-    border-radius: 5px;
+    background: var(--border-color);
+    border-radius: 10px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-    background: var(--primary-color);
+    background: rgba(229, 9, 20, 0.6);
 }
 
 .container {
