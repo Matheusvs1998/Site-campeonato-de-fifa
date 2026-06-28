@@ -143,13 +143,23 @@
         width: 100%;
         max-width: 480px;
         box-sizing: border-box;
+        overflow-x: auto;
+        scroll-snap-type: x mandatory;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+
+    .tabs-container::-webkit-scrollbar {
+        display: none;
     }
 
     .tab-btn {
-        flex: 1;
+        flex: 0 0 auto;
+        min-width: 130px;
         padding: 10px 8px;
         font-size: 0.85rem;
         text-align: center;
+        scroll-snap-align: start;
     }
 
     .group-table th, .group-table td {

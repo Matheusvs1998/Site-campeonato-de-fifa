@@ -640,16 +640,6 @@
 
 .btn-large { padding: 15px 40px; font-size: 1.05rem; }
 
-.btn-primary:hover, .btn-large:hover { 
-    transform: translateY(-3px); 
-    box-shadow: var(--shadow-glow);
-    filter: brightness(1.15);
-}
-
-.btn-primary:active, .btn-large:active {
-    transform: translateY(1px);
-}
-
 .btn-danger {
     background: #ff4444;
     color: white;
@@ -661,8 +651,6 @@
     transition: var(--transition);
 }
 
-.btn-danger:hover { background: #cc0000; transform: translateY(-2px); }
-
 .btn-icon {
     background: transparent;
     border: none;
@@ -672,7 +660,23 @@
     transition: var(--transition);
 }
 
-.btn-icon:hover { transform: scale(1.2); }
+@media (hover: hover) {
+    .btn-primary:hover, .btn-large:hover { 
+        transform: translateY(-3px); 
+        box-shadow: var(--shadow-glow);
+        filter: brightness(1.15);
+    }
+    
+    .btn-danger:hover { background: #cc0000; transform: translateY(-2px); }
+    
+    .btn-icon:hover { transform: scale(1.2); }
+}
+
+.btn-primary:active, .btn-large:active, .btn-danger:active, .btn-icon:active {
+    transform: scale(0.96);
+    filter: brightness(0.9);
+    transition: transform 0.1s ease;
+}
 
 form {
     max-width: 600px;
