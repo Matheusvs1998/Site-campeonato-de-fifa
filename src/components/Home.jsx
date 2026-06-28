@@ -7,6 +7,7 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [activeTab, setActiveTab] = useState('jogos');
+    const [showLiveAlert, setShowLiveAlert] = useState(true);
 
     useEffect(() => {
         const finalMatches = results.filter(m => m.stage.startsWith('Final'));
@@ -454,6 +455,16 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                     </div>
                 )}
             </section>
+
+            {showLiveAlert && (
+                <div className="live-pro-toast">
+                    <a href="https://twitch.tv/eujohnzinrp" target="_blank" rel="noopener noreferrer" className="live-pro-link">
+                        <span className="pulse-dot"></span>
+                        Transmissão ao Vivo
+                    </a>
+                    <button className="live-pro-close" onClick={() => setShowLiveAlert(false)} title="Fechar">×</button>
+                </div>
+            )}
         </React.Fragment>
     );
 }

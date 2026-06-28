@@ -32,7 +32,7 @@ function App() {
     const [results, setResults] = useState([]);
     const [loading, setLoading] = useState(true);
     const [showFeaturedMatch, setShowFeaturedMatch] = useState(true);
-    const [showLiveAlert, setShowLiveAlert] = useState(true);
+
     const [isVerifying, setIsVerifying] = useState(false);
     const [accessError, setAccessError] = useState(null);
     const [currentPublicIp, setCurrentPublicIp] = useState(null);
@@ -623,19 +623,7 @@ function App() {
                 </div>
             ) : (
                 <>
-                    {showLiveAlert && (
-                        <div className="live-alert-overlay" onClick={() => setShowLiveAlert(false)}>
-                            <div className="live-alert-card" onClick={e => e.stopPropagation()}>
-                                <button className="close-alert" onClick={() => setShowLiveAlert(false)}>×</button>
-                                <div className="live-badge">AO VIVO</div>
-                                <h3>Transmissões da Gangster Cup</h3>
-                                <p>Acompanhe na Twitch!</p>
-                                <div style={{ marginTop: '20px' }}>
-                                    <a href="https://twitch.tv/eujohnzinrp" target="_blank" rel="noopener noreferrer" className="btn-primary" onClick={() => setShowLiveAlert(false)}>Assistir Agora</a>
-                                </div>
-                            </div>
-                        </div>
-                    )}
+
 
                     {isRecoveringPassword && (
                         <div className="success-overlay" style={{ zIndex: 9000 }}>
