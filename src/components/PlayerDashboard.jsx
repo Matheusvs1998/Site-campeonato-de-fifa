@@ -99,9 +99,9 @@ function PlayerDashboard({ user, userRegistration, results, onGoHome }) {
                                         className="team-logo" 
                                         onError={(e) => { e.target.src = getFallbackLogo(match.p1.split(' (')[0]); }}
                                     />
-                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ fontWeight: 'bold' }}>{match.p1.split(' (')[0]}</span>
-                                        <GamertagBadge fullName={match.p1} style={{ transform: 'scale(0.8)', transformOrigin: 'left', marginTop: '5px' }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                                        <span className="team-name-text" style={{ fontWeight: 'bold' }}>{match.p1.split(' (')[0]}</span>
+                                        <GamertagBadge fullName={match.p1} style={{ transform: 'scale(0.85)', marginTop: '5px' }} />
                                     </div>
                                 </div>
                                 <span className="score">VS</span>
@@ -112,9 +112,9 @@ function PlayerDashboard({ user, userRegistration, results, onGoHome }) {
                                         className="team-logo" 
                                         onError={(e) => { e.target.src = getFallbackLogo(match.p2.split(' (')[0]); }}
                                     />
-                                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                                        <span style={{ fontWeight: 'bold' }}>{match.p2.split(' (')[0]}</span>
-                                        <GamertagBadge fullName={match.p2} style={{ transform: 'scale(0.8)', transformOrigin: 'left', marginTop: '5px' }} />
+                                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', width: '100%' }}>
+                                        <span className="team-name-text" style={{ fontWeight: 'bold' }}>{match.p2.split(' (')[0]}</span>
+                                        <GamertagBadge fullName={match.p2} style={{ transform: 'scale(0.85)', marginTop: '5px' }} />
                                     </div>
                                 </div>
                             </div>

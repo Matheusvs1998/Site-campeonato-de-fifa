@@ -814,15 +814,11 @@ form {
     min-width: 0;
     color: var(--text-main);
 }
-.match-info .team-display span {
+.match-info .team-display .team-name-text {
     width: 100%;
     text-align: center;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    display: -webkit-box;
-    -webkit-line-clamp: 2;
-    -webkit-box-orient: vertical;
-    word-break: break-word;
+    word-break: normal;
+    overflow-wrap: normal;
 }
 .match-info .team-display > div {
     min-width: 0;
