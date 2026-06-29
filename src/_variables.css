@@ -5,7 +5,35 @@
     --primary-glow: rgba(229, 9, 20, 0.4);
     
     /* Tipografia */
-    --font-main: 'Inter', system-ui, -apple-system, sans-serif;
+    --font-main: 'Barlow', 'Inter', system-ui, -apple-system, sans-serif;
+    --font-display: 'Anton', 'Barlow', system-ui, sans-serif;
+    --font-body: 'Barlow', 'Inter', system-ui, sans-serif;
+    --font-label: 'Barlow Condensed', 'Barlow', system-ui, sans-serif;
+
+    /* Aurora Glow - Vermelhos (compartilhados entre temas) */
+    --gc-red: #e50914;
+    --primary-grad: linear-gradient(180deg, #e20812, #ab0510);
+    --gc-grad-btn: var(--gc-red);
+    --gc-grad-btn-active: var(--gc-red);
+    --gc-accent: #ff5663;
+    --gc-live-dot: #ff3142;
+    --gc-glow: #ff2433;
+
+    /* Aurora Glow - Raios */
+    --gc-r-pill: 100px;
+    --gc-r-card: 26px;
+    --gc-r-card-sm: 20px;
+    --gc-r-input: 16px;
+    --gc-r-btn: 14px;
+    --gc-r-logo: 22px;
+    --gc-r-logo-sm: 11px;
+
+    /* Aurora Glow - Glows de botão/tab */
+    --gc-glow-btn: 0 0 26px rgba(229, 9, 20, 0.5);
+    --gc-glow-tab: 0 0 24px rgba(229, 9, 20, 0.6);
+
+    /* Aurora Glow - Ruído SVG reutilizável */
+    --gc-noise: url("data:image/svg+xml,%3Csvg%20xmlns=%27http://www.w3.org/2000/svg%27%20width=%27140%27%20height=%27140%27%3E%3Cfilter%20id=%27n%27%3E%3CfeTurbulence%20type=%27fractalNoise%27%20baseFrequency=%270.85%27%20numOctaves=%272%27%20stitchTiles=%27stitch%27/%3E%3C/filter%3E%3Crect%20width=%27100%25%27%20height=%27100%25%27%20filter=%27url%28%23n%29%27/%3E%3C/svg%3E");
     
     /* Espaçamento */
     --spacing-xs: 0.5rem;
@@ -24,38 +52,136 @@
     --transition-slow: 0.5s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-/* Tema Dark (Padrão) */
+/* Tema Dark (Padrão) - Aurora Glow exato do mockup */
 [data-theme='dark'], :root:not([data-theme='light']) {
-    --bg-dark: #050505; /* Mais profundo */
-    --bg-card: #121212;
+    --bg-dark: #060608; /* Base Aurora */
+    --bg-card: #0c0c10;
     --bg-input: #1a1a1a;
     --border-color: #242424;
-    --text-main: #f5f5f5;
-    --text-muted: #8c8c8c;
+    --text-main: #ffffff;
+    --text-muted: #9a9aa3;
     --glass-bg: rgba(18, 18, 18, 0.7);
     --glass-border: rgba(255, 255, 255, 0.05);
-    --nav-bg: rgba(5, 5, 5, 0.85);
-    
+    --nav-bg: rgba(6, 6, 8, 0.55);
+
     /* Sombras Premium */
     --shadow-sm: 0 4px 14px 0 rgba(0,0,0,0.4);
     --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.6);
     --shadow-glow: 0 0 20px var(--primary-glow);
+
+    /* Aurora Glow - Fundos */
+    --gc-bg-base: #060608;
+    --gc-card: #0c0c10;
+    --gc-card-deep: #070708;
+    --gc-surface-glass: rgba(16, 16, 20, 0.7);
+    --gc-surface-glass-strong: rgba(16, 16, 20, 0.85);
+    --gc-nav-bg: rgba(6, 6, 8, 0.55);
+    --gc-logo-grad: linear-gradient(160deg, #1a1a20, #0a0a0d);
+    --gc-logo-grad-red: linear-gradient(160deg, #241016, #0a0a0d);
+
+    /* Aurora Glow - Texto */
+    --gc-text: #fff;
+    --gc-text-2: #cfcfd6;
+    --gc-text-3: #c9c9d0;
+    --gc-muted-1: #9a9aa3;
+    --gc-muted-2: #8a8a93;
+    --gc-muted-3: #7c7c85;
+    --gc-muted-4: #6f6f78;
+
+    /* Aurora Glow - Bordas */
+    --gc-border-1: rgba(255, 255, 255, 0.05);
+    --gc-border-2: rgba(255, 255, 255, 0.06);
+    --gc-border-3: rgba(255, 255, 255, 0.07);
+    --gc-border-4: rgba(255, 255, 255, 0.08);
+    --gc-border-strong: rgba(255, 255, 255, 0.14);
+    --gc-border-red: rgba(229, 9, 20, 0.4);
+
+    /* Aurora Glow - Sombras de card */
+    --gc-shadow-card: 0 30px 70px rgba(0, 0, 0, 0.5);
+    --gc-shadow-card-sm: 0 18px 50px rgba(0, 0, 0, 0.5);
+
+    /* Aurora Glow - Camadas (mesh + radiais por card) */
+    --gc-mesh: radial-gradient(780px 600px at 88% 2%, rgba(229,9,20,.28), transparent 62%),
+               radial-gradient(820px 700px at -6% 40%, rgba(150,8,30,.18), transparent 60%),
+               radial-gradient(1100px 800px at 50% 116%, rgba(229,9,20,.16), transparent 64%),
+               var(--gc-bg-base);
+    --gc-card-radials: radial-gradient(560px 360px at 86% 8%, rgba(229,9,20,.5), transparent 60%),
+                       radial-gradient(420px 320px at 8% 96%, rgba(150,10,28,.4), transparent 62%);
+    --gc-matchcard-radial: radial-gradient(280px 180px at 100% 0%, rgba(229,9,20,.28), transparent 64%);
+    --gc-hero-overlay: linear-gradient(180deg, rgba(6,6,8,.55) 0%, rgba(6,6,8,.2) 35%, rgba(6,6,8,.82) 100%);
+    --gc-hero-radial: radial-gradient(860px 480px at 50% 96%, rgba(229,9,20,.5), transparent 66%);
+    --gc-noise-opacity: 0.06;
+    --gc-noise-opacity-strong: 0.08;
+    --gc-status-neutral-bg: rgba(255, 255, 255, 0.06);
+    --gc-status-neutral-border: rgba(255, 255, 255, 0.1);
+    --gc-status-done-bg: rgba(255, 255, 255, 0.04);
+    --gc-discord: #9b8cff;
+    --gc-twitch: #c79bff;
 }
 
-/* Tema Light */
+/* Tema Light - Aurora Glow adaptado (claro, mantendo vermelho de marca) */
 [data-theme='light'] {
-    --bg-dark: #f8f9fa;
+    --bg-dark: #f5f6f8;
     --bg-card: #ffffff;
     --bg-input: #f1f3f5;
     --border-color: #e9ecef;
-    --text-main: #111111;
-    --text-muted: #666666;
+    --text-main: #14141a;
+    --text-muted: #6b6b75;
     --glass-bg: rgba(255, 255, 255, 0.85);
-    --glass-border: rgba(0, 0, 0, 0.05);
-    --nav-bg: rgba(248, 249, 250, 0.9);
-    
+    --glass-border: rgba(0, 0, 0, 0.06);
+    --nav-bg: rgba(245, 246, 248, 0.7);
+
     /* Sombras Premium */
     --shadow-sm: 0 4px 14px 0 rgba(0,0,0,0.08);
     --shadow-md: 0 8px 30px rgba(0, 0, 0, 0.12);
     --shadow-glow: 0 0 20px rgba(229, 9, 20, 0.2);
+
+    /* Aurora Glow - Fundos (claros) */
+    --gc-bg-base: #f5f6f8;
+    --gc-card: #ffffff;
+    --gc-card-deep: #f1f2f5;
+    --gc-surface-glass: rgba(255, 255, 255, 0.7);
+    --gc-surface-glass-strong: rgba(255, 255, 255, 0.85);
+    --gc-nav-bg: rgba(245, 246, 248, 0.7);
+    --gc-logo-grad: linear-gradient(160deg, #ffffff, #e9eaef);
+    --gc-logo-grad-red: linear-gradient(160deg, #ffe9eb, #f3dada);
+
+    /* Aurora Glow - Texto (escuro) */
+    --gc-text: #14141a;
+    --gc-text-2: #3a3a44;
+    --gc-text-3: #44444e;
+    --gc-muted-1: #6b6b75;
+    --gc-muted-2: #7a7a85;
+    --gc-muted-3: #6b6b75; /* placeholder do search — AA sobre #fff (~5.0:1) */
+    --gc-muted-4: #5f5f68; /* copyright/rodape — AA sobre #f5f6f8 (~5.6:1) */
+
+    /* Aurora Glow - Bordas (escuras translúcidas) */
+    --gc-border-1: rgba(0, 0, 0, 0.06);
+    --gc-border-2: rgba(0, 0, 0, 0.07);
+    --gc-border-3: rgba(0, 0, 0, 0.08);
+    --gc-border-4: rgba(0, 0, 0, 0.1);
+    --gc-border-strong: rgba(0, 0, 0, 0.14);
+    --gc-border-red: rgba(229, 9, 20, 0.35);
+
+    /* Aurora Glow - Sombras de card */
+    --gc-shadow-card: 0 24px 60px rgba(20, 20, 30, 0.14);
+    --gc-shadow-card-sm: 0 14px 40px rgba(20, 20, 30, 0.12);
+
+    /* Aurora Glow - Camadas (radiais vermelhos atenuados ~0.4x) */
+    --gc-mesh: radial-gradient(780px 600px at 88% 2%, rgba(229,9,20,.11), transparent 62%),
+               radial-gradient(820px 700px at -6% 40%, rgba(150,8,30,.07), transparent 60%),
+               radial-gradient(1100px 800px at 50% 116%, rgba(229,9,20,.06), transparent 64%),
+               var(--gc-bg-base);
+    --gc-card-radials: radial-gradient(560px 360px at 86% 8%, rgba(229,9,20,.18), transparent 60%),
+                       radial-gradient(420px 320px at 8% 96%, rgba(150,10,28,.14), transparent 62%);
+    --gc-matchcard-radial: radial-gradient(280px 180px at 100% 0%, rgba(229,9,20,.1), transparent 64%);
+    --gc-hero-overlay: linear-gradient(180deg, rgba(6,6,8,.45) 0%, rgba(6,6,8,.2) 35%, rgba(6,6,8,.78) 100%);
+    --gc-hero-radial: radial-gradient(860px 480px at 50% 96%, rgba(229,9,20,.4), transparent 66%);
+    --gc-noise-opacity: 0.03;
+    --gc-noise-opacity-strong: 0.04;
+    --gc-status-neutral-bg: rgba(0, 0, 0, 0.05);
+    --gc-status-neutral-border: rgba(0, 0, 0, 0.1);
+    --gc-status-done-bg: rgba(0, 0, 0, 0.03);
+    --gc-discord: #5865F2;
+    --gc-twitch: #9146FF;
 }

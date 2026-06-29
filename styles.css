@@ -2,6 +2,8 @@
 @import url('./src/_base.css');
 @import url('./src/_layout.css');
 @import url('./src/_components.css');
+@import url('./src/_home.css');
+@import url('./src/_auth.css');
 @import url('./src/_responsive.css');
 
 @keyframes fadeInUp {

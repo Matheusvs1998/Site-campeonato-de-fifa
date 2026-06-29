@@ -2,8 +2,13 @@ import React, { useState, useEffect } from 'react';
 import { supabaseClient } from '../supabase';
 import { getTeamLogo } from '../teamLogos';
 import { translateAuthError } from '../helpers';
+import DashboardShell from './DashboardShell';
+import CustomSelect from './CustomSelect';
+import InviteEnvelope from './InviteEnvelope';
+import GamertagBadge from './GamertagBadge';
+import { teamOptions, platformOptions } from '../optionsData';
 
-function Profile({ user, userRegistration, onUpdate }) {
+function Profile({ user, userRegistration, onUpdate, onGoHome }) {
     const [formData, setFormData] = useState({
         playername: '',
         teamname: 'Real Madrid',
@@ -153,11 +158,16 @@ function Profile({ user, userRegistration, onUpdate }) {
     };
 
     return (
-        <section className="container section">
-            <div className="form-container">
-                <form onSubmit={handleUpdate} className="card" style={{ maxWidth: '450px', margin: '0 auto', padding: '25px' }}>
-                    <h2 style={{ textAlign: 'center', marginBottom: '25px', color: 'var(--primary-color)' }}>Meu Perfil</h2>
+        <DashboardShell
+            onGoHome={onGoHome}
+            eyebrow="Acesso Restrito"
+            title="Meu Perfil"
+            subtitle="Gerencie sua conta"
+        >
+            <div>
+                <form onSubmit={handleUpdate} className="env-form" style={{ maxWidth: '450px', margin: '0 auto', padding: '25px', background: 'transparent', boxShadow: 'none' }}>
                     
+
                     {message.text && (
                         <p style={{ 
                             color: message.type === 'error' ? '#ff4444' : '#28a745', 
@@ -178,24 +188,37 @@ function Profile({ user, userRegistration, onUpdate }) {
                             {emailMessage.text}
                         </p>
                     )}
+
+                    <div className="env-field-group">
+                        <label className="env-label">Player Name</label>
+                        <input 
+                            type="text" 
+                            className="gc-field"
+                            value={formData.playername} 
+                            disabled 
+                            style={{ opacity: 0.7 }}
+                        />
+                    </div>
                     
-                    <div className="form-group" style={{ marginBottom: '15px' }}>
-                        <label>E-mail</label> {/* This label is for the input below */}
+                    <div className="env-field-group">
+                        <label className="env-label">E-mail (Login)</label>
                         <input 
                             type="email" 
+                            className="gc-field"
                             value={editableEmail} 
                             onChange={e => {
                                 setEditableEmail(e.target.value);
-                                setEmailChangePending(false); // Reset pending state if email is edited
-                                setEmailMessage({ text: '', type: '' });
+                                if (e.target.value !== user?.email) {
+                                    setEmailChangePending(false);
+                                }
                             }}
                             required 
-                            style={{ width: '100%' }} 
-                            disabled={loading && !emailChangePending} // Disable if loading, unless it's for OTP
+                            placeholder="seu@email.com"
+                            disabled={loading && !emailChangePending}
                         />
                         {emailChangePending && (
-                            <div className="form-group" style={{ marginTop: '10px' }}>
-                                <label>Código de Verificação (E-mail)</label>
+                            <div className="env-field-group" style={{ marginTop: '10px' }}>
+                                <label className="env-label">Código de Verificação (E-mail)</label>
                                 <input 
                                     type="text" 
                                     inputMode="numeric"
@@ -205,7 +228,8 @@ function Profile({ user, userRegistration, onUpdate }) {
                                     placeholder="6 dígitos" 
                                     maxLength="6"
                                     required 
-                                    style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '5px', fontWeight: 'bold', border: '2px solid var(--primary-color)', background: 'rgba(0,0,0,0.3)' }}
+                                    className="gc-field"
+                                    style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '5px', fontWeight: 'bold' }}
                                 />
                             </div>
                         )}
@@ -221,108 +245,60 @@ function Profile({ user, userRegistration, onUpdate }) {
                         )}
                     </div>
 
-                    <div className="form-group" style={{ textAlign: 'center', marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <img src={getTeamLogo(formData.teamname)} alt="Escudo" style={{ width: '60px', marginBottom: '10px' }} />
-                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--primary-color)', marginBottom: '15px', marginTop: '-5px' }}>{formData.gamertag}</div>
-                        <label style={{ alignSelf: 'flex-start', marginBottom: '8px' }}>Alterar Time</label>
-                        <select value={formData.teamname} onChange={e => setFormData({...formData, teamname: e.target.value})} required style={{ width: '100%' }}>
-                            <optgroup label="Espanha">
-                                <option value="Real Madrid">Real Madrid</option>
-                                <option value="Barcelona">Barcelona</option>
-                                <option value="Atlético de Madrid">Atlético de Madrid</option>
-                                <option value="Sevilla">Sevilla</option>
-                                <option value="Real Sociedad">Real Sociedad</option>
-                                <option value="Villarreal">Villarreal</option>
-                                <option value="Girona">Girona</option>
-                            </optgroup>
-                            <optgroup label="Inglaterra">
-                                <option value="Manchester City">Manchester City</option>
-                                <option value="Arsenal">Arsenal</option>
-                                <option value="Liverpool">Liverpool</option>
-                                <option value="Manchester United">Manchester United</option>
-                                <option value="Chelsea">Chelsea</option>
-                                <option value="Tottenham">Tottenham</option>
-                                <option value="Aston Villa">Aston Villa</option>
-                                <option value="Newcastle United">Newcastle United</option>
-                            </optgroup>
-                            <optgroup label="Itália">
-                                <option value="Inter de Milão">Inter de Milão</option>
-                                <option value="AC Milan">AC Milan</option>
-                                <option value="Juventus">Juventus</option>
-                                <option value="Napoli">Napoli</option>
-                                <option value="AS Roma">AS Roma</option>
-                                <option value="Atalanta">Atalanta</option>
-                            </optgroup>
-                            <optgroup label="Alemanha">
-                                <option value="Bayern de Munique">Bayern de Munique</option>
-                                <option value="Borussia Dortmund">Borussia Dortmund</option>
-                                <option value="Bayer Leverkusen">Bayer Leverkusen</option>
-                                <option value="RB Leipzig">RB Leipzig</option>
-                            </optgroup>
-                            <optgroup label="França">
-                                <option value="PSG">PSG</option>
-                                <option value="Marseille">Marseille</option>
-                                <option value="Monaco">Monaco</option>
-                                <option value="Lille">Lille</option>
-                            </optgroup>
-                            <optgroup label="Outras Ligas">
-                                <option value="Benfica">Benfica (Portugal)</option>
-                                <option value="FC Porto">FC Porto (Portugal)</option>
-                                <option value="Sporting CP">Sporting CP (Portugal)</option>
-                                <option value="Ajax">Ajax (Holanda)</option>
-                                <option value="PSV Eindhoven">PSV Eindhoven (Holanda)</option>
-                                <option value="Boca Juniors">Boca Juniors (Argentina)</option>
-                                <option value="River Plate">River Plate (Argentina)</option>
-                                <option value="Inter Miami">Inter Miami (EUA)</option>
-                                <option value="Al-Nassr">Al-Nassr (Arábia)</option>
-                                <option value="Al-Hilal">Al-Hilal (Arábia)</option>
-                            </optgroup>
-                        </select>
+                    <div className="env-field-group" style={{ textAlign: 'center', marginTop: '20px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <img src={getTeamLogo(formData.teamname)} alt="Escudo" style={{ width: '70px', marginBottom: '15px' }} />
+                        <GamertagBadge gamertag={formData.gamertag} platform={formData.platform} style={{ marginBottom: '25px' }} />
+                        
+                        <label className="env-label" style={{ alignSelf: 'flex-start', marginBottom: '8px' }}>Alterar Time</label>
+                        <div style={{ width: '100%', textAlign: 'left' }}>
+                            <CustomSelect 
+                                options={teamOptions}
+                                value={formData.teamname}
+                                onChange={(val) => setFormData({ ...formData, teamname: val })}
+                                placeholder="Selecione um time..."
+                                isTeam={true}
+                            />
+                        </div>
                     </div>
 
-                    <div className="form-group" style={{ marginBottom: '15px' }}>
-                        <label>Nome do Jogador</label>
-                        <input type="text" value={formData.playername} disabled style={{ width: '100%', opacity: 0.7 }} />
-                        <small style={{ color: 'var(--text-muted)' }}>O nome não pode ser alterado após a inscrição.</small>
-                    </div>
-
-                    <div className="form-group" style={{ marginBottom: '15px', padding: '10px', background: 'var(--bg-input)', borderRadius: '8px' }}>
-                        <label style={{ fontSize: '0.8rem', color: 'var(--primary-color)' }}>Privacidade e Dados</label>
+                    <div className="env-field-group" style={{ padding: '10px', background: 'var(--bg-input)', borderRadius: '8px' }}>
+                        <label className="env-label" style={{ fontSize: '0.8rem', color: 'var(--primary-color)' }}>Privacidade e Dados</label>
                         <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '5px 0' }}>
                             Em conformidade com a LGPD, você pode gerenciar ou excluir seus dados permanentemente através das opções abaixo.
                         </p>
                     </div>
 
-                    <div className="profile-grid-fields">
-                        <div className="form-group">
-                            <label>Plataforma</label>
-                            <select value={formData.platform} onChange={e => setFormData({...formData, platform: e.target.value})}>
-                                <option value="PS5">PlayStation 5</option>
-                                <option value="Xbox">Xbox Series X/S</option>
-                                <option value="PC">PC</option>
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label>Gamertag / PSN ID</label>
-                            <input type="text" value={formData.gamertag} onChange={e => setFormData({...formData, gamertag: e.target.value})} required />
-                        </div>
+                    <div className="env-field-group">
+                        <label className="env-label">Gamertag (EA ID)</label>
+                        <input 
+                            type="text" 
+                            className="gc-field"
+                            value={formData.gamertag} 
+                            onChange={e => setFormData({...formData, gamertag: e.target.value})} 
+                            required 
+                            placeholder="Seu nick no jogo"
+                        />
+                    </div>
+                    
+                    <div className="env-field-group">
+                        <label className="env-label">Plataforma</label>
+                        <CustomSelect 
+                            options={platformOptions}
+                            value={formData.platform}
+                            onChange={(val) => setFormData({ ...formData, platform: val })}
+                            placeholder="Selecione..."
+                            isPlatform={true}
+                        />
                     </div>
 
-                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '20px' }} disabled={loading}>
+                    <button type="submit" className="env-submit" disabled={loading} style={{ marginTop: '20px' }}>
                         {loading ? 'Salvando...' : (emailChangePending ? 'Confirmar E-mail e Salvar' : 'Salvar Alterações')}
                     </button>
 
-                    <div style={{ marginTop: '40px', paddingTop: '20px', borderTop: '1px solid var(--border-color)' }}>
-                        <h4 style={{ color: '#ff4444', marginBottom: '5px', fontSize: '0.9rem', textTransform: 'uppercase' }}>Zona de Perigo</h4>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '15px' }}>
-                            Esta ação apagará permanentemente seu perfil e todas as suas participações em campeonatos.
-                        </p>
-                        <button 
-                            type="button" 
-                            className="btn-primary" 
-                            style={{ background: 'transparent', border: '1px solid #ff4444', color: '#ff4444', width: '100%' }}
-                            onClick={() => setShowDeleteConfirm(true)}
-                        >
+                    <hr style={{ margin: '30px 0', borderColor: 'rgba(255,255,255,0.05)' }} />
+
+                    <div style={{ textAlign: 'center' }}>
+                        <button type="button" className="env-submit" style={{ background: 'transparent', borderColor: '#ff4444', color: '#ff4444' }} onClick={() => setShowDeleteConfirm(true)} disabled={loading}>
                             Excluir minha conta e dados permanentemente
                         </button>
                     </div>
@@ -356,13 +332,12 @@ function Profile({ user, userRegistration, onUpdate }) {
                 <div className="success-overlay" style={{ zIndex: 6000 }}>
                     <div className="success-modal" style={{ borderColor: '#ff4444' }}>
                         <div style={{ fontSize: '5rem' }}>👋</div>
-                        <h2 style={{ color: '#ff4444' }}>Conta Excluída</h2>
                         <p>Seus dados foram removidos com sucesso de nossos servidores.</p>
                         <p style={{ marginTop: '10px', fontSize: '0.9rem', opacity: 0.7 }}>Esperamos te ver em breve!</p>
                     </div>
                 </div>
             )}
-        </section>
+        </DashboardShell>
     );
 }
 

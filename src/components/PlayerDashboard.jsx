@@ -1,8 +1,10 @@
 import React, { useMemo } from 'react';
 import { getTeamLogo, getFallbackLogo } from '../teamLogos';
 import { extractGamertag, calculatePlayerStats } from '../helpers';
+import DashboardShell from './DashboardShell';
+import GamertagBadge from './GamertagBadge';
 
-function PlayerDashboard({ user, userRegistration, results }) {
+function PlayerDashboard({ user, userRegistration, results, onGoHome }) {
     const stats = useMemo(() => {
         if (!userRegistration) return null;
         return calculatePlayerStats(userRegistration.gamertag, results);
@@ -21,32 +23,37 @@ function PlayerDashboard({ user, userRegistration, results }) {
     }, [userRegistration, results]);
 
     return (
-        <section className="container section fade-in">
-            <div className="admin-header">
-                <div>
-                    <h2>Olá, {user.username}! 👋</h2>
-                    <p style={{marginTop: '5px'}}>Bem-vindo ao seu painel do competidor.</p>
-                </div>
-            </div>
+        <DashboardShell
+            onGoHome={onGoHome}
+            eyebrow="Acesso de competidor"
+            title="Painel do Jogador"
+            subtitle={`Bem-vindo, ${user.username}`}
+        >
+            <div>
+
+
 
             {stats && (
                 <div className="grid" style={{ gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', marginBottom: '40px' }}>
-                    <div className="card text-center" style={{ padding: '20px' }}>
-                        <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold' }}>Aproveitamento</small>
-                        <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--primary-color)' }}>{stats.winRate}%</div>
+                    <div className="admin-section-card text-center" style={{ padding: '20px', margin: 0 }}>
+                        <small style={{ color: '#9a9aa3', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.1em' }}>Aproveitamento</small>
+                        <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#ff3142', fontFamily: 'Anton, sans-serif', letterSpacing: '0.05em' }}>{stats.winRate}%</div>
                     </div>
-                    <div className="card text-center" style={{ padding: '20px' }}>
-                        <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold' }}>Média de Gols</small>
-                        <div style={{ fontSize: '2rem', fontWeight: '800', color: 'var(--primary-color)' }}>{stats.avgGoals}</div>
+                    <div className="admin-section-card text-center" style={{ padding: '20px', margin: 0 }}>
+                        <small style={{ color: '#9a9aa3', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.1em' }}>Média de Gols</small>
+                        <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#fff', fontFamily: 'Anton, sans-serif', letterSpacing: '0.05em' }}>
+                            {stats.matchesPlayed > 0 ? (stats.goalsFor / stats.matchesPlayed).toFixed(1) : '0.0'}
+                        </div>
                     </div>
-                    <div className="card text-center" style={{ padding: '20px' }}>
-                        <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold' }}>Saldo Total</small>
-                        <div style={{ fontSize: '2rem', fontWeight: '800', color: stats.goalsFor - stats.goalsAgainst >= 0 ? '#28a745' : '#ff4444' }}>
+                    <div className="admin-section-card text-center" style={{ padding: '20px', margin: 0 }}>
+                        <small style={{ color: '#9a9aa3', textTransform: 'uppercase', fontWeight: 'bold', letterSpacing: '0.1em' }}>Saldo</small>
+                        <div style={{ fontSize: '2.5rem', fontWeight: '800', color: (stats.goalsFor - stats.goalsAgainst) > 0 ? '#28a745' : ((stats.goalsFor - stats.goalsAgainst) < 0 ? '#ff3142' : '#fff'), fontFamily: 'Anton, sans-serif', letterSpacing: '0.05em' }}>
+                            {(stats.goalsFor - stats.goalsAgainst) > 0 ? '+' : ''}
                             {stats.goalsFor - stats.goalsAgainst}
                         </div>
                     </div>
-                    <div className="card text-center" style={{ padding: '20px' }}>
-                        <small style={{ color: 'var(--text-muted)', textTransform: 'uppercase', fontWeight: 'bold', display: 'block', marginBottom: '10px' }}>Forma Atual</small>
+                    <div className="admin-section-card text-center" style={{ padding: '20px', margin: 0 }}>
+                        <small style={{ color: '#9a9aa3', textTransform: 'uppercase', fontWeight: 'bold', display: 'block', marginBottom: '10px', letterSpacing: '0.1em' }}>Forma Atual</small>
                         <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
                             {stats.form.map((r, i) => (
                                 <span key={i} className="stat-badge" style={{ 
@@ -60,18 +67,18 @@ function PlayerDashboard({ user, userRegistration, results }) {
                 </div>
             )}
 
-            <div className="card" style={{marginBottom: '40px', padding: '20px'}}>
-                <h3>Sua Inscrição</h3>
+            <div className="admin-section-card" style={{marginBottom: '40px', padding: '30px'}}>
+                <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase', fontSize: '1.2rem', letterSpacing: '0.1em', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '15px' }}>Sua Inscrição</h3>
                 {userRegistration ? (
-                    <div style={{display: 'flex', alignItems: 'center', gap: '20px', marginTop: '20px', flexWrap: 'wrap'}}>
+                    <div style={{display: 'flex', alignItems: 'center', gap: '30px', marginTop: '20px', flexWrap: 'wrap'}}>
                         <div style={{ textAlign: 'center' }}>
-                            <img src={getTeamLogo(userRegistration.teamname)} alt="Escudo" style={{width: '80px'}} />
-                            <div style={{ fontWeight: 'bold', color: 'var(--primary-color)', fontSize: '1.1rem', marginTop: '5px' }}>{userRegistration.gamertag}</div>
+                            <img src={getTeamLogo(userRegistration.teamname)} alt="Escudo" style={{width: '90px'}} />
+                            <div style={{ fontFamily: 'Anton, sans-serif', color: '#ff3142', fontSize: '1.4rem', marginTop: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{userRegistration.gamertag}</div>
                         </div>
-                        <div style={{flex: 1}}>
-                            <p style={{fontSize: '1.1rem'}}><strong>Time:</strong> {userRegistration.teamname}</p>
-                            <p><strong>Gamertag:</strong> {userRegistration.gamertag}</p>
-                            <p><strong>Plataforma:</strong> {userRegistration.platform}</p>
+                        <div style={{flex: 1, color: '#f2e9e2', fontSize: '1.05rem', lineHeight: '1.6'}}>
+                            <p><strong>Time:</strong> <span style={{ color: '#fff' }}>{userRegistration.teamname}</span></p>
+                            <p><strong>Gamertag:</strong> <span style={{ color: '#fff' }}>{userRegistration.gamertag}</span></p>
+                            <p><strong>Plataforma:</strong> <span style={{ color: '#fff' }}>{userRegistration.platform}</span></p>
                         </div>
                     </div>
                 ) : (
@@ -79,7 +86,7 @@ function PlayerDashboard({ user, userRegistration, results }) {
                 )}
             </div>
 
-            <h2 style={{borderLeft: '5px solid var(--primary-color)', paddingLeft: '15px', marginBottom: '30px'}}>Minhas Próximas Partidas</h2>
+            <h2 style={{borderLeft: '5px solid #ff3142', paddingLeft: '15px', marginBottom: '30px', fontFamily: 'Anton, sans-serif', textTransform: 'uppercase', letterSpacing: '0.05em', fontSize: '1.8rem'}}>Minhas Próximas Partidas</h2>
             {upcomingMatches.length > 0 ? (
                 <div className="results-grid">
                     {upcomingMatches.map(match => (
@@ -94,7 +101,7 @@ function PlayerDashboard({ user, userRegistration, results }) {
                                     />
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <span style={{ fontWeight: 'bold' }}>{match.p1.split(' (')[0]}</span>
-                                        <small style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 'bold', marginTop: '-2px' }}>{extractGamertag(match.p1)}</small>
+                                        <GamertagBadge fullName={match.p1} style={{ transform: 'scale(0.8)', transformOrigin: 'left', marginTop: '5px' }} />
                                     </div>
                                 </div>
                                 <span className="score">VS</span>
@@ -107,7 +114,7 @@ function PlayerDashboard({ user, userRegistration, results }) {
                                     />
                                     <div style={{ display: 'flex', flexDirection: 'column' }}>
                                         <span style={{ fontWeight: 'bold' }}>{match.p2.split(' (')[0]}</span>
-                                        <small style={{ fontSize: '0.75rem', color: 'var(--primary-color)', fontWeight: 'bold', marginTop: '-2px' }}>{extractGamertag(match.p2)}</small>
+                                        <GamertagBadge fullName={match.p2} style={{ transform: 'scale(0.8)', transformOrigin: 'left', marginTop: '5px' }} />
                                     </div>
                                 </div>
                             </div>
@@ -122,11 +129,12 @@ function PlayerDashboard({ user, userRegistration, results }) {
                     ))}
                 </div>
             ) : (
-                <div className="card text-center" style={{padding: '40px'}}>
-                    <p style={{color: 'var(--text-muted)', fontSize: '1.1rem'}}>Você não possui partidas agendadas no momento.</p>
+                <div className="admin-section-card text-center" style={{padding: '40px'}}>
+                    <p style={{color: '#9a9aa3', fontSize: '1.1rem'}}>Você não possui partidas agendadas no momento.</p>
                 </div>
             )}
-        </section>
+            </div>
+        </DashboardShell>
     );
 }
 

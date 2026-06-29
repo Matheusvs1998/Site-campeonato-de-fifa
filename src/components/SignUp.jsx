@@ -2,8 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabaseClient } from '../supabase';
 import { getTeamLogo } from '../teamLogos';
 import { translateAuthError } from '../helpers';
+import InviteEnvelope from './InviteEnvelope.jsx';
+import CustomSelect from './CustomSelect';
+import { teamOptions, platformOptions } from '../optionsData';
+import GamertagBadge from './GamertagBadge';
 
-function SignUp({ onStepVerify }) {
+function SignUp({ onStepVerify, onGoHome, onGoToLogin }) {
     const [email, setEmail] = useState('');
     const [pass, setPass] = useState('');
     const [formData, setFormData] = useState({
@@ -17,6 +21,7 @@ function SignUp({ onStepVerify }) {
     const [loading, setLoading] = useState(false);
     const [acceptedTerms, setAcceptedTerms] = useState(false);
     const [hasRead, setHasRead] = useState(false);
+    const [sent, setSent] = useState(false);
     const termsRef = useRef(null);
 
     // Estados de validação em tempo real
@@ -79,7 +84,7 @@ function SignUp({ onStepVerify }) {
                         .maybeSingle();
                     if (data) {
                         taken = true;
-                        message = '⚠️ Este nome de usuário já está em uso.';
+                        message = 'Este nome de usuário já está em uso.';
                     }
                 } else if (field === 'gamertag') {
                     const { data } = await supabaseClient
@@ -89,7 +94,7 @@ function SignUp({ onStepVerify }) {
                         .maybeSingle();
                     if (data) {
                         taken = true;
-                        message = '⚠️ Esta Gamertag/PSN ID já está em uso.';
+                        message = 'Esta Gamertag/PSN ID já está em uso.';
                     }
                 }
 
@@ -121,14 +126,14 @@ function SignUp({ onStepVerify }) {
     const FieldIndicator = ({ field }) => {
         const status = fieldStatus[field];
         if (status.checking) {
-            return <small style={{ color: 'var(--primary-color)', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>🔍 Verificando disponibilidade...</small>;
+            return <small className="env-field-status is-checking">Verificando disponibilidade...</small>;
         }
         if (status.taken) {
-            return <small style={{ color: '#ff4444', fontSize: '0.8rem', marginTop: '4px', display: 'block', fontWeight: 'bold' }}>{status.message}</small>;
+            return <small className="env-field-status is-taken">{status.message}</small>;
         }
         const fieldValue = field === 'email' ? email.trim() : (field === 'playername' ? formData.playername.trim() : formData.gamertag.trim());
         if (fieldValue && !status.checking && !status.taken && field !== 'email') {
-            return <small style={{ color: '#28a745', fontSize: '0.75rem', marginTop: '4px', display: 'block' }}>✅ Disponível</small>;
+            return <small className="env-field-status is-available">Disponível</small>;
         }
         return null;
     };
@@ -139,6 +144,10 @@ function SignUp({ onStepVerify }) {
         setLoading(true);
         setError('');
         try {
+            if (!supabaseClient) {
+                throw new Error("Serviço indisponível. Configure as credenciais do Supabase (.env).");
+            }
+
             const playername = formData.playername.trim();
             const gamertagTrimmed = formData.gamertag.trim();
             const emailTrimmed = email.trim();
@@ -181,17 +190,17 @@ function SignUp({ onStepVerify }) {
                 throw new Error("Por favor, preencha todos os campos do jogador.");
             }
 
-            const { data, error: authError } = await supabaseClient.auth.signUp({ 
-                email: emailTrimmed, 
+            const { data, error: authError } = await supabaseClient.auth.signUp({
+                email: emailTrimmed,
                 password: pass,
-                options: { 
+                options: {
                     data: signUpMetadata,
                     emailRedirectTo: window.location.origin
                 }
             });
-            
+
             if (authError) {
-                if (authError.message.includes("User already registered") || authError.status === 422) {
+                if (authError.message.includes("User already registered")) {
                     throw new Error("Este e-mail já está cadastrado em nossa base.");
                 }
                 throw authError;
@@ -203,6 +212,8 @@ function SignUp({ onStepVerify }) {
             }
 
             if (data?.user && !data?.session) {
+                // Confirmação visual transitória antes de trocar para a tela de verificação
+                setSent(true);
                 onStepVerify(emailTrimmed);
             }
         } catch (err) {
@@ -213,218 +224,177 @@ function SignUp({ onStepVerify }) {
     };
 
     return (
-        <section className="container section">
-            <div className="form-container">
-                <form onSubmit={handleSignUp} className="card" style={{ maxWidth: '450px', margin: '0 auto', padding: '25px' }}>
-                    <h2 style={{ textAlign: 'center', marginBottom: '25px', color: 'var(--primary-color)' }}>Inscrição e Conta</h2>
-                    {error && <p style={{ color: '#ff4444', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>{error}</p>}
-                    
-                    <div className="form-group" style={{ marginBottom: '15px' }}>
-                        <label>E-mail</label>
-                        <input type="email" value={email} onChange={e => handleEmailChange(e.target.value)} required style={{ width: '100%' }} />
-                        <FieldIndicator field="email" />
-                    </div>
-                    
-                    <div className="form-group" style={{ marginBottom: '15px' }}>
-                        <label>Senha</label>
-                        <div style={{ position: 'relative' }}>
-                            <input 
-                                type={showPassword ? "text" : "password"} 
-                                value={pass} 
-                                onChange={(e) => setPass(e.target.value)} 
-                                required 
-                                style={{ width: '100%', paddingRight: '40px' }}
-                            />
-                            <button 
-                                type="button" 
-                                onClick={() => setShowPassword(!showPassword)}
-                                style={{ position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex' }}
-                            >
-                                <img 
-                                    src="https://cdn-icons-png.flaticon.com/128/158/158746.png" 
-                                    alt="Olho" 
-                                    className="eye-icon"
-                                    style={{ width: '20px', opacity: showPassword ? '1' : '0.5' }} 
-                                />
-                            </button>
-                        </div>
-                    </div>
+        <InviteEnvelope
+            onGoHome={onGoHome}
+            tall={true}
+            eyebrow="Inscrição Oficial · 2026"
+            title="Garanta sua vaga"
+            subtitle="Preencha sua ficha de competidor para entrar na Gangster Cup."
+        >
+            <form onSubmit={handleSignUp} className="env-form">
+                {/* E-mail */}
+                <div className="env-field-group">
+                    <label className="env-label">E-mail</label>
+                    <input
+                        type="email"
+                        className="gc-field"
+                        value={email}
+                        onChange={e => handleEmailChange(e.target.value)}
+                        required
+                    />
+                    <FieldIndicator field="email" />
+                </div>
 
-                    <div className="form-group" style={{ textAlign: 'center', marginTop: '10px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        <img src={getTeamLogo(formData.teamname)} alt="Escudo" style={{ width: '60px', marginBottom: '10px' }} />
-                        <div style={{ fontWeight: 'bold', fontSize: '0.9rem', color: 'var(--primary-color)', marginBottom: '15px', marginTop: '-5px' }}>{formData.gamertag || 'Seu Nick'}</div>
-                        <label style={{ alignSelf: 'flex-start', marginBottom: '8px' }}>Escolha seu Time</label>
-                        <select value={formData.teamname} onChange={e => setFormData({...formData, teamname: e.target.value})} required style={{ width: '100%' }}>
-                            <optgroup label="Espanha">
-                                <option value="Real Madrid">Real Madrid</option>
-                                <option value="Barcelona">Barcelona</option>
-                                <option value="Atlético de Madrid">Atlético de Madrid</option>
-                                <option value="Sevilla">Sevilla</option>
-                                <option value="Real Sociedad">Real Sociedad</option>
-                                <option value="Villarreal">Villarreal</option>
-                                <option value="Girona">Girona</option>
-                            </optgroup>
-                            <optgroup label="Inglaterra">
-                                <option value="Manchester City">Manchester City</option>
-                                <option value="Arsenal">Arsenal</option>
-                                <option value="Liverpool">Liverpool</option>
-                                <option value="Manchester United">Manchester United</option>
-                                <option value="Chelsea">Chelsea</option>
-                                <option value="Tottenham">Tottenham</option>
-                                <option value="Aston Villa">Aston Villa</option>
-                                <option value="Newcastle United">Newcastle United</option>
-                            </optgroup>
-                            <optgroup label="Itália">
-                                <option value="Inter de Milão">Inter de Milão</option>
-                                <option value="AC Milan">AC Milan</option>
-                                <option value="Juventus">Juventus</option>
-                                <option value="Napoli">Napoli</option>
-                                <option value="AS Roma">AS Roma</option>
-                                <option value="Atalanta">Atalanta</option>
-                            </optgroup>
-                            <optgroup label="Alemanha">
-                                <option value="Bayern de Munique">Bayern de Munique</option>
-                                <option value="Borussia Dortmund">Borussia Dortmund</option>
-                                <option value="Bayer Leverkusen">Bayer Leverkusen</option>
-                                <option value="RB Leipzig">RB Leipzig</option>
-                            </optgroup>
-                            <optgroup label="França">
-                                <option value="PSG">PSG</option>
-                                <option value="Marseille">Marseille</option>
-                                <option value="Monaco">Monaco</option>
-                                <option value="Lille">Lille</option>
-                            </optgroup>
-                            <optgroup label="Outras Ligas">
-                                <option value="Benfica">Benfica (Portugal)</option>
-                                <option value="FC Porto">FC Porto (Portugal)</option>
-                                <option value="Sporting CP">Sporting CP (Portugal)</option>
-                                <option value="Ajax">Ajax (Holanda)</option>
-                                <option value="PSV Eindhoven">PSV Eindhoven (Holanda)</option>
-                                <option value="Boca Juniors">Boca Juniors (Argentina)</option>
-                                <option value="River Plate">River Plate (Argentina)</option>
-                                <option value="Inter Miami">Inter Miami (EUA)</option>
-                                <option value="Al-Nassr">Al-Nassr (Arábia)</option>
-                                <option value="Al-Hilal">Al-Hilal (Arábia)</option>
-                            </optgroup>
-                        </select>
-                    </div>
-
-                    <div className="form-group" style={{ marginBottom: '15px' }}>
-                        <label>Nome Completo do Jogador</label>
-                        <input 
-                            type="text" 
-                            value={formData.playername} 
-                            onChange={e => handlePlayernameChange(e.target.value)} 
-                            required 
-                            style={{ 
-                                width: '100%',
-                                borderColor: fieldStatus.playername.taken ? '#ff4444' : undefined 
-                            }}
-                        />
-                        <FieldIndicator field="playername" />
-                    </div>
-
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '15px' }}>
-                        <div className="form-group">
-                            <label>Plataforma</label>
-                            <select value={formData.platform} onChange={e => setFormData({...formData, platform: e.target.value})}>
-                                <option value="PS5">PlayStation 5</option>
-                                <option value="Xbox">Xbox Series X/S</option>
-                                <option value="PC">PC</option>
-                            </select>
-                        </div>
-                        <div className="form-group">
-                            <label>Gamertag / PSN ID</label>
-                            <input 
-                                type="text" 
-                                value={formData.gamertag} 
-                                onChange={e => handleGamertagChange(e.target.value)} 
-                                placeholder="Ex: Player_123" 
-                                required 
-                                style={{ 
-                                    borderColor: fieldStatus.gamertag.taken ? '#ff4444' : undefined 
-                                }}
-                            />
-                            <FieldIndicator field="gamertag" />
-                        </div>
-                    </div>
-
-                    <div className="form-group" style={{ marginTop: '20px', textAlign: 'left' }}>
-                        <label style={{ fontSize: '0.85rem', opacity: 0.8, marginBottom: '8px', display: 'block', fontWeight: '600' }}>Regulamento da Gangster Cup</label>
-                        <div 
-                            ref={termsRef}
-                            onScroll={handleScroll}
-                            className="terms-box" 
-                            style={{ 
-                                maxHeight: '120px', 
-                                overflowY: 'auto', 
-                                fontSize: '0.75rem', 
-                                padding: '12px', 
-                                background: 'var(--bg-input)', 
-                                borderRadius: '8px',
-                                border: hasRead ? '1px solid #28a745' : '1px solid var(--border-color)',
-                                transition: 'all 0.3s ease',
-                                color: 'var(--text-muted)',
-                                lineHeight: '1.5'
-                            }}
+                {/* Senha */}
+                <div className="env-field-group">
+                    <div className="env-label-row">
+                        <label className="env-label">Senha</label>
+                        <button
+                            type="button"
+                            className="env-toggle"
+                            onClick={() => setShowPassword(!showPassword)}
                         >
-                            <p style={{ marginBottom: '10px' }}><strong>1. Tratamento de Dados (LGPD):</strong> Ao se inscrever, você consente com a coleta de seu e-mail, nome e gamertag para fins exclusivos de gestão do torneio, conforme a Lei 13.709/2018.</p>
-                            <p style={{ marginBottom: '10px' }}><strong>2. Dados Públicos:</strong> Você está ciente de que seu Time e Gamertag serão exibidos publicamente nas tabelas de classificação e resultados.</p>
-                            <p style={{ marginBottom: '10px' }}><strong>3. Transmissões:</strong> Você autoriza o uso de sua imagem (gameplay) em transmissões oficiais nas plataformas Twitch/YouTube.</p>
-                            <p style={{ marginBottom: '10px' }}><strong>4. Seus Direitos:</strong> Você pode, a qualquer momento, retificar seus dados no painel de perfil ou solicitar a exclusão de sua conta entrando em contato com a organização.</p>
-                            <p style={{ marginBottom: '10px' }}><strong>5. Fair Play:</strong> Ofensas ou condutas tóxicas resultarão em banimento e exclusão dos dados da competição.</p>
-                            <p><strong>6. Segurança:</strong> Utilizamos o Supabase para armazenamento seguro e criptografado de suas credenciais.</p>
-                        </div>
-                        
-                        <div style={{ marginTop: '12px' }}>
-                            <label 
-                                className="checkbox-label" 
-                                style={{ 
-                                    display: 'flex', 
-                                    alignItems: 'center', 
-                                    gap: '12px', 
-                                    opacity: hasRead ? 1 : 0.5, 
-                                    cursor: hasRead ? 'pointer' : 'not-allowed',
-                                    userSelect: 'none',
-                                    color: 'var(--text-main)'
-                                }}
-                            >
-                                <input 
-                                    type="checkbox" 
-                                    checked={acceptedTerms} 
-                                    onChange={e => setAcceptedTerms(e.target.checked)} 
-                                    disabled={!hasRead}
-                                    required 
-                                    style={{ width: '18px', height: '18px', cursor: hasRead ? 'pointer' : 'not-allowed', margin: 0 }}
-                                />
-                                <span style={{ fontSize: '0.9rem', fontWeight: '500' }}>
-                                    Li e concordo com o regulamento
-                                </span>
-                            </label>
-                            {!hasRead && (
-                                <small style={{ color: 'var(--primary-color)', fontSize: '0.75rem', display: 'block', marginTop: '8px', fontWeight: 'bold' }}>
-                                    ⚠️ Role o texto acima até o final para habilitar o aceite.
-                                </small>
-                            )}
-                        </div>
+                            {showPassword ? 'Ocultar' : 'Mostrar'}
+                        </button>
+                    </div>
+                    <input
+                        type={showPassword ? 'text' : 'password'}
+                        className="gc-field"
+                        value={pass}
+                        onChange={e => setPass(e.target.value)}
+                        required
+                    />
+                </div>
+
+                {/* Time */}
+                <div className="env-field-group">
+                    <label className="env-label">Escolha seu Time</label>
+                    <CustomSelect 
+                        options={teamOptions}
+                        value={formData.teamname}
+                        onChange={(val) => setFormData({ ...formData, teamname: val })}
+                        placeholder="Selecione um time..."
+                        isTeam={true}
+                    />
+                    <div className="env-team-preview" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <img src={getTeamLogo(formData.teamname)} alt="Escudo" />
+                        <GamertagBadge gamertag={formData.gamertag || 'Seu Nick'} platform={formData.platform} />
+                    </div>
+                </div>
+
+                {/* Nome Completo */}
+                <div className="env-field-group">
+                    <label className="env-label">Nome Completo do Jogador</label>
+                    <input
+                        type="text"
+                        className="gc-field"
+                        value={formData.playername}
+                        onChange={e => handlePlayernameChange(e.target.value)}
+                        required
+                        style={{ borderBottomColor: fieldStatus.playername.taken ? '#ff7782' : undefined }}
+                    />
+                    <FieldIndicator field="playername" />
+                </div>
+
+                {/* Plataforma */}
+                <div className="env-field-group">
+                    <label className="env-label">Plataforma</label>
+                    <CustomSelect 
+                        options={platformOptions}
+                        value={formData.platform}
+                        onChange={(val) => setFormData({ ...formData, platform: val })}
+                        placeholder="Selecione..."
+                        isPlatform={true}
+                    />
+                </div>
+
+                {/* Gamertag */}
+                <div className="env-field-group">
+                    <label className="env-label">Gamertag / PSN ID</label>
+                    <input
+                        type="text"
+                        className="gc-field"
+                        value={formData.gamertag}
+                        onChange={e => handleGamertagChange(e.target.value)}
+                        placeholder="Ex: Player_123"
+                        required
+                        style={{ borderBottomColor: fieldStatus.gamertag.taken ? '#ff7782' : undefined }}
+                    />
+                    <FieldIndicator field="gamertag" />
+                </div>
+
+                {/* Regulamento */}
+                <div className="env-field-group">
+                    <label className="env-label">Regulamento da Gangster Cup</label>
+                    <div
+                        ref={termsRef}
+                        onScroll={handleScroll}
+                        className="env-terms-box"
+                        style={{ borderColor: hasRead ? 'rgba(111,207,151,.5)' : undefined }}
+                    >
+                        <p style={{ marginBottom: '10px' }}><strong>1. Tratamento de Dados (LGPD):</strong> Ao se inscrever, você consente com a coleta de seu e-mail, nome e gamertag para fins exclusivos de gestão do torneio, conforme a Lei 13.709/2018.</p>
+                        <p style={{ marginBottom: '10px' }}><strong>2. Dados Públicos:</strong> Você está ciente de que seu Time e Gamertag serão exibidos publicamente nas tabelas de classificação e resultados.</p>
+                        <p style={{ marginBottom: '10px' }}><strong>3. Transmissões:</strong> Você autoriza o uso de sua imagem (gameplay) em transmissões oficiais nas plataformas Twitch/YouTube.</p>
+                        <p style={{ marginBottom: '10px' }}><strong>4. Seus Direitos:</strong> Você pode, a qualquer momento, retificar seus dados no painel de perfil ou solicitar a exclusão de sua conta entrando em contato com a organização.</p>
+                        <p style={{ marginBottom: '10px' }}><strong>5. Fair Play:</strong> Ofensas ou condutas tóxicas resultarão em banimento e exclusão dos dados da competição.</p>
+                        <p><strong>6. Segurança:</strong> Utilizamos o Supabase para armazenamento seguro e criptografado de suas credenciais.</p>
                     </div>
 
-                    <button 
-                        type="submit" 
-                        className="btn-primary" 
-                        style={{ width: '100%', marginTop: '20px' }} 
-                        disabled={loading || fieldStatus.playername.taken || fieldStatus.gamertag.taken || fieldStatus.playername.checking || fieldStatus.gamertag.checking}
+                    <label
+                        className="env-terms-accept"
+                        style={{
+                            opacity: hasRead ? 1 : 0.5,
+                            cursor: hasRead ? 'pointer' : 'not-allowed'
+                        }}
                     >
-                        {loading ? 'Processando...' : 'Finalizar Inscrição'}
-                    </button>
-                    {(fieldStatus.playername.taken || fieldStatus.gamertag.taken) && (
-                        <p style={{ color: '#ff4444', fontSize: '0.8rem', textAlign: 'center', marginTop: '8px', fontWeight: 'bold' }}>
-                            ⚠️ Corrija os campos destacados em vermelho antes de continuar.
-                        </p>
+                        <input
+                            type="checkbox"
+                            checked={acceptedTerms}
+                            onChange={e => setAcceptedTerms(e.target.checked)}
+                            disabled={!hasRead}
+                            required
+                        />
+                        <span>Li e concordo com o regulamento</span>
+                    </label>
+                    {!hasRead && (
+                        <small className="env-field-status is-checking" style={{ marginTop: '6px' }}>
+                            Role o texto acima até o final para habilitar o aceite.
+                        </small>
                     )}
-                </form>
-            </div>
-        </section>
+                </div>
+
+                {error && <p className="env-error">{error}</p>}
+
+                <button
+                    type="submit"
+                    className="env-submit"
+                    disabled={loading || fieldStatus.playername.taken || fieldStatus.gamertag.taken || fieldStatus.playername.checking || fieldStatus.gamertag.checking}
+                >
+                    {loading ? 'Processando...' : 'Finalizar Inscrição'}
+                </button>
+
+                {(fieldStatus.playername.taken || fieldStatus.gamertag.taken) && (
+                    <p className="env-error">
+                        Corrija os campos destacados em vermelho antes de continuar.
+                    </p>
+                )}
+
+                {onGoToLogin && (
+                    <button type="button" className="env-link" onClick={onGoToLogin}>
+                        Já tem conta? Entrar
+                    </button>
+                )}
+            </form>
+
+            {sent && (
+                <div className="env-success">
+                    <div className="env-success-grain" aria-hidden="true"></div>
+                    <div className="env-success-check">✓</div>
+                    <div className="env-success-title">Inscrição enviada</div>
+                    <div className="env-success-sub">Confirme seu e-mail para garantir sua vaga.</div>
+                </div>
+            )}
+        </InviteEnvelope>
     );
 }
 

@@ -1,8 +1,9 @@
 import React, { useState } from 'react';
 import { supabaseClient } from '../supabase.js';
 import { translateAuthError } from '../helpers.js';
+import InviteEnvelope from './InviteEnvelope.jsx';
 
-function Login({ onGoToSignUp }) {
+function Login({ onGoToSignUp, onGoHome }) {
     const [email, setEmail] = useState('');
     const [pass, setPass] = useState('');
     const [showPassword, setShowPassword] = useState(false);
@@ -19,7 +20,7 @@ function Login({ onGoToSignUp }) {
         setError('');
         setShowSignUpSuggestion(false);
         setIsChecking(true);
-        
+
         try {
             if (!supabaseClient) throw new Error('Erro de inicialização: Verifique suas chaves no arquivo .env');
 
@@ -43,6 +44,7 @@ function Login({ onGoToSignUp }) {
         setError('');
         setIsChecking(true);
         try {
+            if (!supabaseClient) throw new Error('Erro de inicialização: Verifique suas chaves no arquivo .env');
             const { error } = await supabaseClient.auth.resetPasswordForEmail(resetEmail, {
                 redirectTo: window.location.origin
             });
@@ -55,134 +57,130 @@ function Login({ onGoToSignUp }) {
         }
     };
 
+    const backToLogin = () => {
+        setShowReset(false);
+        setResetSent(false);
+        setError('');
+    };
+
+    // ===== Conteúdo da carta: RECUPERAÇÃO DE SENHA =====
     if (showReset) {
         return (
-            <section className="container section">
-                <div className="form-container">
-                    <form onSubmit={handleResetRequest} className="card" style={{ maxWidth: '400px', margin: '0 auto', padding: '25px' }}>
-                        <h2 style={{ textAlign: 'center', marginBottom: '20px', color: 'var(--primary-color)' }}>Recuperar Senha</h2>
-                        
-                        {resetSent ? (
-                            <div style={{ textAlign: 'center' }}>
-                                <div style={{ fontSize: '4rem', marginBottom: '15px' }}>📧</div>
-                                <p style={{ fontWeight: 'bold', marginBottom: '15px' }}>E-mail enviado!</p>
-                                <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '20px' }}>
-                                    Enviamos um link de recuperação para <strong>{resetEmail}</strong>. Verifique sua caixa de entrada e spam.
-                                </p>
-                                <button type="button" className="btn-primary" style={{ width: '100%' }} onClick={() => setShowReset(false)}>Voltar para Login</button>
-                            </div>
-                        ) : (
-                            <>
-                                <p style={{ textAlign: 'center', marginBottom: '20px', fontSize: '0.9rem' }}>
-                                    Insira seu e-mail cadastrado para receber o link de redefinição de senha.
-                                </p>
-                                {error && <p style={{ color: '#ff4444', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold' }}>{error}</p>}
-                                <div className="form-group">
-                                    <label>E-mail</label>
-                                    <input type="email" value={resetEmail} onChange={(e) => setResetEmail(e.target.value)} required />
-                                </div>
-                                <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={isChecking}>
-                                    {isChecking ? 'Enviando...' : 'Enviar Link de Recuperação'}
-                                </button>
-                                <button type="button" className="btn-text" style={{ width: '100%', marginTop: '15px', justifyContent: 'center' }} onClick={() => setShowReset(false)}>
-                                    Voltar para o Login
-                                </button>
-                            </>
-                        )}
+            <InviteEnvelope
+                onGoHome={onGoHome}
+                eyebrow="Acesso de competidor"
+                title="Recuperar sua senha"
+                subtitle="Enviaremos um link de redefinição para o seu e-mail."
+            >
+                {resetSent ? (
+                    <div className="env-form" style={{ textAlign: 'center' }}>
+                        <div className="env-success-check" style={{ margin: '0 auto' }}>✓</div>
+                        <p className="env-subtitle" style={{ marginTop: 0 }}>
+                            Enviamos um link de recuperação para <strong>{resetEmail}</strong>.
+                            Verifique sua caixa de entrada e o spam.
+                        </p>
+                        <button type="button" className="env-submit" onClick={backToLogin}>
+                            Voltar para o login
+                        </button>
+                    </div>
+                ) : (
+                    <form onSubmit={handleResetRequest} className="env-form">
+                        {error && <p className="env-error">{error}</p>}
+                        <div className="env-field-group">
+                            <label className="env-label">E-mail</label>
+                            <input
+                                type="email"
+                                className="gc-field"
+                                placeholder="seu@email.com"
+                                value={resetEmail}
+                                onChange={(e) => setResetEmail(e.target.value)}
+                                required
+                            />
+                        </div>
+                        <button type="submit" className="env-submit" disabled={isChecking}>
+                            {isChecking ? 'Enviando...' : 'Enviar link de recuperação'}
+                        </button>
+                        <button type="button" className="env-link" onClick={backToLogin}>
+                            Voltar para o login
+                        </button>
                     </form>
-                </div>
-            </section>
+                )}
+            </InviteEnvelope>
         );
     }
 
+    // ===== Conteúdo da carta: LOGIN =====
     return (
-        <section className="container section">
-            {showAnimation && (
-                <div className="success-overlay">
-                    <div className="success-modal">
-                        <div style={{fontSize: '5rem'}}>✅</div>
-                        <h2>Acesso Autorizado!</h2>
-                        <p>Bem-vindo de volta!</p>
+        <InviteEnvelope
+            onGoHome={onGoHome}
+            eyebrow="Acesso de competidor"
+            title="Confirme sua presença"
+            subtitle="Entre com suas credenciais para acessar a Gangster Cup."
+        >
+            <form onSubmit={handleSubmit} className="env-form">
+                <div className="env-field-group">
+                    <label className="env-label">E-mail</label>
+                    <input
+                        type="email"
+                        className="gc-field"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                    />
+                </div>
+
+                <div className="env-field-group">
+                    <div className="env-label-row">
+                        <label className="env-label">Senha</label>
+                        <button
+                            type="button"
+                            className="env-toggle"
+                            onClick={() => setShowPassword(!showPassword)}
+                        >
+                            {showPassword ? 'Ocultar' : 'Mostrar'}
+                        </button>
                     </div>
+                    <input
+                        type={showPassword ? 'text' : 'password'}
+                        className="gc-field"
+                        placeholder="••••••••"
+                        value={pass}
+                        onChange={(e) => setPass(e.target.value)}
+                        required
+                    />
+                </div>
+
+                {error && <p className="env-error">{error}</p>}
+
+                {showSignUpSuggestion && onGoToSignUp && (
+                    <div className="env-suggestion">
+                        Não encontramos uma conta com esse e-mail.
+                        <br />
+                        <button type="button" onClick={onGoToSignUp}>
+                            Criar minha conta
+                        </button>
+                    </div>
+                )}
+
+                <button type="submit" className="env-submit" disabled={isChecking}>
+                    {isChecking ? 'Verificando...' : 'Confirmar presença'}
+                </button>
+
+                <button type="button" className="env-link" onClick={() => setShowReset(true)}>
+                    Esqueci minha senha
+                </button>
+            </form>
+
+            {showAnimation && (
+                <div className="env-success">
+                    <div className="env-success-grain" aria-hidden="true"></div>
+                    <div className="env-success-check">✓</div>
+                    <div className="env-success-title">Presença confirmada</div>
+                    <div className="env-success-sub">Bem-vindo de volta à Gangster Cup.</div>
                 </div>
             )}
-            <div className="form-container">
-                <form onSubmit={handleSubmit} className="card" style={{ maxWidth: '350px', margin: '0 auto', padding: '20px' }}>
-                    <h2 style={{ textAlign: 'center', marginBottom: '25px', color: 'var(--primary-color)' }}>Entrar</h2>
-                    {error && (
-                        <p style={{ color: '#ff4444', marginBottom: showSignUpSuggestion ? '5px' : '15px', textAlign: 'center', fontWeight: 'bold' }}>
-                            {error}
-                        </p>
-                    )}
-                    {showSignUpSuggestion && onGoToSignUp && (
-                        <div style={{
-                            background: 'rgba(0, 123, 255, 0.1)',
-                            border: '1px solid rgba(0, 123, 255, 0.3)',
-                            borderRadius: '10px',
-                            padding: '15px',
-                            marginBottom: '20px',
-                            textAlign: 'center',
-                            animation: 'fadeIn 0.3s ease'
-                        }}>
-                            <p style={{ fontSize: '0.9rem', marginBottom: '10px', color: 'var(--text-color)' }}>
-                                Não encontramos uma conta com esse e-mail. <br/>
-                                <strong>Deseja criar uma conta?</strong>
-                            </p>
-                            <button
-                                type="button"
-                                className="btn-primary"
-                                style={{ 
-                                    background: 'linear-gradient(135deg, #007bff, #0056b3)',
-                                    width: '100%',
-                                    fontSize: '0.9rem'
-                                }}
-                                onClick={onGoToSignUp}
-                            >
-                                📝 Criar minha conta agora
-                            </button>
-                        </div>
-                    )}
-                    <div className="form-group">
-                        <label>E-mail</label>
-                        <input type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
-                    </div>
-                    <div className="form-group">
-                        <label>Senha</label>
-                        <div style={{ position: 'relative', width: '100%' }}>
-                            <input 
-                                type={showPassword ? "text" : "password"} 
-                                value={pass} 
-                                onChange={(e) => setPass(e.target.value)} 
-                                required 
-                                style={{ width: '100%', paddingRight: '45px' }}
-                            />
-                            <button 
-                                type="button" 
-                                onClick={() => setShowPassword(!showPassword)}
-                                style={{ position: 'absolute', right: '12px', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', padding: '0', display: 'flex', alignItems: 'center' }}
-                            >
-                                <img 
-                                    src="https://cdn-icons-png.flaticon.com/128/158/158746.png" 
-                                    alt="Ver senha" 
-                                    className="eye-icon"
-                                    style={{ 
-                                        width: '22px', 
-                                        height: 'auto', 
-                                        opacity: showPassword ? '1' : '0.5'
-                                    }} 
-                                />
-                            </button>
-                        </div>
-                    </div>
-                    <button type="submit" className="btn-primary" style={{ width: '100%' }} disabled={isChecking}>
-                        {isChecking ? 'Verificando...' : 'Entrar'}
-                    </button>
-                    <button type="button" className="btn-text" style={{ width: '100%', marginTop: '15px', justifyContent: 'center' }} onClick={() => setShowReset(true)}>
-                        🔑 Esqueci minha senha
-                    </button>
-                </form>
-            </div>
-        </section>
+        </InviteEnvelope>
     );
 }
 

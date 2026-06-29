@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { supabaseClient } from '../supabase';
 import { translateAuthError } from '../helpers';
+import InviteEnvelope from './InviteEnvelope';
 
 function VerifyEmail({ email, onVerified }) {
     const [token, setToken] = useState('');
@@ -60,19 +61,20 @@ function VerifyEmail({ email, onVerified }) {
     };
 
     return (
-        <section className="container section">
-            <div className="form-container">
-                <form onSubmit={handleVerify} className="card" style={{ maxWidth: '350px', margin: '0 auto', padding: '20px' }}>
-                    <h2 style={{ textAlign: 'center', marginBottom: '15px', color: 'var(--primary-color)' }}>Verifique seu E-mail</h2>
-                    <p style={{ textAlign: 'center', marginBottom: '20px', fontSize: '0.9rem' }}>
-                        Enviamos um código para <strong>{email}</strong>. Insira-o abaixo.
-                    </p>
-
+        <InviteEnvelope
+            onGoHome={() => window.location.href = '/'}
+            eyebrow="Quase lá"
+            title="Verifique seu E-mail"
+            subtitle={`Enviamos um código para ${email}.`}
+            initialOpen={true}
+        >
+            <div className="env-card-content">
+                <form onSubmit={handleVerify} className="env-form">
                     <div style={{
                         background: 'rgba(255, 193, 7, 0.1)',
-                        border: '1px solid #ffc107',
+                        border: '1px solid rgba(255, 193, 7, 0.3)',
                         color: '#ffc107',
-                        padding: '10px',
+                        padding: '12px',
                         borderRadius: '8px',
                         fontSize: '0.85rem',
                         marginBottom: '20px',
@@ -82,12 +84,14 @@ function VerifyEmail({ email, onVerified }) {
                         Não encontrou? <strong>Verifique sua caixa de spam!</strong>
                     </div>
 
-                    {error && <p style={{ color: '#ff4444', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold', fontSize: '0.85rem' }}>{error}</p>}
-                    {resendStatus && <p style={{ color: '#28a745', marginBottom: '15px', textAlign: 'center', fontSize: '0.85rem' }}>{resendStatus}</p>}
-                    <div className="form-group">
-                        <label>Código de Verificação</label>
+                    {error && <p className="env-error" style={{ textAlign: 'center' }}>{error}</p>}
+                    {resendStatus && <p className="env-success-sub" style={{ textAlign: 'center', marginBottom: '15px' }}>{resendStatus}</p>}
+                    
+                    <div className="env-field-group">
+                        <label className="env-label">Código de Verificação</label>
                         <input 
                             type="text" 
+                            className="gc-field"
                             inputMode="numeric"
                             pattern="[0-9]*"
                             value={token} 
@@ -98,15 +102,17 @@ function VerifyEmail({ email, onVerified }) {
                             style={{ textAlign: 'center', fontSize: '1.5rem', letterSpacing: '5px', fontWeight: 'bold' }}
                         />
                     </div>
-                    <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '15px' }} disabled={loading}>
+                    
+                    <button type="submit" className="env-submit" disabled={loading}>
                         {loading ? 'Verificando...' : 'Confirmar Código'}
                     </button>
-                    <button type="button" onClick={handleResendCode} className="btn-text" style={{ marginTop: '15px', width: '100%', justifyContent: 'center' }}>
+                    
+                    <button type="button" onClick={handleResendCode} className="env-toggle" style={{ marginTop: '15px', width: '100%', justifyContent: 'center' }}>
                         Não recebeu o código? <strong>Reenviar</strong>
                     </button>
                 </form>
             </div>
-        </section>
+        </InviteEnvelope>
     );
 }
 

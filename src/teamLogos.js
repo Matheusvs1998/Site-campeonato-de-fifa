@@ -25,10 +25,10 @@ export const TEAM_LOGOS = {
     'Leicester City': 'upload.wikimedia.org/wikipedia/en/2/2d/Leicester_City_crest.svg',
     // França
     'PSG': 'upload.wikimedia.org/wikipedia/en/a/a7/Paris_Saint-Germain_F.C..svg',
-    'Marseille': 'upload.wikimedia.org/wikipedia/en/d/d8/Olympic_Marseille_logo.svg',
+    'Marseille': 'https://upload.wikimedia.org/wikipedia/commons/thumb/d/d8/Olympique_Marseille_logo.svg/250px-Olympique_Marseille_logo.svg.png',
     'Lyon': 'upload.wikimedia.org/wikipedia/en/c/c6/Olympique_Lyonnais_crest.svg',
-    'Monaco': 'upload.wikimedia.org/wikipedia/en/f/f3/AS_Monaco_FC.svg',
-    'Lille': 'upload.wikimedia.org/wikipedia/en/3/3f/Lille_OSC_logo.svg',
+    'Monaco': 'https://upload.wikimedia.org/wikipedia/pt/thumb/6/6f/ASMonacoFC2021.png/120px-ASMonacoFC2021.png',
+    'Lille': 'https://upload.wikimedia.org/wikipedia/pt/7/74/Lille_osc.png?_=20241011201342',
     'Nice': 'upload.wikimedia.org/wikipedia/en/2/2e/OGC_Nice_logo.svg',
     'Rennes': 'upload.wikimedia.org/wikipedia/en/9/9e/Stade_Rennais_FC.svg',
     // Alemanha
@@ -44,20 +44,20 @@ export const TEAM_LOGOS = {
     'Inter de Milão': 'upload.wikimedia.org/wikipedia/commons/0/05/FC_Internazionale_Milano_2021.svg',
     'AC Milan': 'https://upload.wikimedia.org/wikipedia/commons/d/d0/Logo_of_AC_Milan.svg',
     'Juventus': 'https://upload.wikimedia.org/wikipedia/commons/4/4e/Juventus_FC_-_logo_black_%28Italy%2C_2017%29.svg',
-    'Napoli': 'upload.wikimedia.org/wikipedia/commons/2/2d/SSC_Napoli_2021.svg',
-    'AS Roma': 'upload.wikimedia.org/wikipedia/en/f/f3/AS_Roma_logo_%282017%29.svg',
+    'Napoli': 'https://upload.wikimedia.org/wikipedia/commons/thumb/b/ba/SSC_Napoli.svg/500px-SSC_Napoli.svg.png',
+    'AS Roma': 'https://upload.wikimedia.org/wikipedia/pt/8/8c/AS_Roma_logo.png?_=20130721012201',
     'Lazio': 'upload.wikimedia.org/wikipedia/en/c/ce/S.S._Lazio_badge.svg',
-    'Atalanta': 'upload.wikimedia.org/wikipedia/en/6/66/Atalanta_BC.svg',
+    'Atalanta': 'https://upload.wikimedia.org/wikipedia/pt/5/54/Atalanta_Bergamasca_Calcio_logo.png?_=20260425025101',
     'Fiorentina': 'upload.wikimedia.org/wikipedia/commons/7/79/ACF_Fiorentina_2022_logo.svg',
     'Bologna': 'upload.wikimedia.org/wikipedia/en/5/5b/Bologna_F.C._1909_logo.svg',
     'Roma': 'upload.wikimedia.org/wikipedia/en/f/f3/AS_Roma_logo_%282017%29.svg',
     // Portugal
     'Benfica': 'upload.wikimedia.org/wikipedia/en/a/a2/SL_Benfica_logo.svg',
-    'FC Porto': 'upload.wikimedia.org/wikipedia/en/f/f1/FC_Porto_logo.svg',
-    'Sporting CP': 'upload.wikimedia.org/wikipedia/en/3/3e/Sporting_Clube_de_Portugal.svg',
+    'FC Porto': 'https://upload.wikimedia.org/wikipedia/pt/c/c5/F.C._Porto_logo.png?_=20190609150041',
+    'Sporting CP': 'https://upload.wikimedia.org/wikipedia/pt/3/3e/Sporting_Clube_de_Portugal.png?_=20100912044134',
     // Outros
-    'Al-Nassr': 'upload.wikimedia.org/wikipedia/en/2/2b/Al_Nassr_Logo.svg',
-    'Al-Hilal': 'upload.wikimedia.org/wikipedia/en/f/fa/Al-Hilal_Logo.svg',
+    'Al-Nassr': 'https://upload.wikimedia.org/wikipedia/pt/2/26/Al-Nassr_FC.png?_=20251229130701',
+    'Al-Hilal': 'https://upload.wikimedia.org/wikipedia/commons/thumb/5/55/Al_Hilal_SFC_Logo.svg/120px-Al_Hilal_SFC_Logo.svg.png',
     'Al-Ittihad': 'upload.wikimedia.org/wikipedia/en/5/5b/Al-Ittihad_FC_logo.svg',
     'Al-Ahli': 'upload.wikimedia.org/wikipedia/en/b/b0/Al-Ahli_Saudi_FC_logo.svg',
     'Inter Miami': 'upload.wikimedia.org/wikipedia/en/5/5c/Inter_Miami_CF_logo.svg',
@@ -68,16 +68,27 @@ export const TEAM_LOGOS = {
     'Feyenoord': 'upload.wikimedia.org/wikipedia/en/e/e9/Feyenoord_logo.svg',
     'Celtic': 'upload.wikimedia.org/wikipedia/en/3/35/Celtic_FC_crest.svg',
     'Rangers': 'upload.wikimedia.org/wikipedia/en/4/43/Rangers_FC.svg',
-    'Boca Juniors': 'upload.wikimedia.org/wikipedia/en/d/d1/Boca_Juniors_logo.svg',
-    'River Plate': 'upload.wikimedia.org/wikipedia/en/a/ac/River_Plate_crest.svg'
+    'Boca Juniors': 'https://upload.wikimedia.org/wikipedia/commons/c/c9/Boca_escudo.png',
+    'River Plate': 'https://upload.wikimedia.org/wikipedia/commons/thumb/4/43/Club_Atl%C3%A9tico_River_Plate_logo.svg/500px-Club_Atl%C3%A9tico_River_Plate_logo.svg.png'
 };
 
-export const getFallbackLogo = (name) => 
+export const getFallbackLogo = (name) =>
     `https://ui-avatars.com/api/?name=${encodeURIComponent(name)}&background=f30909&color=fff&bold=true&format=svg`;
 
 export const getTeamLogo = (teamName) => {
     const nameOnly = teamName.split(' (')[0];
-    const proxy = 'https://images.weserv.nl/?url=';
-    if (TEAM_LOGOS[nameOnly]) return `${proxy}${TEAM_LOGOS[nameOnly]}`;
+    if (TEAM_LOGOS[nameOnly]) {
+        let logoUrl = TEAM_LOGOS[nameOnly];
+        if (!logoUrl.startsWith('http')) {
+            logoUrl = 'https://' + logoUrl;
+        }
+
+        if (logoUrl.includes('wikipedia/en/')) {
+            const proxy = 'https://images.weserv.nl/?url=';
+            return `${proxy}${encodeURIComponent(logoUrl)}&default=${encodeURIComponent(getFallbackLogo(nameOnly))}`;
+        }
+
+        return logoUrl;
+    }
     return getFallbackLogo(nameOnly);
 };

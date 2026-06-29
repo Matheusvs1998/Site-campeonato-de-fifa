@@ -155,43 +155,9 @@ html, body {
     color: var(--primary-color);
 }
 
-.hero {
-    min-height: 70vh;
-    display: flex;
-    align-items: center;
-    text-align: center;
-    position: relative;
-    overflow: hidden;
-    padding: 80px 0;
-    color: #ffffff;
-    z-index: 1; /* Estabiliza o contexto de empilhamento */
-}
-
-.hero::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-image: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.8)),
-                      url('/hero-bg.webp');
-    background-size: cover;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-attachment: fixed; /* Efeito de parallax robusto */
-    z-index: -1;
-    filter: blur(calc(var(--scroll-y, 0) * 0.015)); /* Desfoque profissional progressivo */
-    will-change: filter;
-}
-
-.hero h1 {
-    font-size: clamp(2.5rem, 10vw, 4.5rem);
-    margin-bottom: 20px;
-    line-height: 1.1;
-    font-weight: 800;
-    position: relative;
-}
+/* .hero, .hero::before, .hero h1 — agora definidos em _home.css (design Aurora Glow).
+   O bloco legado foi removido por sobrescrever, via maior especificidade (.hero h1),
+   o tamanho do título Anton e por aplicar foto/parallax conflitantes. */
 
 .footer-nav {
     padding: 40px 0;
@@ -221,11 +187,21 @@ html, body {
     letter-spacing: 1px;
 }
 
-.social-links a.discord { color: #5865F2; }
-.social-links a.twitch { color: #9146FF; }
-.social-links a:hover { filter: brightness(1.3); transform: translateY(-3px); }
-.social-links a.discord:hover { text-shadow: 0 0 10px rgba(88, 101, 242, 0.5); }
-.social-links a.twitch:hover { text-shadow: 0 0 10px rgba(145, 70, 255, 0.5); }
+.social-links a.discord,
+.social-links a.twitch { 
+    color: var(--text-muted, #a0a0a0); 
+    transition: all var(--transition);
+}
+
+.social-links a:hover { 
+    filter: brightness(1.3); 
+    transform: translateY(-3px); 
+    color: var(--primary-color);
+}
+.social-links a.discord:hover,
+.social-links a.twitch:hover { 
+    text-shadow: 0 0 10px rgba(229, 9, 20, 0.5); 
+}
 
 /* Mobile Menu Logic */
 .mobile-menu-btn {

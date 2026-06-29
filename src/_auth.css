@@ -1,0 +1,874 @@
+/* ============================================================
+   GANGSTER CUP — AUTH (LOGIN / CADASTRO) IMERSIVO
+   Tela cheia + envelope/convite animado (Aurora Glow)
+   Classes: .auth-screen .auth-nav .auth-header .auth-footer
+            .env-stage .env-glow .env-back .env-card .env-pocket
+            .env-flap .env-seal .env-trigger ...
+   Keyframes: gcEmber, gcFloat  (gcSpin já existe em _home.css)
+   ============================================================ */
+
+/* ----- Animações novas ----- */
+@keyframes gcEmber {
+    0%, 100% { opacity: .5; transform: translate(-50%, -50%) scale(1); }
+    50%      { opacity: .8; transform: translate(-50%, -50%) scale(1.05); }
+}
+@keyframes gcFloat {
+    0%, 100% { transform: translateY(0); }
+    50%      { transform: translateY(-5px); }
+}
+/* fallback: garante gcSpin mesmo se _home.css mudar */
+@keyframes gcSpinAuth {
+    to { transform: rotate(360deg); }
+}
+
+/* ============================================================
+   FULLSCREEN SHELL (aplicado no app-wrapper quando isAuthPage)
+   ============================================================ */
+.gc-auth-fullscreen {
+    min-height: 100vh;
+    padding: 0;
+}
+
+/* ----- Tela cheia (container desenhado pelo Login/SignUp) ----- */
+.auth-screen {
+    position: relative;
+    width: 100%;
+    min-height: 100vh;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    background: #060608;
+    font-family: 'Barlow', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* mesh vermelho radial */
+.auth-screen::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background:
+        radial-gradient(760px 620px at 50% 30%, rgba(229, 9, 20, .18), transparent 60%),
+        radial-gradient(680px 560px at 90% 4%, rgba(150, 8, 30, .16), transparent 60%),
+        radial-gradient(1100px 820px at 50% 122%, rgba(229, 9, 20, .12), transparent 64%),
+        #060608;
+}
+
+/* grão */
+.auth-screen::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 1;
+    opacity: .05;
+    mix-blend-mode: overlay;
+    background-image: var(--gc-noise);
+}
+
+/* ============================================================
+   NAV MINIMALISTA
+   ============================================================ */
+.auth-nav {
+    position: relative;
+    z-index: 6;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 48px;
+}
+.auth-nav-logo {
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+}
+.auth-nav-logo img {
+    height: 62px;
+    width: auto;
+    display: block;
+    /* o wordmark sobe p/ a direita; gira no horário p/ ficar reto e legível */
+    transform: rotate(10deg);
+    transform-origin: center;
+}
+.auth-nav-back {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 15px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: #9a9aa3;
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color .25s ease;
+}
+.auth-nav-back:hover { color: #f2e9e2; }
+
+/* ============================================================
+   MAIN + HEADER
+   ============================================================ */
+.auth-main {
+    position: relative;
+    z-index: 4;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 34px 24px 90px;
+}
+
+.auth-header {
+    text-align: center;
+    margin-bottom: 26px;
+}
+.auth-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 9px;
+    padding: 7px 16px;
+    border-radius: 100px;
+    background: rgba(229, 9, 20, .13);
+    border: 1px solid rgba(229, 9, 20, .38);
+    margin-bottom: 16px;
+}
+.auth-badge-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: #ff3142;
+    box-shadow: 0 0 10px #ff3142;
+}
+.auth-badge-text {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: #ff5663;
+}
+.auth-title {
+    margin: 0;
+    font-family: 'Anton', sans-serif;
+    font-size: 46px;
+    line-height: .96;
+    text-transform: uppercase;
+    color: #fff;
+}
+.auth-subtitle {
+    margin: 12px 0 0;
+    font-family: 'Barlow', sans-serif;
+    font-size: 17px;
+    color: #9a9aa3;
+}
+
+/* ============================================================
+   ENVELOPE — STAGE
+   ============================================================ */
+.env-stage {
+    position: relative;
+    width: 520px;
+    height: 600px;
+    perspective: 1700px;
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+}
+.env-wrap {
+    position: relative;
+    width: 440px;
+    height: 360px;
+}
+
+/* ----- ember glow ----- */
+.env-glow {
+    position: absolute;
+    left: 50%;
+    top: 46%;
+    width: 520px;
+    height: 520px;
+    pointer-events: none;
+    z-index: 1;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgba(255, 86, 40, .4), rgba(229, 9, 20, .22) 40%, transparent 66%);
+    filter: blur(10px);
+    opacity: .22;
+    transition: opacity 1s ease;
+    animation: gcEmber 4.5s ease-in-out infinite;
+}
+.env-stage.is-open .env-glow { opacity: 1; }
+
+/* ----- envelope back ----- */
+.env-back {
+    position: absolute;
+    inset: 0;
+    border-radius: 12px;
+    z-index: 1;
+    background: linear-gradient(158deg, #181410, #0d0b0c);
+    border: 1px solid rgba(255, 255, 255, .05);
+    box-shadow: 0 44px 100px rgba(0, 0, 0, .62);
+}
+
+/* ============================================================
+   CARTA / CONVITE
+   ============================================================ */
+.env-card {
+    position: absolute;
+    left: 20px;
+    top: 6px;
+    width: 400px;
+    height: 440px;
+    border-radius: 14px;
+    overflow: hidden;
+    z-index: 40;
+    pointer-events: none;
+    transform: translateY(0);
+    opacity: 0;
+    transition: transform 1.05s cubic-bezier(.16, 1, .3, 1) .2s,
+                opacity .28s ease .12s;
+    box-shadow: 0 26px 60px rgba(0, 0, 0, .55),
+                0 2px 0 rgba(255, 255, 255, .05) inset;
+    /* base cartonado */
+    background: linear-gradient(162deg, #1d1a20 0%, #141218 52%, #0f0d12 100%);
+}
+.env-stage.is-open .env-card {
+    transform: translateY(-200px);
+    opacity: 1;
+    pointer-events: auto;
+}
+/* sucesso: carta sem interação */
+.env-stage.is-sent .env-card { pointer-events: none; }
+
+/* grão do papel */
+.env-card-grain {
+    position: absolute;
+    inset: 0;
+    opacity: .55;
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+    background-image: var(--gc-noise);
+}
+/* vinheta quente + ink wash */
+.env-card-vignette {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+        radial-gradient(120% 80% at 50% 0%, rgba(226, 56, 69, .18), transparent 58%),
+        radial-gradient(120% 90% at 50% 100%, rgba(0, 0, 0, .45), transparent 60%);
+}
+/* moldura deckle */
+.env-card-deckle {
+    position: absolute;
+    inset: 14px;
+    border: 1px solid rgba(226, 180, 170, .16);
+    border-radius: 6px;
+    pointer-events: none;
+}
+
+/* conteúdo da carta */
+.env-card-content {
+    position: relative;
+    z-index: 2;
+    box-sizing: border-box;
+    height: 100%;
+    padding: 16px 30px 0;
+    display: flex;
+    flex-direction: column;
+}
+
+/* monograma */
+.env-monogram {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 7px;
+}
+.env-monogram span {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1px solid rgba(226, 180, 170, .4);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Anton', sans-serif;
+    font-size: 14px;
+    color: #e8c9c2;
+}
+
+.env-eyebrow {
+    text-align: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: .32em;
+    text-transform: uppercase;
+    color: #e23845;
+    margin-bottom: 5px;
+}
+.env-title {
+    margin: 0;
+    text-align: center;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-weight: 500;
+    font-size: 26px;
+    line-height: 1.05;
+    color: #f4ece6;
+}
+.env-subtitle {
+    margin: 6px 0 0;
+    text-align: center;
+    font-family: 'Barlow', sans-serif;
+    font-size: 12.5px;
+    line-height: 1.45;
+    color: rgba(244, 236, 230, .6);
+}
+
+/* divisor com losango */
+.env-divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 9px 2px 8px;
+}
+.env-divider::before,
+.env-divider::after {
+    content: "";
+    flex: 1;
+    height: 1px;
+}
+.env-divider::before { background: linear-gradient(90deg, transparent, rgba(226, 180, 170, .3)); }
+.env-divider::after  { background: linear-gradient(90deg, rgba(226, 180, 170, .3), transparent); }
+.env-divider span {
+    width: 6px;
+    height: 6px;
+    transform: rotate(45deg);
+    background: #e23845;
+}
+
+/* form */
+.env-form {
+    display: flex;
+    flex-direction: column;
+    gap: 13px;
+    /* reset da regra global `form` de _components.css (background/padding/margin
+       vazavam, criando uma "caixa" interna e inflando a altura da carta) */
+    max-width: none;
+    margin: 0;
+    padding: 0;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    box-shadow: none;
+}
+.env-field-group { /* wrapper de cada campo */ }
+
+.env-label {
+    display: block;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: .2em;
+    text-transform: uppercase;
+    color: rgba(244, 236, 230, .5);
+    margin-bottom: 2px;
+}
+.env-label-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+/* input estilizado (papel quente) */
+.gc-field {
+    width: 100%;
+    box-sizing: border-box;
+    background: transparent;
+    border: none;
+    border-bottom: 1px solid rgba(229, 180, 170, .28);
+    padding: 8px 2px;
+    color: #f2e9e2;
+    font-family: 'Barlow', sans-serif;
+    font-size: 16px;
+    outline: none;
+    transition: border-color .25s ease;
+}
+.gc-field::placeholder { color: rgba(242, 233, 226, .32); }
+.gc-field:focus { border-bottom-color: #e23845; }
+
+/* select com a mesma cara */
+select.gc-field { cursor: pointer; }
+select.gc-field option {
+    background: #1a1620;
+    color: #f2e9e2;
+}
+
+/* toggle senha */
+.env-toggle {
+    font-family: 'Barlow', sans-serif;
+    font-size: 11px;
+    letter-spacing: .04em;
+    color: rgba(226, 180, 170, .7);
+    cursor: pointer;
+    text-transform: uppercase;
+    background: none;
+    border: none;
+    padding: 0;
+    transition: color .25s ease;
+}
+.env-toggle:hover { color: #e23845; }
+
+/* botão submit (outline -> hover preenchido) */
+.env-submit {
+    margin-top: 12px;
+    width: 100%;
+    height: 46px;
+    border: 1.5px solid rgba(226, 56, 69, .85);
+    cursor: pointer;
+    border-radius: 8px;
+    background: transparent;
+    color: #f3ded9;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 14px;
+    letter-spacing: .24em;
+    text-transform: uppercase;
+    transition: background .25s ease, color .25s ease, border-color .25s ease;
+}
+.env-submit:hover:not(:disabled) {
+    background: #e23845;
+    border-color: #e23845;
+    color: #fff;
+}
+.env-submit:disabled {
+    opacity: .5;
+    cursor: not-allowed;
+}
+
+/* link esqueci senha / links auxiliares */
+.env-link {
+    margin-top: 11px;
+    text-align: center;
+    font-family: 'Barlow', sans-serif;
+    font-size: 12px;
+    color: rgba(226, 180, 170, .6);
+    text-decoration: none;
+    background: none;
+    border: none;
+    cursor: pointer;
+    transition: color .25s ease;
+}
+.env-link:hover { color: #e23845; }
+
+/* erro / aviso dentro da carta */
+.env-error {
+    margin-top: 10px;
+    text-align: center;
+    font-family: 'Barlow', sans-serif;
+    font-size: 12.5px;
+    line-height: 1.4;
+    color: #ff7782;
+}
+.env-suggestion {
+    margin-top: 10px;
+    padding: 12px;
+    border-radius: 8px;
+    background: rgba(229, 9, 20, .08);
+    border: 1px solid rgba(226, 56, 69, .3);
+    text-align: center;
+    font-family: 'Barlow', sans-serif;
+    font-size: 12.5px;
+    color: rgba(244, 236, 230, .8);
+}
+.env-suggestion button {
+    margin-top: 8px;
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #e23845;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 12px;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    text-decoration: underline;
+}
+
+/* indicador de disponibilidade (FieldIndicator) */
+.env-field-status {
+    display: block;
+    margin-top: 4px;
+    font-family: 'Barlow', sans-serif;
+    font-size: 11px;
+    letter-spacing: .02em;
+}
+.env-field-status.is-checking { color: rgba(244, 236, 230, .5); }
+.env-field-status.is-taken    { color: #ff7782; }
+.env-field-status.is-available { color: #6fcf97; }
+
+/* rodapé da carta */
+.env-cardfoot {
+    margin-top: auto;
+    padding: 12px 0 14px;
+    text-align: center;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 600;
+    font-size: 9px;
+    letter-spacing: .36em;
+    text-transform: uppercase;
+    color: rgba(226, 180, 170, .34);
+}
+
+/* preview do escudo (cadastro) */
+.env-team-preview {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+}
+.env-team-preview img {
+    width: 28px;
+    height: 28px;
+    object-fit: contain;
+}
+
+/* caixa de termos (cadastro) — próprio scroll */
+.env-terms-box {
+    max-height: 120px;
+    overflow-y: auto;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(226, 180, 170, .2);
+    background: rgba(0, 0, 0, .2);
+    font-family: 'Barlow', sans-serif;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: rgba(244, 236, 230, .65);
+}
+.env-terms-accept {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    margin-top: 10px;
+    font-family: 'Barlow', sans-serif;
+    font-size: 12px;
+    color: rgba(244, 236, 230, .7);
+    cursor: pointer;
+}
+.env-terms-accept input { margin-top: 2px; accent-color: #e23845; }
+.env-terms-accept input:disabled { cursor: not-allowed; }
+
+/* ============================================================
+   SUCESSO (overlay sobre a carta)
+   ============================================================ */
+.env-success {
+    position: absolute;
+    inset: 0;
+    z-index: 5;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 14px;
+    background: linear-gradient(162deg, #1d1a20, #0f0d12);
+    text-align: center;
+    padding: 34px;
+}
+.env-success-grain {
+    position: absolute;
+    inset: 0;
+    opacity: .5;
+    mix-blend-mode: soft-light;
+    pointer-events: none;
+    background-image: var(--gc-noise);
+}
+.env-success-check {
+    position: relative;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 1px solid rgba(226, 180, 170, .45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 28px;
+    color: #e23845;
+}
+.env-success-title {
+    position: relative;
+    font-family: 'Playfair Display', serif;
+    font-style: italic;
+    font-size: 28px;
+    color: #f4ece6;
+}
+.env-success-sub {
+    position: relative;
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    color: rgba(244, 236, 230, .6);
+}
+
+/* ============================================================
+   FRONT POCKET (triângulo apontando para cima)
+   ============================================================ */
+.env-pocket {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    pointer-events: none;
+    z-index: 50;
+    border-left: 220px solid transparent;
+    border-right: 220px solid transparent;
+    border-bottom: 150px solid #15110e;
+    filter: drop-shadow(0 -3px 7px rgba(0, 0, 0, .4));
+}
+.env-pocket-sheen {
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    width: 0;
+    height: 0;
+    z-index: 51;
+    pointer-events: none;
+    border-left: 220px solid transparent;
+    border-right: 220px solid transparent;
+    border-bottom: 150px solid rgba(255, 255, 255, .025);
+}
+
+/* ============================================================
+   TOP FLAP (triângulo apontando para baixo, abre)
+   ============================================================ */
+.env-flap {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 0;
+    height: 0;
+    transform-origin: top center;
+    transform: rotateX(0deg);
+    transition: transform .95s cubic-bezier(.5, .02, .2, 1);
+    z-index: 45;
+    border-left: 220px solid transparent;
+    border-right: 220px solid transparent;
+    border-top: 150px solid #211a16;
+    filter: drop-shadow(0 3px 8px rgba(0, 0, 0, .45));
+}
+.env-stage.is-open .env-flap {
+    transform: rotateX(172deg);
+    z-index: 5;
+}
+
+/* ============================================================
+   WAX SEAL (selo de cera — gatilho)
+   ============================================================ */
+.env-seal {
+    position: absolute;
+    left: 50%;
+    top: 120px;
+    width: 62px;
+    height: 62px;
+    margin-left: -31px;
+    z-index: 48;
+    border-radius: 50%;
+    cursor: pointer;
+    background: radial-gradient(circle at 36% 30%, #ff3142, #9e0414 72%);
+    border: 2px solid rgba(255, 255, 255, .18);
+    box-shadow: 0 8px 24px rgba(229, 9, 20, .6), inset 0 1px 0 rgba(255, 255, 255, .3);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity .55s ease;
+    animation: gcFloat 3.6s ease-in-out infinite;
+    padding: 0;
+}
+.env-seal span {
+    font-family: 'Anton', sans-serif;
+    font-size: 17px;
+    color: #fff;
+}
+.env-stage.is-open .env-seal {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ============================================================
+   BOTÃO "ABRIR CONVITE" (com borda cônica girando)
+   ============================================================ */
+.env-trigger {
+    margin-top: 14px;
+    opacity: 1;
+    pointer-events: auto;
+    transition: opacity .5s ease;
+}
+.env-stage.is-open ~ .env-trigger,
+.env-trigger.is-hidden {
+    opacity: 0;
+    pointer-events: none;
+}
+.env-trigger-frame {
+    position: relative;
+    border-radius: 14px;
+    padding: 2px;
+    overflow: hidden;
+    box-shadow: 0 0 30px rgba(229, 9, 20, .5);
+}
+.env-trigger-frame::before {
+    content: "";
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 340px;
+    height: 340px;
+    margin: -170px 0 0 -170px;
+    background: conic-gradient(from 0deg,
+        rgba(255, 255, 255, 0) 0deg,
+        rgba(255, 255, 255, .95) 48deg,
+        #ff7782 86deg,
+        rgba(255, 255, 255, 0) 150deg,
+        rgba(255, 255, 255, 0) 205deg,
+        rgba(255, 255, 255, .85) 250deg,
+        #ff2433 296deg,
+        rgba(255, 255, 255, 0) 360deg);
+    animation: gcSpin 3.4s linear infinite, gcSpinAuth 3.4s linear infinite;
+}
+.env-trigger-btn {
+    position: relative;
+    display: block;
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 17px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: #fff;
+    border: none;
+    cursor: pointer;
+    padding: 15px 50px;
+    border-radius: 12px;
+    background: linear-gradient(180deg, #e20812, #a8050f);
+}
+
+/* ============================================================
+   RODAPÉ DA PÁGINA
+   ============================================================ */
+.auth-footer {
+    position: relative;
+    z-index: 4;
+    text-align: center;
+    padding: 26px 0 40px;
+}
+.auth-footer-links {
+    display: flex;
+    justify-content: center;
+    gap: 34px;
+    margin-bottom: 14px;
+}
+.auth-footer-link {
+    font-family: 'Barlow Condensed', sans-serif;
+    font-weight: 700;
+    font-size: 15px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    text-decoration: none;
+}
+.auth-footer-link.is-discord { color: var(--gc-discord, #9b8cff); }
+.auth-footer-link.is-twitch  { color: var(--gc-twitch, #c79bff); }
+.auth-footer-copy {
+    font-family: 'Barlow', sans-serif;
+    font-size: 14px;
+    color: #6f6f78;
+}
+
+/* ============================================================
+   VARIANTE CADASTRO — CARTA ALTA COM ROLAGEM
+   ============================================================ */
+.env-card.is-tall {
+    height: min(560px, 78vh);
+}
+/* a carta alta sobe um pouco mais para limpar o bolso frontal */
+.env-stage.is-tall.is-open .env-card,
+.env-stage.is-open .env-card.is-tall {
+    transform: translateY(-260px);
+}
+/* área de conteúdo rolável (mantém deckle/grão fixos) */
+.env-card-scroll {
+    position: relative;
+    z-index: 2;
+    box-sizing: border-box;
+    height: 100%;
+    /* padding-bottom reserva espaco para o conteudo "limpar" o bolso
+       frontal (.env-pocket, border-bottom:150px, z-index:50): sem ele o
+       botao Finalizar / link / rodape ficam atras do triangulo ao rolar */
+    padding: 22px 28px 160px;
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+}
+.env-card-scroll::-webkit-scrollbar { width: 6px; }
+.env-card-scroll::-webkit-scrollbar-thumb {
+    background: rgba(226, 180, 170, .3);
+    border-radius: 3px;
+}
+.env-card-scroll::-webkit-scrollbar-track { background: transparent; }
+
+/* ============================================================
+   RESPONSIVO
+   ============================================================ */
+@media (max-width: 768px) {
+    .auth-nav { padding: 16px 22px; }
+    .auth-title { font-size: 38px; }
+    .auth-subtitle { font-size: 15px; }
+    .env-stage { transform: scale(.92); }
+}
+
+@media (max-width: 480px) {
+    .auth-nav { padding: 14px 16px; }
+    .auth-nav-back { font-size: 13px; }
+    .auth-nav-logo img { height: 48px; }
+    .auth-main { padding: 18px 12px 60px; }
+    .auth-title { font-size: 30px; }
+    .auth-subtitle { font-size: 14px; }
+
+    /* escala o palco inteiro p/ caber em 375px (520px -> ~360px) */
+    .env-stage {
+        transform: scale(.7);
+        transform-origin: top center;
+        /* compensa a altura perdida pelo scale para não sobrar gap */
+        margin-bottom: -180px;
+    }
+    .env-card.is-tall { height: min(560px, 70vh); }
+
+    .auth-footer-links { gap: 22px; }
+    .auth-footer-link { font-size: 13px; }
+}
+
+@media (max-width: 360px) {
+    .env-stage {
+        transform: scale(.62);
+        margin-bottom: -210px;
+    }
+}
+
+/* acessibilidade: respeita prefers-reduced-motion */
+@media (prefers-reduced-motion: reduce) {
+    .env-glow,
+    .env-seal,
+    .env-trigger-frame::before {
+        animation: none;
+    }
+    .env-card,
+    .env-flap {
+        transition-duration: .35s;
+    }
+}

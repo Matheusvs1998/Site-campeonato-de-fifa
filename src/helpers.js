@@ -79,6 +79,16 @@ export const extractGamertag = (fullName) => {
     return match ? match[1].split(' - ')[0] : '';
 };
 
+export const extractPlatform = (fullName) => {
+    if (!fullName || typeof fullName !== 'string') return '';
+    const match = fullName.match(/\(([^)]+)\)/);
+    if (match) {
+        const parts = match[1].split(' - ');
+        return parts.length > 1 ? parts[1].toLowerCase() : '';
+    }
+    return '';
+};
+
 export const translateAuthError = (msg) => {
     if (typeof msg !== 'string') return 'Erro inesperado.';
     if (msg.includes('Password should be at least')) {

@@ -51,13 +51,16 @@ function App() {
         };
         window.addEventListener('scroll', handleScroll, { passive: true });
 
-        // Listener de Recuperação de Senha
-        const { data: authListener } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
-            if (event === 'PASSWORD_RECOVERY') {
-                setIsRecoveringPassword(true);
-                setPage('login');
-            }
-        });
+        // Listener de Recuperação de Senha (apenas se o Supabase estiver configurado)
+        let authListener = null;
+        if (supabaseClient) {
+            ({ data: authListener } = supabaseClient.auth.onAuthStateChange(async (event, session) => {
+                if (event === 'PASSWORD_RECOVERY') {
+                    setIsRecoveringPassword(true);
+                    setPage('login');
+                }
+            }));
+        }
 
         return () => {
             window.removeEventListener('scroll', handleScroll);
@@ -576,15 +579,28 @@ function App() {
         </div>
     );
 
+    const isAuthPage = (page === 'login' || page === 'signup' || page === 'admin' || page === 'profile');
+
     return (
-        <div className="app-wrapper">
+        <div className={`app-wrapper gc-aurora-bg${isAuthPage ? ' gc-auth-fullscreen' : ''}`}>
             <div className="toast-container">
                 {toasts.map(t => (
-                    <div key={t.id} className={`toast ${t.type}`}>
+                    <div key={t.id} className={`toast red-theme`}>
                         <div className="toast-icon">
-                            {t.type === 'success' ? '✅' : t.type === 'error' ? '❌' : 'ℹ️'}
+                            {t.type === 'success' ? (
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                            ) : t.type === 'error' ? (
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm5 13.59L15.59 17 12 13.41 8.41 17 7 15.59 10.59 12 7 8.41 8.41 7 12 10.59 15.59 7 17 8.41 13.41 12 17 15.59z" /></svg>
+                            ) : (
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+                            )}
                         </div>
-                        <div className="toast-content">{t.message}</div>
+                        <div className="toast-content">
+                            <strong className="toast-title">
+                                {t.type === 'error' ? 'Erro!' : t.type === 'success' ? 'Sucesso!' : 'Aviso!'}
+                            </strong>
+                            <span className="toast-message">{t.message}</span>
+                        </div>
                     </div>
                 ))}
             </div>
@@ -604,7 +620,10 @@ function App() {
                 <div className="maintenance-wrapper">
                     <div className="maintenance-card">
                         <div className="maintenance-icon-wrapper">
-                            <span>🛠️</span>
+                            <svg className="anim-maintenance" width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="3"></circle>
+                                <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+                            </svg>
                         </div>
                         <div className="maintenance-status-bar">
                             <div className="maintenance-status-dot"></div>
@@ -648,77 +667,79 @@ function App() {
                         </div>
                     )}
 
-                    <header className="header-nav">
-                        <nav className="container nav-content">
-                            <div className={`logo ${isLogoAnimated ? 'logo-click-animation' : ''}`} onClick={handleLogoClick}>
-                                <img src="/logo.png" alt="Logo" className="nav-logo" />
-                                <span className="logo-prefix"></span> <span className="logo-main">GANGSTER CUP</span>
-                            </div>
+                    {!isAuthPage && (
+                        <header className="header-nav">
+                            <nav className="container nav-content">
+                                <div className={`logo ${isLogoAnimated ? 'logo-click-animation' : ''}`} onClick={handleLogoClick}>
+                                    <img src="/logo-gangster-cup.png" alt="Gangster Cup" className="nav-logo" />
+                                </div>
 
-                            <div className="nav-right-group">
-                                <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
-                                    {/* Botão de Tema visível apenas no Mobile dentro do menu */}
-                                    <li className="mobile-only" style={{ marginBottom: '20px' }}>
-                                        <button className="theme-toggle-btn" onClick={toggleTheme} style={{ width: '100%', justifyContent: 'center', gap: '10px' }}>
-                                            {theme === 'dark' ? (
-                                                <Fragment>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: '20px' }}>
+                                <div className="nav-right-group">
+                                    <ul className={`nav-links ${isMenuOpen ? 'active' : ''}`}>
+                                        {/* Botão de Tema visível apenas no Mobile dentro do menu */}
+                                        <li className="mobile-only" style={{ marginBottom: '20px' }}>
+                                            <button className="theme-toggle-btn" onClick={toggleTheme} style={{ width: '100%', justifyContent: 'center', gap: '10px' }}>
+                                                {theme === 'dark' ? (
+                                                    <Fragment>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: '20px' }}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                                                        </svg>
+                                                        <span>Modo Claro</span>
+                                                    </Fragment>
+                                                ) : (
+                                                    <Fragment>
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: '20px' }}>
+                                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                                                        </svg>
+                                                        <span>Modo Escuro</span>
+                                                    </Fragment>
+                                                )}
+                                            </button>
+                                        </li>
+                                        <li><a href="#" className={page === 'home' ? 'active' : ''} aria-current={page === 'home' ? 'page' : undefined} onClick={() => navigate('home')}>Início</a></li>
+                                        {user && !user.is_banned && (
+                                            <Fragment>
+                                                <li><a href="#" className={page === 'admin' ? 'active' : ''} aria-current={page === 'admin' ? 'page' : undefined} onClick={() => navigate('admin')}>
+                                                    {user.role === 'developer' ? 'Dev' : user.role === 'admin' ? 'Painel Admin' : user.role === 'moderador' ? 'Painel Mod' : 'Painel do Usuário'}
+                                                </a></li>
+                                                <li><a href="#" className={page === 'profile' ? 'active' : ''} aria-current={page === 'profile' ? 'page' : undefined} onClick={() => navigate('profile')}>Perfil</a></li>
+                                            </Fragment>
+                                        )}
+                                        {!user ? (
+                                            <>
+                                                <li><a href="#" className={page === 'signup' ? 'active' : ''} aria-current={page === 'signup' ? 'page' : undefined} onClick={() => navigate('signup')}>Inscreva-se</a></li>
+                                                <li><button className="btn-primary" onClick={() => navigate('login')}>Entrar</button></li>
+                                            </>
+                                        ) : (
+                                            <li><button className="btn-primary" onClick={handleLogout}>Sair</button></li>
+                                        )}
+                                    </ul>
+
+                                    <div className="nav-controls">
+                                        {/* Botão de Tema visível apenas no Desktop no cabeçalho */}
+                                        <button className="theme-toggle-btn desktop-only" onClick={toggleTheme} aria-label="Alternar Tema">
+                                            <div className="toggle-track">
+                                                <div className="toggle-knob">
+                                                    <svg className="sun-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
                                                     </svg>
-                                                    <span>Modo Claro</span>
-                                                </Fragment>
-                                            ) : (
-                                                <Fragment>
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" style={{ width: '20px' }}>
+                                                    <svg className="moon-icon" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
                                                     </svg>
-                                                    <span>Modo Escuro</span>
-                                                </Fragment>
-                                            )}
+                                                </div>
+                                            </div>
                                         </button>
-                                    </li>
-                                    <li><a href="#" onClick={() => navigate('home')}>Início</a></li>
-                                    {user && !user.is_banned && (
-                                        <Fragment>
-                                            <li><a href="#" onClick={() => navigate('admin')}>
-                                                {user.role === 'developer' ? 'Dev' : user.role === 'admin' ? 'Painel Admin' : user.role === 'moderador' ? 'Painel Mod' : 'Painel do Usuário'}
-                                            </a></li>
-                                            <li><a href="#" onClick={() => navigate('profile')}>Perfil</a></li>
-                                        </Fragment>
-                                    )}
-                                    {!user ? (
-                                        <>
-                                            <li><a href="#" onClick={() => navigate('signup')}>Inscreva-se</a></li>
-                                            <li><button className="btn-primary" onClick={() => navigate('login')}>Entrar</button></li>
-                                        </>
-                                    ) : (
-                                        <li><button className="btn-primary" onClick={handleLogout}>Sair</button></li>
-                                    )}
-                                </ul>
 
-                                <div className="nav-controls">
-                                    {/* Botão de Tema visível apenas no Desktop no cabeçalho */}
-                                    <button className="theme-toggle-btn desktop-only" onClick={toggleTheme} aria-label="Alternar Tema">
-                                        {theme === 'dark' ? (
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-                                            </svg>
-                                        ) : (
-                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                                            </svg>
-                                        )}
-                                    </button>
-
-                                    <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
-                                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
-                                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
-                                        <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
-                                    </button>
+                                        <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                                            <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
+                                            <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
+                                            <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
+                                        </button>
+                                    </div>
                                 </div>
-                            </div>
-                        </nav>
-                    </header>
+                            </nav>
+                        </header>
+                    )}
 
                     {roleUpdateNotify && (
                         <div className="success-overlay" style={{ zIndex: 3000 }}>
@@ -740,8 +761,8 @@ function App() {
                     {logoutMessage && (
                         <div className="success-overlay">
                             <div className={`success-modal welcome-modal role-${logoutMessage.role || 'player'}`}>
-                                <div className="welcome-icon">
-                                    {logoutMessage.role === 'admin' || logoutMessage.role === 'developer' ? '👑' : logoutMessage.role === 'moderador' ? '🛡️' : '⚽'}
+                                <div className="welcome-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                                    <img src="/logo-gangster-cup-white.png" alt="Gangster Cup" style={{ width: '220px', maxWidth: '100%', objectFit: 'contain' }} />
                                 </div>
                                 <h2>Até logo, {logoutMessage.username}!</h2>
                                 <p className="welcome-role">Sessão encerrada com segurança.</p>
@@ -779,18 +800,18 @@ function App() {
                         ) : (
                             <div className="fade-in">
                                 {page === 'home' && <Home results={results} loading={loading} onRegisterClick={() => setPage('signup')} showFeaturedMatch={showFeaturedMatch} />}
-                                {page === 'login' && <Login onGoToSignUp={() => setPage('signup')} />}
-                                {page === 'signup' && <SignUp onStepVerify={(email) => { setTempEmail(email); setPage('verify'); }} />}
+                                {page === 'login' && <Login onGoToSignUp={() => setPage('signup')} onGoHome={() => setPage('home')} />}
+                                {page === 'signup' && <SignUp onStepVerify={(email) => { setTempEmail(email); setPage('verify'); }} onGoHome={() => setPage('home')} onGoToLogin={() => setPage('login')} />}
                                 {page === 'verify' && tempEmail && <VerifyEmail email={tempEmail} onVerified={() => setPage('admin')} />}
-                                {page === 'profile' && <Profile user={session?.user} userRegistration={userRegistration} onUpdate={async () => { await fetchData(); if (session?.user) await fetchUserProfile(session.user); }} />}
+                                {page === 'profile' && <Profile user={session?.user} userRegistration={userRegistration} onUpdate={async () => { await fetchData(); if (session?.user) await fetchUserProfile(session.user); }} onGoHome={() => setPage('home')} />}
                                 {page === 'admin' && (
                                     (!user || showWelcome) ? (
                                         <div className="success-overlay">
                                             <div className={`success-modal welcome-modal role-${user?.role || 'player'}`}>
                                                 {user ? (
                                                     <Fragment>
-                                                        <div className="welcome-icon">
-                                                            {user.role === 'admin' || user.role === 'developer' ? '👑' : user.role === 'moderador' ? '🛡️' : '⚽'}
+                                                        <div className="welcome-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                                                            <img src="/logo-gangster-cup-white.png" alt="Gangster Cup" style={{ width: '220px', maxWidth: '100%', objectFit: 'contain' }} />
                                                         </div>
                                                         <h2>Bem-vindo, {user.username}!</h2>
                                                         <p className="welcome-role">Acesso: <strong>{
@@ -804,9 +825,9 @@ function App() {
                                         </div>
                                     ) : (
                                         user.role === 'admin' || user.role === 'developer' || user.role === 'moderador' ? (
-                                            <Admin results={results} registrations={registrations} updateResult={updateResult} onDraw={() => setShowDrawConfirm(true)} onKnockoutDraw={executeKnockoutDraw} onDeleteMatch={deleteMatch} onDeleteAll={() => setShowResetConfirm(true)} user={user} fetchData={fetchData} showFeaturedMatch={showFeaturedMatch} onToggleFeatured={toggleFeaturedMatch} />
+                                            <Admin results={results} registrations={registrations} updateResult={updateResult} onDraw={() => setShowDrawConfirm(true)} onKnockoutDraw={executeKnockoutDraw} onDeleteMatch={deleteMatch} onDeleteAll={() => setShowResetConfirm(true)} user={user} fetchData={fetchData} showFeaturedMatch={showFeaturedMatch} onToggleFeatured={toggleFeaturedMatch} onGoHome={() => setPage('home')} />
                                         ) : (
-                                            <PlayerDashboard user={user} userRegistration={userRegistration} results={results} />
+                                            <PlayerDashboard user={user} userRegistration={userRegistration} results={results} onGoHome={() => setPage('home')} />
                                         )
                                     )
                                 )}
@@ -815,30 +836,34 @@ function App() {
                     </section>
                 </>
             )}
-            <footer className="footer-nav">
-                <div className="container">
-                    <div className="social-links">
-                        <a href="https://discord.gg/neQt9DdJVT" className="discord" target="_blank" rel="noopener noreferrer">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2758-3.68-.2758-5.4876 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189z" />
-                            </svg>
-                            Discord
-                        </a>
-                        <a href="https://twitch.tv/eujohnzinrp" className="twitch" target="_blank" rel="noopener noreferrer">
-                            <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
-                                <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
-                            </svg>
-                            Twitch
-                        </a>
+            {!isAuthPage && (
+                <footer className="footer-nav">
+                    <div className="container">
+                        <div className="social-links">
+                            <a href="https://discord.gg/neQt9DdJVT" className="discord" target="_blank" rel="noopener noreferrer">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M20.317 4.3698a19.7913 19.7913 0 00-4.8851-1.5152.0741.0741 0 00-.0785.0371c-.211.3753-.4447.8648-.6083 1.2495-1.8447-.2758-3.68-.2758-5.4876 0-.1636-.3933-.4058-.8742-.6177-1.2495a.077.077 0 00-.0785-.037 19.7363 19.7363 0 00-4.8852 1.515.0699.0699 0 00-.0321.0277C.5334 9.0458-.319 13.5799.0992 18.0578a.0824.0824 0 00.0312.0561c2.0528 1.5076 4.0413 2.4228 5.9929 3.0294a.0777.0777 0 00.0842-.0276c.4616-.6304.8731-1.2952 1.226-1.9942a.076.076 0 00-.0416-.1057c-.6528-.2476-1.2743-.5495-1.8722-.8923a.077.077 0 01-.0076-.1277c.1258-.0943.2517-.1923.3718-.2914a.0743.0743 0 01.0776-.0105c3.9278 1.7933 8.18 1.7933 12.0614 0a.0739.0739 0 01.0785.0095c.1202.099.246.1981.3728.2924a.077.077 0 01-.0066.1276 12.2986 12.2986 0 01-1.873.8914.0766.0766 0 00-.0407.1067c.3604.698.7719 1.3628 1.225 1.9932a.076.076 0 00.0842.0286c1.961-.6067 3.9495-1.5219 6.0023-3.0294a.077.077 0 00.0313-.0552c.5004-5.177-.8382-9.6739-3.5485-13.6604a.061.061 0 00-.0312-.0286zM8.02 15.3312c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9555-2.4189 2.157-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.9555 2.4189-2.1569 2.4189zm7.9748 0c-1.1825 0-2.1569-1.0857-2.1569-2.419 0-1.3332.9554-2.4189 2.1569-2.4189 1.2108 0 2.1757 1.0952 2.1568 2.419 0 1.3332-.946 2.4189-2.1568 2.4189z" />
+                                </svg>
+                                Discord
+                            </a>
+                            <a href="https://twitch.tv/eujohnzinrp" className="twitch" target="_blank" rel="noopener noreferrer">
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg">
+                                    <path d="M11.571 4.714h1.715v5.143H11.57zm4.715 0H18v5.143h-1.714zM6 0L1.714 4.286v15.428h5.143V24l4.286-4.286h3.428L22.286 12V0zm14.571 11.143l-3.428 3.428h-3.429l-3 3v-3H6.857V1.714h13.714Z" />
+                                </svg>
+                                Twitch
+                            </a>
+                        </div>
+                        <p className="footer-copyright" style={{ marginTop: '20px' }}>&copy; 2026 Gangster Cup.</p>
                     </div>
-                    <p style={{ marginTop: '20px' }}>&copy; 2026 Gangster Cup.</p>
-                </div>
-            </footer>
+                </footer>
+            )}
         </div>
     );
 }
 
-ReactDOM.createRoot(document.getElementById('root')).render(
+const container = document.getElementById('root');
+const root = (window.__gangsterCupRoot ??= ReactDOM.createRoot(container));
+root.render(
     <React.StrictMode>
         <App />
     </React.StrictMode>
