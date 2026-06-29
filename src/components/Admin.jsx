@@ -259,12 +259,12 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                                 onChange={(e) => handleUpdateUser(u.id, { role: e.target.value })}
                                                 disabled={u.role === 'developer' && !isDev}
                                                 className="admin-status-select"
-                                                style={{ color: u.role === 'developer' ? '#28a745' : u.role === 'admin' ? '#007bff' : u.role === 'moderador' ? '#ffc107' : 'var(--text-main)' }}
+                                                style={{ color: 'var(--text-main)' }}
                                             >
-                                                <option value="player" style={{ color: 'var(--text-main)', background: 'var(--bg-card)' }}>Jogador</option>
-                                                <option value="moderador" style={{ color: '#ffc107', background: 'var(--bg-card)' }}>Moderador</option>
-                                                <option value="admin" style={{ color: '#007bff', background: 'var(--bg-card)' }}>Administrador</option>
-                                                {isDev && <option value="developer" style={{ color: '#28a745', background: 'var(--bg-card)' }}>Desenvolvedor</option>}
+                                                <option value="player" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Jogador</option>
+                                                <option value="moderador" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Moderador</option>
+                                                <option value="admin" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Administrador</option>
+                                                {isDev && <option value="developer" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Desenvolvedor</option>}
                                             </select>
                                         </td>
                                         <td className="mobile-hide">
@@ -573,12 +573,12 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                     }}
                                     disabled={selectedMobileUser.role === 'developer' && !isDev}
                                     className="admin-status-select"
-                                    style={{ width: '100%', padding: '12px', color: selectedMobileUser.role === 'developer' ? '#28a745' : selectedMobileUser.role === 'admin' ? '#007bff' : selectedMobileUser.role === 'moderador' ? '#ffc107' : 'var(--text-main)' }}
+                                    style={{ width: '100%', padding: '12px', color: 'var(--text-main)' }}
                                 >
-                                    <option value="player" style={{ color: 'var(--text-main)', background: 'var(--bg-card)' }}>Jogador</option>
-                                    <option value="moderador" style={{ color: '#ffc107', background: 'var(--bg-card)' }}>Moderador</option>
-                                    <option value="admin" style={{ color: '#007bff', background: 'var(--bg-card)' }}>Administrador</option>
-                                    {isDev && <option value="developer" style={{ color: '#28a745', background: 'var(--bg-card)' }}>Desenvolvedor</option>}
+                                    <option value="player" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Jogador</option>
+                                    <option value="moderador" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Moderador</option>
+                                    <option value="admin" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Administrador</option>
+                                    {isDev && <option value="developer" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Desenvolvedor</option>}
                                 </select>
                             </div>
 
