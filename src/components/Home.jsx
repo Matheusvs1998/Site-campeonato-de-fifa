@@ -239,7 +239,7 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
 
                     <div className="hero-kicker">Bem-vindos à</div>
                     <div className="hero-title-wrap" style={{ marginTop: '10px', marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
-                        <img src="/logo-gangster-cup-white.png" alt="Gangster Cup" style={{ width: '100%', maxWidth: '550px', filter: 'drop-shadow(0 10px 25px rgba(0,0,0,0.6))' }} />
+                        <img src="/logo-gangster-cup.png" alt="Gangster Cup" style={{ width: '100%', maxWidth: '550px', filter: 'brightness(0) invert(1)' }} />
                     </div>
                     <p className="hero-subtitle">Acompanhe os próximos confrontos e os resultados em tempo real.</p>
                     <div className="hero-cta-wrap">

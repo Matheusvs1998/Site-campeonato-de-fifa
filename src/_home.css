@@ -275,13 +275,13 @@
 .hero {
     position: relative;
     min-height: 600px;
-    height: 600px;
+    height: auto;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     text-align: center;
-    padding: 0 40px;
+    padding: 60px 40px;
     color: #fff;
     z-index: 1;
 }
