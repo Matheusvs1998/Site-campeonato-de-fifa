@@ -93,34 +93,33 @@
 .nav-links a.active,
 .nav-links a[aria-current='page'] { color: var(--gc-text); }
 
-/* Botão "Entrar" — borda cônica girando (gcSpin) */
+/* Botões principais (Entrar, Sair, Resetar, Sortear) */
 .btn-primary {
     position: relative;
     z-index: 0;
     overflow: hidden;
     font-family: var(--font-label);
     font-weight: 700;
-    font-size: 16px;
-    letter-spacing: 0.14em;
+    font-size: 15px;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     color: #fff;
     border: none;
     cursor: pointer;
-    padding: 14px 28px;
-    border-radius: 8px; /* Cara atual do projeto */
-    background: #000; /* Dark background so the gap looks like a physical gap */
-    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.5);
+    padding: 12px 24px;
+    border-radius: var(--gc-r-btn);
+    background: var(--gc-bg-base);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
     display: inline-flex;
     align-items: center;
     justify-content: center;
     gap: 8px;
     line-height: 1;
-    text-shadow: 0 1px 2px rgba(0,0,0,0.6);
-    transition: all 0.15s ease;
+    transition: all var(--transition-fast);
 }
 .btn-primary svg {
     flex-shrink: 0;
-    margin-top: -2px; /* Correção óptica de alinhamento com letras maiúsculas */
+    margin-top: -2px;
 }
 .btn-primary::before {
     content: '';
@@ -147,26 +146,22 @@
     position: absolute;
     inset: 2px;
     z-index: -1;
-    border-radius: 6px;
-    background: #bd1414;
-    box-shadow: 
-        inset 0 4px 0 rgba(255, 110, 110, 0.4), 
-        inset 0 -5px 0 rgba(80, 0, 0, 0.6),
-        inset 3px 0 0 rgba(255, 255, 255, 0.1),
-        inset -3px 0 0 rgba(0, 0, 0, 0.2);
-    transition: all 0.15s ease;
+    border-radius: calc(var(--gc-r-btn) - 2px);
+    background: var(--gc-grad-btn);
+    transition: background var(--transition-fast);
 }
-.btn-primary:hover { filter: brightness(1.1); transform: translateY(-1px); }
+.btn-primary:hover {
+    filter: brightness(1.15);
+    transform: translateY(-2px);
+    box-shadow: var(--gc-glow-btn);
+}
+.btn-primary:hover::after {
+    background: var(--gc-grad-btn-active);
+}
 .btn-primary:active {
-    transform: translateY(3px);
-    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.5);
-}
-.btn-primary:active::after {
-    box-shadow: 
-        inset 0 2px 0 rgba(255, 110, 110, 0.2), 
-        inset 0 -2px 0 rgba(80, 0, 0, 0.8),
-        inset 2px 0 0 rgba(255, 255, 255, 0.05),
-        inset -2px 0 0 rgba(0, 0, 0, 0.3);
+    transform: translateY(1px);
+    box-shadow: none;
+    filter: brightness(0.9);
 }
 
 /* Toggle de tema — pill (DESKTOP)

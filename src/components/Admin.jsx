@@ -4,6 +4,7 @@ import { getTeamLogo, getFallbackLogo } from '../teamLogos';
 import { calculateStandings, extractGamertag } from '../helpers';
 import DashboardShell from './DashboardShell';
 import GamertagBadge from './GamertagBadge';
+import CustomSelect from './CustomSelect';
 
 function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, onDeleteMatch, onDeleteAll, user, fetchData, showFeaturedMatch, onToggleFeatured, onGoHome }) {
     const [users, setUsers] = useState([]);
@@ -254,18 +255,19 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                             </div>
                                         </td>
                                         <td className="mobile-hide">
-                                            <select 
+                                            <CustomSelect 
                                                 value={u.role} 
-                                                onChange={(e) => handleUpdateUser(u.id, { role: e.target.value })}
+                                                onChange={(val) => handleUpdateUser(u.id, { role: val })}
                                                 disabled={u.role === 'developer' && !isDev}
-                                                className="admin-status-select"
-                                                style={{ color: 'var(--text-main)' }}
-                                            >
-                                                <option value="player" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Jogador</option>
-                                                <option value="moderador" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Moderador</option>
-                                                <option value="admin" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Administrador</option>
-                                                {isDev && <option value="developer" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Desenvolvedor</option>}
-                                            </select>
+                                                isRole={true}
+                                                options={[
+                                                    { value: 'player', label: 'Jogador' },
+                                                    { value: 'moderador', label: 'Moderador' },
+                                                    { value: 'admin', label: 'Administrador' },
+                                                    ...(isDev ? [{ value: 'developer', label: 'Desenvolvedor' }] : [])
+                                                ]}
+                                                placeholder="Selecione..."
+                                            />
                                         </td>
                                         <td className="mobile-hide">
                                             <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
@@ -565,21 +567,22 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                             
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', textAlign: 'left' }}>
                                 <label style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Alterar Cargo</label>
-                                <select 
+                                <CustomSelect 
                                     value={selectedMobileUser.role} 
-                                    onChange={(e) => {
-                                        handleUpdateUser(selectedMobileUser.id, { role: e.target.value });
-                                        setSelectedMobileUser(prev => ({ ...prev, role: e.target.value }));
+                                    onChange={(val) => {
+                                        handleUpdateUser(selectedMobileUser.id, { role: val });
+                                        setSelectedMobileUser(prev => ({ ...prev, role: val }));
                                     }}
                                     disabled={selectedMobileUser.role === 'developer' && !isDev}
-                                    className="admin-status-select"
-                                    style={{ width: '100%', padding: '12px', color: 'var(--text-main)' }}
-                                >
-                                    <option value="player" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Jogador</option>
-                                    <option value="moderador" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Moderador</option>
-                                    <option value="admin" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Administrador</option>
-                                    {isDev && <option value="developer" style={{ background: 'var(--bg-card)', color: 'var(--text-main)' }}>Desenvolvedor</option>}
-                                </select>
+                                    isRole={true}
+                                    options={[
+                                        { value: 'player', label: 'Jogador' },
+                                        { value: 'moderador', label: 'Moderador' },
+                                        { value: 'admin', label: 'Administrador' },
+                                        ...(isDev ? [{ value: 'developer', label: 'Desenvolvedor' }] : [])
+                                    ]}
+                                    placeholder="Selecione..."
+                                />
                             </div>
 
                             <div style={{ display: 'flex', gap: '10px', marginTop: '10px', flexDirection: 'column' }}>

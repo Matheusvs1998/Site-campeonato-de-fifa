@@ -319,6 +319,25 @@
 .role-indicator.moderador { background: rgba(255, 193, 7, 0.12); color: #ffc107; border: 1px solid rgba(255, 193, 7, 0.3); }
 .role-indicator.player { background: rgba(255, 255, 255, 0.05); color: var(--text-muted); border: 1px solid var(--border-color); }
 
+/* Animação para o texto de acesso no welcome modal */
+.role-text-anim {
+    display: inline-block;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    animation: rolePulse 2s infinite alternate ease-in-out;
+}
+
+@keyframes rolePulse {
+    0% { filter: brightness(1); text-shadow: 0 0 10px currentColor; }
+    100% { filter: brightness(1.4); text-shadow: 0 0 20px currentColor, 0 0 35px currentColor; }
+}
+
+.role-text-anim.role-developer { color: #28a745; }
+.role-text-anim.role-admin { color: #007bff; }
+.role-text-anim.role-moderador { color: #ffc107; }
+.role-text-anim.role-player { color: var(--text-muted); }
+
 /* Date/Time Inputs in Admin */
 .admin-date-input,
 .admin-time-input {
@@ -894,7 +913,6 @@ form {
 }
 
 .welcome-role strong {
-    color: var(--primary-color) !important;
     font-weight: 700;
 }
 

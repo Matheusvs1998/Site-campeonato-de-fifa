@@ -30,7 +30,7 @@ const PlatformIcon = ({ platform }) => {
     return null;
 };
 
-function CustomSelect({ options, value, onChange, placeholder, isTeam = false, isPlatform = false }) {
+function CustomSelect({ options, value, onChange, placeholder, isTeam = false, isPlatform = false, isRole = false, disabled = false }) {
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef(null);
 
@@ -46,15 +46,26 @@ function CustomSelect({ options, value, onChange, placeholder, isTeam = false, i
 
     const selectedOption = options.find(o => o.value === value);
 
-    const renderOption = (opt, isHeader = false) => (
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            {isTeam && (
-                <img src={getTeamLogo(opt.value)} alt={opt.value} style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
-            )}
-            {isPlatform && <PlatformIcon platform={opt.value} />}
-            <span style={{ color: isHeader ? '#f2e9e2' : '#f2e9e2', fontWeight: isHeader ? 'bold' : 'normal' }}>{opt.value}</span>
-        </div>
-    );
+    const renderOption = (opt, isHeader = false) => {
+        if (isRole) {
+            return (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <span className={`role-text-anim role-${opt.value}`} style={{ fontSize: isHeader ? '14px' : '13px' }}>
+                        {opt.label || opt.value}
+                    </span>
+                </div>
+            );
+        }
+        return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                {isTeam && (
+                    <img src={getTeamLogo(opt.value)} alt={opt.value} style={{ width: '24px', height: '24px', objectFit: 'contain' }} />
+                )}
+                {isPlatform && <PlatformIcon platform={opt.value} />}
+                <span style={{ color: isHeader ? '#f2e9e2' : '#f2e9e2', fontWeight: isHeader ? 'bold' : 'normal' }}>{opt.label || opt.value}</span>
+            </div>
+        );
+    };
 
     // Group options for teams
     let groups = {};
@@ -66,12 +77,12 @@ function CustomSelect({ options, value, onChange, placeholder, isTeam = false, i
     }
 
     return (
-        <div className="custom-select-wrapper" ref={wrapperRef} style={{ position: 'relative', width: '100%' }}>
+        <div className="custom-select-wrapper" ref={wrapperRef} style={{ position: 'relative', width: '100%', opacity: disabled ? 0.5 : 1 }}>
             <div 
                 className="gc-field custom-select-header"
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => { if (!disabled) setIsOpen(!isOpen); }}
                 style={{ 
-                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+                    cursor: disabled ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
                     padding: '8px 2px', minHeight: '38px', userSelect: 'none',
                     borderBottomColor: isOpen ? '#e23845' : 'rgba(229, 180, 170, .28)'
                 }}

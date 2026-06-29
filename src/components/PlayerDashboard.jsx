@@ -71,9 +71,9 @@ function PlayerDashboard({ user, userRegistration, results, onGoHome }) {
                 <h3 style={{ fontFamily: 'Barlow Condensed, sans-serif', textTransform: 'uppercase', fontSize: '1.2rem', letterSpacing: '0.1em', color: '#fff', borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: '15px' }}>Sua Inscrição</h3>
                 {userRegistration ? (
                     <div style={{display: 'flex', alignItems: 'center', gap: '30px', marginTop: '20px', flexWrap: 'wrap'}}>
-                        <div style={{ textAlign: 'center' }}>
-                            <img src={getTeamLogo(userRegistration.teamname)} alt="Escudo" style={{width: '90px'}} />
-                            <div style={{ fontFamily: 'Anton, sans-serif', color: '#ff3142', fontSize: '1.4rem', marginTop: '10px', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{userRegistration.gamertag}</div>
+                        <div style={{ textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                            <img src={getTeamLogo(userRegistration.teamname)} alt="Escudo" style={{width: '90px', marginBottom: '15px'}} />
+                            <GamertagBadge gamertag={userRegistration.gamertag} platform={userRegistration.platform} />
                         </div>
                         <div style={{flex: 1, color: '#f2e9e2', fontSize: '1.05rem', lineHeight: '1.6'}}>
                             <p><strong>Time:</strong> <span style={{ color: '#fff' }}>{userRegistration.teamname}</span></p>

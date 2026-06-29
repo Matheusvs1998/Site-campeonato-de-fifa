@@ -579,7 +579,7 @@ function App() {
         </div>
     );
 
-    const isAuthPage = (page === 'login' || page === 'signup' || page === 'admin' || page === 'profile');
+    const isAuthPage = (page === 'login' || page === 'signup');
 
     return (
         <div className={`app-wrapper gc-aurora-bg${isAuthPage ? ' gc-auth-fullscreen' : ''}`}>
@@ -814,7 +814,7 @@ function App() {
                                                             <img src="/logo-gangster-cup-white.png" alt="Gangster Cup" style={{ width: '220px', maxWidth: '100%', objectFit: 'contain' }} />
                                                         </div>
                                                         <h2>Bem-vindo, {user.username}!</h2>
-                                                        <p className="welcome-role">Acesso: <strong>{
+                                                        <p className="welcome-role">Acesso: <strong className={`role-text-anim role-${user.role || 'player'}`}>{
                                                             user.role === 'developer' ? 'Desenvolvedor' :
                                                                 user.role === 'admin' ? 'Administrador' :
                                                                     user.role === 'moderador' ? 'Moderador' : 'Competidor'
