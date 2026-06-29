@@ -823,7 +823,7 @@ form {
 .match-info .team-display > div {
     min-width: 0;
     max-width: 100%;
-    overflow: hidden;
+    overflow: visible;
 }
 .match-info .team-display small {
     display: block;

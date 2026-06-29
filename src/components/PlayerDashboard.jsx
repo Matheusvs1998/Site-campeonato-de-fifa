@@ -54,14 +54,16 @@ function PlayerDashboard({ user, userRegistration, results, onGoHome }) {
                     </div>
                     <div className="admin-section-card text-center" style={{ padding: '20px', margin: 0 }}>
                         <small style={{ color: '#9a9aa3', textTransform: 'uppercase', fontWeight: 'bold', display: 'block', marginBottom: '10px', letterSpacing: '0.1em' }}>Forma Atual</small>
-                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                            {stats.form.map((r, i) => (
+                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'center', minHeight: '24px', alignItems: 'center' }}>
+                            {stats.form && stats.form.length > 0 ? stats.form.map((r, i) => (
                                 <span key={i} className="stat-badge" style={{ 
                                     background: r === 'V' ? '#28a745' : r === 'E' ? '#ffc107' : '#ff4444',
                                     color: r === 'E' ? '#000' : '#fff',
                                     width: '24px', height: '24px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '4px', fontSize: '0.8rem'
                                 }}>{r}</span>
-                            ))}
+                            )) : (
+                                <span style={{ color: 'var(--text-muted)', fontSize: '0.9rem', fontStyle: 'italic' }}>Sem histórico</span>
+                            )}
                         </div>
                     </div>
                 </div>

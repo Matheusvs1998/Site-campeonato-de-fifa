@@ -109,38 +109,53 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                         </span>
                     </div>
 
-                    <div className="team-display">
-                        <div className="team-side">
-                            <span className="team-logo">
-                                <img
-                                    src={getTeamLogo(match.p1)}
-                                    alt={match.p1.split(' (')[0]}
-                                    loading="lazy"
-                                    onError={(e) => { e.target.src = getFallbackLogo(match.p1.split(' (')[0]); }}
-                                />
-                            </span>
-                            <span className="team-name">{match.p1.split(' (')[0]}</span>
-                            <GamertagBadge fullName={match.p1} style={{ transform: 'scale(0.75)', transformOrigin: 'center', marginTop: '2px' }} />
-                        </div>
-                        {showScore
-                            ? <span className="score">{match.score1}<span style={{ color: 'var(--gc-live-dot)' }}>:</span>{match.score2}</span>
-                            : <span className="match-vs">VS</span>}
-                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center' }}>
+                        <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                            <div className="team-display">
+                                <div className="team-side">
+                                    <span className="team-logo">
+                                        <img
+                                            src={getTeamLogo(match.p1)}
+                                            alt={match.p1.split(' (')[0]}
+                                            loading="lazy"
+                                            onError={(e) => { e.target.src = getFallbackLogo(match.p1.split(' (')[0]); }}
+                                        />
+                                    </span>
+                                    <span className="team-name">{match.p1.split(' (')[0]}</span>
+                                    <GamertagBadge fullName={match.p1} style={{ transform: 'scale(0.75)', transformOrigin: 'center', marginTop: '2px' }} />
+                                </div>
+                                {showScore && <span className="score" style={{ fontWeight: 'bold', fontSize: '1.2rem', paddingRight: '10px' }}>{match.score1}</span>}
+                            </div>
 
-                    <div className="match-divider"></div>
+                            <div className="match-divider" style={{ margin: '16px 0', position: 'relative' }}>
+                                {!showScore && (
+                                    <span className="match-vs" style={{ 
+                                        position: 'absolute', 
+                                        left: '20px', 
+                                        top: '50%', 
+                                        transform: 'translate(-50%, -50%)', 
+                                        background: 'rgba(29, 26, 32, 1)', 
+                                        padding: '0 8px',
+                                        color: '#ff3142'
+                                    }}>VS</span>
+                                )}
+                            </div>
 
-                    <div className="team-display">
-                        <div className="team-side">
-                            <span className="team-logo">
-                                <img
-                                    src={getTeamLogo(match.p2)}
-                                    alt={match.p2.split(' (')[0]}
-                                    loading="lazy"
-                                    onError={(e) => { e.target.src = getFallbackLogo(match.p2.split(' (')[0]); }}
-                                />
-                            </span>
-                            <span className="team-name">{match.p2.split(' (')[0]}</span>
-                            <GamertagBadge fullName={match.p2} style={{ transform: 'scale(0.75)', transformOrigin: 'center', marginTop: '2px' }} />
+                            <div className="team-display">
+                                <div className="team-side">
+                                    <span className="team-logo">
+                                        <img
+                                            src={getTeamLogo(match.p2)}
+                                            alt={match.p2.split(' (')[0]}
+                                            loading="lazy"
+                                            onError={(e) => { e.target.src = getFallbackLogo(match.p2.split(' (')[0]); }}
+                                        />
+                                    </span>
+                                    <span className="team-name">{match.p2.split(' (')[0]}</span>
+                                    <GamertagBadge fullName={match.p2} style={{ transform: 'scale(0.75)', transformOrigin: 'center', marginTop: '2px' }} />
+                                </div>
+                                {showScore && <span className="score" style={{ fontWeight: 'bold', fontSize: '1.2rem', paddingRight: '10px' }}>{match.score2}</span>}
+                            </div>
                         </div>
                     </div>
 
@@ -439,8 +454,6 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                                                                         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                                                                             <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                                                                                 <span>{teamName}</span>
-                                                                                {isTopAttack && <span className="stat-badge" title="Melhor Ataque">🚀</span>}
-                                                                                {isTopDefense && <span className="stat-badge" title="Melhor Defesa">🛡️</span>}
                                                                             </div>
                                                                             <GamertagBadge fullName={team.fullName} style={{ transform: 'scale(0.8)', transformOrigin: 'left', marginTop: '2px' }} />
                                                                         </div>
