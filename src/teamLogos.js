@@ -83,12 +83,8 @@ export const getTeamLogo = (teamName) => {
             logoUrl = 'https://' + logoUrl;
         }
 
-        if (logoUrl.includes('wikipedia/en/')) {
-            const proxy = 'https://images.weserv.nl/?url=';
-            return `${proxy}${encodeURIComponent(logoUrl)}&default=${encodeURIComponent(getFallbackLogo(nameOnly))}`;
-        }
-
-        return logoUrl;
+        const proxy = 'https://images.weserv.nl/?url=';
+        return `${proxy}${encodeURIComponent(logoUrl)}&w=120&h=120&output=webp&default=${encodeURIComponent(getFallbackLogo(nameOnly))}`;
     }
     return getFallbackLogo(nameOnly);
 };
