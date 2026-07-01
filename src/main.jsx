@@ -730,7 +730,7 @@ function App() {
                                             </div>
                                         </button>
 
-                                        <button className="mobile-menu-btn" onClick={() => setIsMenuOpen(!isMenuOpen)}>
+                                        <button className="mobile-menu-btn" aria-label="Abrir menu" onClick={() => setIsMenuOpen(!isMenuOpen)}>
                                             <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
                                             <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
                                             <div className={`bar ${isMenuOpen ? 'open' : ''}`}></div>
