@@ -1,14 +1,14 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef, Fragment } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef, Fragment, Suspense, lazy } from 'react';
 import ReactDOM from 'react-dom/client';
 import { supabaseClient } from './supabase.js';
 import { calculateStandings, sortGroupTeams } from './helpers.js';
-import Home from './components/Home';
-import Login from './components/Login';
-import SignUp from './components/SignUp';
-import VerifyEmail from './components/VerifyEmail';
-import Admin from './components/Admin';
-import Profile from './components/Profile';
-import PlayerDashboard from './components/PlayerDashboard';
+const Home = lazy(() => import('./components/Home'));
+const Login = lazy(() => import('./components/Login'));
+const SignUp = lazy(() => import('./components/SignUp'));
+const VerifyEmail = lazy(() => import('./components/VerifyEmail'));
+const Admin = lazy(() => import('./components/Admin'));
+const Profile = lazy(() => import('./components/Profile'));
+const PlayerDashboard = lazy(() => import('./components/PlayerDashboard'));
 import '../styles.css';
 
 const MAINTENANCE_MODE = false;
@@ -635,7 +635,7 @@ function App() {
                         </p>
                         <div className="maintenance-divider"></div>
                         <div className="maintenance-footer">
-                            <img src="/logo.png" alt="Logo" />
+                            <img src="/logo.png" alt="Logo" width="100" height="100" />
                             <span>Gangster Cup © 2026</span>
                         </div>
                     </div>
@@ -671,7 +671,7 @@ function App() {
                         <header className="header-nav">
                             <nav className="container nav-content">
                                 <div className={`logo ${isLogoAnimated ? 'logo-click-animation' : ''}`} onClick={handleLogoClick}>
-                                    <img src="/logo-gangster-cup.png" alt="Gangster Cup" className="nav-logo" />
+                                    <img src="/logo-gangster-cup.png" alt="Gangster Cup" className="nav-logo" width="120" height="40" />
                                 </div>
 
                                 <div className="nav-right-group">
@@ -762,7 +762,7 @@ function App() {
                         <div className="success-overlay">
                             <div className={`success-modal welcome-modal role-${logoutMessage.role || 'player'}`}>
                                 <div className="welcome-icon" style={{ display: 'flex', justifyContent: 'center' }}>
-                                    <img src="/logo-gangster-cup-white.png" alt="Gangster Cup" style={{ width: '220px', maxWidth: '100%', objectFit: 'contain' }} />
+                                    <img src="/logo-gangster-cup-white.png" alt="Gangster Cup" style={{ width: '220px', maxWidth: '100%', objectFit: 'contain' }} width="220" height="70" />
                                 </div>
                                 <h2>Até logo, {logoutMessage.username}!</h2>
                                 <p className="welcome-role">Sessão encerrada com segurança.</p>
@@ -798,40 +798,42 @@ function App() {
                         {loading ? (
                             <SkeletonLoader />
                         ) : (
-                            <div className="fade-in">
-                                {page === 'home' && <Home results={results} loading={loading} onRegisterClick={() => setPage('signup')} showFeaturedMatch={showFeaturedMatch} />}
-                                {page === 'login' && <Login onGoToSignUp={() => setPage('signup')} onGoHome={() => setPage('home')} />}
-                                {page === 'signup' && <SignUp onStepVerify={(email) => { setTempEmail(email); setPage('verify'); }} onGoHome={() => setPage('home')} onGoToLogin={() => setPage('login')} />}
-                                {page === 'verify' && tempEmail && <VerifyEmail email={tempEmail} onVerified={() => setPage('admin')} />}
-                                {page === 'profile' && <Profile user={session?.user} userRegistration={userRegistration} onUpdate={async () => { await fetchData(); if (session?.user) await fetchUserProfile(session.user); }} onGoHome={() => setPage('home')} />}
-                                {page === 'admin' && (
-                                    (!user || showWelcome) ? (
-                                        <div className="success-overlay">
-                                            <div className={`success-modal welcome-modal role-${user?.role || 'player'}`}>
-                                                {user ? (
-                                                    <Fragment>
-                                                        <div className="welcome-icon" style={{ display: 'flex', justifyContent: 'center' }}>
-                                                            <img src="/logo-gangster-cup-white.png" alt="Gangster Cup" style={{ width: '220px', maxWidth: '100%', objectFit: 'contain' }} />
-                                                        </div>
-                                                        <h2>Bem-vindo, {user.username}!</h2>
-                                                        <p className="welcome-role">Acesso: <strong className={`role-text-anim role-${user.role || 'player'}`}>{
-                                                            user.role === 'developer' ? 'Desenvolvedor' :
-                                                                user.role === 'admin' ? 'Administrador' :
-                                                                    user.role === 'moderador' ? 'Moderador' : 'Competidor'
-                                                        }</strong></p>
-                                                    </Fragment>
-                                                ) : <h2>Carregando perfil...</h2>}
+                            <Suspense fallback={<SkeletonLoader />}>
+                                <div className="fade-in">
+                                    {page === 'home' && <Home results={results} loading={loading} onRegisterClick={() => setPage('signup')} showFeaturedMatch={showFeaturedMatch} />}
+                                    {page === 'login' && <Login onGoToSignUp={() => setPage('signup')} onGoHome={() => setPage('home')} />}
+                                    {page === 'signup' && <SignUp onStepVerify={(email) => { setTempEmail(email); setPage('verify'); }} onGoHome={() => setPage('home')} onGoToLogin={() => setPage('login')} />}
+                                    {page === 'verify' && tempEmail && <VerifyEmail email={tempEmail} onVerified={() => setPage('admin')} />}
+                                    {page === 'profile' && <Profile user={session?.user} userRegistration={userRegistration} onUpdate={async () => { await fetchData(); if (session?.user) await fetchUserProfile(session.user); }} onGoHome={() => setPage('home')} />}
+                                    {page === 'admin' && (
+                                        (!user || showWelcome) ? (
+                                            <div className="success-overlay">
+                                                <div className={`success-modal welcome-modal role-${user?.role || 'player'}`}>
+                                                    {user ? (
+                                                        <Fragment>
+                                                            <div className="welcome-icon" style={{ display: 'flex', justifyContent: 'center' }}>
+                                                                <img src="/logo-gangster-cup-white.png" alt="Gangster Cup" style={{ width: '220px', maxWidth: '100%', objectFit: 'contain' }} />
+                                                            </div>
+                                                            <h2>Bem-vindo, {user.username}!</h2>
+                                                            <p className="welcome-role">Acesso: <strong className={`role-text-anim role-${user.role || 'player'}`}>{
+                                                                user.role === 'developer' ? 'Desenvolvedor' :
+                                                                    user.role === 'admin' ? 'Administrador' :
+                                                                        user.role === 'moderador' ? 'Moderador' : 'Competidor'
+                                                            }</strong></p>
+                                                        </Fragment>
+                                                    ) : <h2>Carregando perfil...</h2>}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ) : (
-                                        user.role === 'admin' || user.role === 'developer' || user.role === 'moderador' ? (
-                                            <Admin results={results} registrations={registrations} updateResult={updateResult} onDraw={() => setShowDrawConfirm(true)} onKnockoutDraw={executeKnockoutDraw} onDeleteMatch={deleteMatch} onDeleteAll={() => setShowResetConfirm(true)} user={user} fetchData={fetchData} showFeaturedMatch={showFeaturedMatch} onToggleFeatured={toggleFeaturedMatch} onGoHome={() => setPage('home')} />
                                         ) : (
-                                            <PlayerDashboard user={user} userRegistration={userRegistration} results={results} onGoHome={() => setPage('home')} />
+                                            user.role === 'admin' || user.role === 'developer' || user.role === 'moderador' ? (
+                                                <Admin results={results} registrations={registrations} updateResult={updateResult} onDraw={() => setShowDrawConfirm(true)} onKnockoutDraw={executeKnockoutDraw} onDeleteMatch={deleteMatch} onDeleteAll={() => setShowResetConfirm(true)} user={user} fetchData={fetchData} showFeaturedMatch={showFeaturedMatch} onToggleFeatured={toggleFeaturedMatch} onGoHome={() => setPage('home')} />
+                                            ) : (
+                                                <PlayerDashboard user={user} userRegistration={userRegistration} results={results} onGoHome={() => setPage('home')} />
+                                            )
                                         )
-                                    )
-                                )}
-                            </div>
+                                    )}
+                                </div>
+                            </Suspense>
                         )}
                     </section>
                 </>

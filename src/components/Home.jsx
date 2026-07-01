@@ -119,6 +119,7 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                                             alt={match.p1.split(' (')[0]}
                                             loading="lazy"
                                             onError={(e) => { e.target.src = getFallbackLogo(match.p1.split(' (')[0]); }}
+                                            width="80" height="80"
                                         />
                                     </span>
                                     <span className="team-name">{match.p1.split(' (')[0]}</span>
@@ -149,6 +150,7 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                                             alt={match.p2.split(' (')[0]}
                                             loading="lazy"
                                             onError={(e) => { e.target.src = getFallbackLogo(match.p2.split(' (')[0]); }}
+                                            width="80" height="80"
                                         />
                                     </span>
                                     <span className="team-name">{match.p2.split(' (')[0]}</span>
@@ -223,6 +225,7 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                             alt="Escudo do Campeão"
                             className="winner-team-logo"
                             onError={(e) => { e.target.src = getFallbackLogo(champion.split(' (')[0]); }}
+                            width="120" height="120"
                         />
                         <h2 className="winner-name">{champion.split(' (')[0]}</h2>
                         <div style={{ marginTop: '-10px', marginBottom: '15px', display: 'flex', justifyContent: 'center' }}>
@@ -239,7 +242,7 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
 
                     <div className="hero-kicker">Bem-vindos à</div>
                     <div className="hero-title-wrap" style={{ marginTop: '10px', marginBottom: '20px', display: 'flex', justifyContent: 'center' }}>
-                        <img src="/logo-gangster-cup.png" alt="Gangster Cup" style={{ width: '100%', maxWidth: '550px', filter: 'brightness(0) invert(1)' }} />
+                        <img src="/logo-gangster-cup.png" alt="Gangster Cup" style={{ width: '100%', maxWidth: '550px', filter: 'brightness(0) invert(1)' }} width="550" height="150" />
                     </div>
                     <p className="hero-subtitle">Acompanhe os próximos confrontos e os resultados em tempo real.</p>
                     <div className="hero-cta-wrap">
@@ -280,6 +283,7 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                                                         alt={featuredMatch.p1.split(' (')[0]}
                                                         loading="lazy"
                                                         onError={(e) => { e.target.src = getFallbackLogo(featuredMatch.p1.split(' (')[0]); }}
+                                                        width="80" height="80"
                                                     />
                                                 </span>
                                                 <span className="featured-team-name">{featuredMatch.p1.split(' (')[0]}</span>
@@ -315,6 +319,7 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                                                         alt={featuredMatch.p2.split(' (')[0]}
                                                         loading="lazy"
                                                         onError={(e) => { e.target.src = getFallbackLogo(featuredMatch.p2.split(' (')[0]); }}
+                                                        width="80" height="80"
                                                     />
                                                 </span>
                                                 <span className="featured-team-name">{featuredMatch.p2.split(' (')[0]}</span>
@@ -450,6 +455,7 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                                                                             alt=""
                                                                             loading="lazy"
                                                                             onError={(e) => { e.target.src = getFallbackLogo(teamName); }}
+                                                                            width="40" height="40"
                                                                         />
                                                                         <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
                                                                             <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
