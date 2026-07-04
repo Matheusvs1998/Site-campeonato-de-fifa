@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Campeonato de FIFA</string>
+    <string name="title_activity_main">Campeonato de FIFA</string>
+    <string name="package_name">com.matheus.campeonatofifa</string>
+    <string name="custom_url_scheme">com.matheus.campeonatofifa</string>
+</resources>

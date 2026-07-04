@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { getTeamLogo } from '../teamLogos';
 
 // Ícones animados das plataformas
@@ -34,15 +35,53 @@ function CustomSelect({ options, value, onChange, placeholder, isTeam = false, i
     const [isOpen, setIsOpen] = useState(false);
     const wrapperRef = useRef(null);
 
+    const [dropdownStyle, setDropdownStyle] = useState({});
+
     useEffect(() => {
         function handleClickOutside(event) {
             if (wrapperRef.current && !wrapperRef.current.contains(event.target)) {
+                if (event.target.closest('.custom-select-dropdown')) return;
                 setIsOpen(false);
             }
         }
         document.addEventListener("mousedown", handleClickOutside);
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (isOpen && wrapperRef.current) {
+            const rect = wrapperRef.current.getBoundingClientRect();
+            setDropdownStyle({
+                position: 'fixed',
+                top: `${rect.bottom}px`,
+                left: `${rect.left}px`,
+                width: `${rect.width}px`,
+                background: '#151119', 
+                border: '1px solid rgba(229, 180, 170, .15)', 
+                borderTop: '2px solid #e23845', 
+                zIndex: 9999, 
+                maxHeight: '250px', 
+                overflowY: 'auto',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.6)', 
+                borderBottomLeftRadius: '8px', 
+                borderBottomRightRadius: '8px'
+            });
+        }
+        
+        const handleScroll = (e) => {
+            if (e.target.closest('.custom-select-dropdown')) return;
+            setIsOpen(false);
+        };
+        
+        if (isOpen) {
+            window.addEventListener('scroll', handleScroll, true);
+            window.addEventListener('resize', handleScroll);
+        }
+        return () => {
+            window.removeEventListener('scroll', handleScroll, true);
+            window.removeEventListener('resize', handleScroll);
+        };
+    }, [isOpen]);
 
     const selectedOption = options.find(o => o.value === value);
 
@@ -91,13 +130,8 @@ function CustomSelect({ options, value, onChange, placeholder, isTeam = false, i
                 <span style={{ fontSize: '10px', color: '#e23845', transform: isOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.25s ease' }}>▼</span>
             </div>
             
-            {isOpen && (
-                <div className="custom-select-dropdown" style={{
-                    position: 'absolute', top: '100%', left: 0, right: 0, 
-                    background: '#151119', border: '1px solid rgba(229, 180, 170, .15)', 
-                    borderTop: '2px solid #e23845', zIndex: 1000, maxHeight: '250px', overflowY: 'auto',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.6)', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px'
-                }}>
+            {isOpen && createPortal(
+                <div className="custom-select-dropdown" style={dropdownStyle}>
                     {isTeam ? (
                         Object.keys(groups).map((groupName, i) => (
                             <div key={i}>
@@ -145,7 +179,8 @@ function CustomSelect({ options, value, onChange, placeholder, isTeam = false, i
                             </div>
                         ))
                     )}
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

@@ -439,20 +439,21 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                         </div>
                                     </td>
                                     <td className="mobile-hide">
-                                        <select 
-                                            value={match.status} 
-                                            onChange={(e) => updateResult(match.id, 'status', e.target.value)}
-                                            className={`admin-status-select ${match.status === 'Ao Vivo' ? 'live' : ''}`}
-                                            onClick={(e) => window.innerWidth <= 768 && e.stopPropagation()}
-                                        >
-                                            <option value="Agendado">Agendado</option>
-                                            <option value="Ao Vivo">🔴 Ao Vivo</option>
-                                            <option value="Finalizado">Finalizado</option>
-                                        </select>
+                                        <div onClick={(e) => window.innerWidth <= 768 && e.stopPropagation()} style={{ minWidth: '130px' }}>
+                                            <CustomSelect 
+                                                value={match.status} 
+                                                onChange={(val) => updateResult(match.id, 'status', val)}
+                                                options={[
+                                                    { value: 'Agendado', label: 'Agendado' },
+                                                    { value: 'Ao Vivo', label: <span style={{ color: '#ff3142', fontWeight: 'bold' }}>🔴 Ao Vivo</span> },
+                                                    { value: 'Finalizado', label: 'Finalizado' }
+                                                ]}
+                                                placeholder="Status"
+                                            />
+                                        </div>
                                     </td>
                                     <td className="mobile-hide">
                                         <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                                            <button className="admin-btn success icon-only" onClick={(e) => { e.stopPropagation(); setSelectedMatch(match); setShowScorersModal(true); }} title="Registrar Gols">⚽</button>
                                             <button className="admin-btn danger icon-only" onClick={(e) => { e.stopPropagation(); onDeleteMatch(match.id); }} title="Excluir Partida">🗑️</button>
                                         </div>
                                     </td>
@@ -682,28 +683,24 @@ function Admin({ results, registrations, updateResult, onDraw, onKnockoutDraw, o
                                 
                                 <div>
                                     <label style={{ fontSize: '0.75rem', color: 'var(--text-muted)', fontWeight: 700, textTransform: 'uppercase' }}>Status</label>
-                                    <select 
-                                        value={selectedMobileMatch.status} 
-                                        onChange={(e) => {
-                                            updateResult(selectedMobileMatch.id, 'status', e.target.value);
-                                            setSelectedMobileMatch(prev => ({...prev, status: e.target.value}));
-                                        }}
-                                        className="admin-status-select"
-                                        style={{ width: '100%', padding: '12px' }}
-                                    >
-                                        <option value="Agendado">Agendado</option>
-                                        <option value="Ao Vivo">Ao Vivo</option>
-                                        <option value="Finalizado">Finalizado</option>
-                                    </select>
+                                    <div style={{ marginTop: '5px' }}>
+                                        <CustomSelect 
+                                            value={selectedMobileMatch.status} 
+                                            onChange={(val) => {
+                                                updateResult(selectedMobileMatch.id, 'status', val);
+                                                setSelectedMobileMatch(prev => ({...prev, status: val}));
+                                            }}
+                                            options={[
+                                                { value: 'Agendado', label: 'Agendado' },
+                                                { value: 'Ao Vivo', label: <span style={{ color: '#ff3142', fontWeight: 'bold' }}>🔴 Ao Vivo</span> },
+                                                { value: 'Finalizado', label: 'Finalizado' }
+                                            ]}
+                                            placeholder="Status"
+                                        />
+                                    </div>
                                 </div>
 
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '10px' }}>
-                                    <button className="admin-btn" style={{ width: '100%', justifyContent: 'center', padding: '12px' }} onClick={() => {
-                                        setSelectedMatch(selectedMobileMatch);
-                                        setShowScorersModal(true);
-                                        setSelectedMobileMatch(null);
-                                    }}>⚽ Goleadores</button>
-
                                     {isAdmin && (
                                         <button className="admin-btn danger" style={{ width: '100%', justifyContent: 'center', padding: '12px' }} onClick={() => {
                                             onDeleteMatch(selectedMobileMatch.id);
