@@ -1,6 +1,6 @@
-# Campeonato EA FC 26 - Gangster Cup
+# Gangster Cup App (Campeonato EA FC 26)
 
-Aplicação React para gerenciar um campeonato de EA FC 26, incluindo inscrições, sorteio de partidas e moderação.
+Plataforma Web e Aplicativo Mobile para gerenciar a **Gangster Cup** de EA FC 26, incluindo inscrições, sorteio de partidas, moderação e placares em tempo real.
 
 ---
 
@@ -17,10 +17,16 @@ Aplicação React para gerenciar um campeonato de EA FC 26, incluindo inscriçõ
     *   Crie um arquivo `.env` na raiz do projeto com suas chaves do Supabase
     *   Instale as dependências: `npm install`
 2.  **Desenvolvimento:** `npm run dev`
-3.  **Build para Produção:** `npm run build` (os arquivos gerados estarão na pasta `dist/`)
+3.  **Build para Produção Web:** `npm run build` (os arquivos gerados estarão na pasta `dist/`)
+
+## 📱 Aplicativo Mobile (Android)
+Este projeto possui integração com o **Capacitor** para geração de aplicativo Android nativo.
+1. **Preparar a Atualização:** `npm run build:mobile` (Compila o React e sincroniza os assets para a pasta `android/`)
+2. **Gerar o APK:** Use o Android Studio (`npm run open:android`) ou o Gradle para rodar o build. O aplicativo gerado terá o nome configurado automaticamente como **Gangster Cup.apk** com a foto oficial do projeto.
 
 
 ## Tecnologias
+- [Capacitor](https://capacitorjs.com/) (Integração Mobile nativa)
 - [React](https://react.dev/) (Interface do Usuário)
 - [Vite](https://vitejs.dev/) (Ferramenta de Build e Desenvolvimento)
 - [Supabase](https://supabase.com/) (Banco de dados e persistência com realtime ativado)

@@ -566,6 +566,8 @@
 
 .maintenance-footer img {
     height: 22px;
+    width: auto;
+    object-fit: contain;
     opacity: 0.5;
 }
 

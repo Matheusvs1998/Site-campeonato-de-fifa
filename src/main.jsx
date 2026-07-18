@@ -635,7 +635,7 @@ function App() {
                         </p>
                         <div className="maintenance-divider"></div>
                         <div className="maintenance-footer">
-                            <img src="/logo.png" alt="Logo" width="100" height="100" />
+                            <img src="/logo.png" alt="Logo" />
                             <span>Gangster Cup © 2026</span>
                         </div>
                     </div>

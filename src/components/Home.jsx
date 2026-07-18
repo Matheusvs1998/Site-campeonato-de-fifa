@@ -4,32 +4,10 @@ import GamertagBadge from './GamertagBadge.jsx';
 import { getTeamLogo, getFallbackLogo } from '../teamLogos.js';
 
 function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
-    const [champion, setChampion] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [filterStatus, setFilterStatus] = useState('all');
     const [activeTab, setActiveTab] = useState('jogos');
     const [showLiveAlert, setShowLiveAlert] = useState(true);
-    const [posterError, setPosterError] = useState(false);
-
-    useEffect(() => {
-        const finalMatches = results.filter(m => m.stage.startsWith('Final'));
-        if (finalMatches.length > 0 && finalMatches.every(m => m.status === 'Finalizado')) {
-            const scores = {};
-            finalMatches.forEach(m => {
-                scores[m.p1] = (scores[m.p1] || 0) + (parseInt(m.score1) || 0);
-                scores[m.p2] = (scores[m.p2] || 0) + (parseInt(m.score2) || 0);
-            });
-            const teams = Object.keys(scores);
-            if (teams.length === 2) {
-                const [t1, t2] = teams;
-                if (scores[t1] > scores[t2]) setChampion(t1);
-                else if (scores[t2] > scores[t1]) setChampion(t2);
-                else setChampion("Empate! (Decisão por pênaltis)");
-            }
-        } else {
-            setChampion(null);
-        }
-    }, [results]);
 
     const currentStage = useMemo(() => {
         if (results.length === 0) return 'Fase de Grupos';
@@ -232,45 +210,7 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
                 </div>
             </section>
 
-            {champion && (
-                <section className="champion-poster-section fade-in-up" style={{ padding: '0 20px', maxWidth: '1200px', margin: '40px auto' }}>
-                    {!posterError ? (
-                        <div style={{ position: 'relative', width: '100%', borderRadius: '20px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.8)', border: '2px solid rgba(255, 215, 0, 0.5)' }}>
-                            <img 
-                                src={`/posters/${champion.split(' (')[0].toLowerCase().replace(/\s+/g, '-')}.png`} 
-                                alt={`Pôster de Campeão - ${champion.split(' (')[0]}`}
-                                style={{ width: '100%', height: 'auto', display: 'block' }}
-                                onError={() => {
-                                    // Se a imagem .png não carregar, tenta .jpg (isso é comum)
-                                    // Como não podemos fazer fallback duplo tão fácil inline no React sem sujar, 
-                                    // chamamos a função setPosterError diretamente, assumindo que usaremos a FUT Card como fallback
-                                    setPosterError(true);
-                                }}
-                            />
-                        </div>
-                    ) : (
-                        <div className="champion-section fade-in" style={{ padding: 0, minHeight: 'auto', background: 'transparent', borderBottom: 'none' }}>
-                            {[...Array(6)].map((_, i) => <div key={i} className="firework"></div>)}
-                            <div className="champion-modal winner-modal">
-                                <div className="winner-badge">CAMPEÃO</div>
-                                <div className="winner-trophy">🏆</div>
-                                <img
-                                    src={getTeamLogo(champion)}
-                                    alt="Escudo do Campeão"
-                                    className="winner-team-logo"
-                                    onError={(e) => { e.target.src = getFallbackLogo(champion.split(' (')[0]); }}
-                                    width="120" height="120"
-                                />
-                                <h2 className="winner-name">{champion.split(' (')[0]}</h2>
-                                <div style={{ marginTop: '-10px', marginBottom: '15px', display: 'flex', justifyContent: 'center' }}>
-                                     <GamertagBadge fullName={champion} style={{ transform: 'scale(1.1)', transformOrigin: 'center' }} />
-                                </div>
-                                <p className="winner-congrats">Parabéns por conquistar a Gangster cup!</p>
-                            </div>
-                        </div>
-                    )}
-                </section>
-            )}
+
 
             <div className="gc-content">
                 <div className="tabs-container">
