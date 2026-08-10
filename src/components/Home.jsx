@@ -222,7 +222,7 @@ function Home({ results, loading, onRegisterClick, showFeaturedMatch = true }) {
 
                 {activeTab === 'jogos' && (
                     <>
-                        {featuredMatch && !champion && showFeaturedMatch && (
+                        {featuredMatch && showFeaturedMatch && (
                             <div className="featured-section fade-in-up">
                                 <div className="featured-match-hero">
                                     <div className="gc-radials" aria-hidden="true"></div>
