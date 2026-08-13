@@ -49,7 +49,11 @@ function Profile({ user, userRegistration, onUpdate, onGoHome }) {
     const handleResendOtp = async () => {
         setLoading(true);
         try {
-            const { error } = await supabaseClient.auth.updateUser({ email: editableEmail });
+            const redirectUrl = window.location.origin || 'http://localhost:5173';
+            const { error } = await supabaseClient.auth.updateUser(
+                { email: editableEmail },
+                { emailRedirectTo: redirectUrl }
+            );
             if (error) throw error;
             setEmailMessage({ text: 'Novo código enviado para ' + editableEmail, type: 'success' });
         } catch (err) {
@@ -84,9 +88,13 @@ function Profile({ user, userRegistration, onUpdate, onGoHome }) {
             if (editableEmail !== user?.email) {
                 if (!emailChangePending) {
                     // Step 1: Request email change (sends OTP to new email)
-                    const { error: updateError } = await supabaseClient.auth.updateUser({ email: editableEmail });
+                    const redirectUrl = window.location.origin || 'http://localhost:5173';
+                    const { error: updateError } = await supabaseClient.auth.updateUser(
+                        { email: editableEmail },
+                        { emailRedirectTo: redirectUrl }
+                    );
                     if (updateError) throw updateError;
-                    
+
                     setEmailChangePending(true);
                     setEmailMessage({ text: 'Um código de verificação foi enviado para o novo e-mail. Insira-o abaixo para confirmar.', type: 'info' });
                     setMessage({ text: 'Verifique seu novo e-mail para o código.', type: 'info' });

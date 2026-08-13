@@ -101,6 +101,7 @@ export const translateAuthError = (msg) => {
     if (msg.includes('Invalid login credentials')) return 'E-mail ou senha inválidos.';
     if (msg.includes('User already registered')) return 'Este e-mail já está cadastrado. Verifique sua caixa de entrada ou tente reenviar o código.';
     if (msg.includes('Email not confirmed')) return 'E-mail não confirmado. Verifique seu código.';
+    if (msg.includes('Error sending confirmation email')) return 'Não foi possível enviar o código de confirmação. Verifique a configuração de e-mail do Supabase (Auth > Providers > Email) e a URL de redirecionamento.';
     if (msg.includes('Token has expired') || msg.includes('Invalid OTP')) return 'Código inválido ou expirado.';
     if (msg.includes('rate limit') || msg.includes('too many requests')) return 'Limite de e-mails atingido (máx. 3 por hora no plano gratuito). Tente novamente mais tarde.';
     if (msg.includes('Database error saving new user')) return 'Erro interno ao salvar dados. Verifique os logs do banco de dados.';
