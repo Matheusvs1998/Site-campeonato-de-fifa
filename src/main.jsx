@@ -11,7 +11,7 @@ const Profile = lazy(() => import('./components/Profile'));
 const PlayerDashboard = lazy(() => import('./components/PlayerDashboard'));
 import '../styles.css';
 
-const MAINTENANCE_MODE = true;
+const MAINTENANCE_MODE = false;
 
 function App() {
     const [page, setPage] = useState('home');
